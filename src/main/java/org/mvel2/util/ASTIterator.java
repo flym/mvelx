@@ -39,38 +39,17 @@ public interface ASTIterator extends Serializable {
   /** 返回并将下标指向下一个节点 */
   public ASTNode nextNode();
 
-  /** 跳过当前节点(暂无使用) */
-  public void skipNode();
-
   /** 获取下一个节点(执行状态不作处理) */
   public ASTNode peekNext();
 
   /** 获取当前节点(执行状态不作处理) */
   public ASTNode peekNode();
 
-  /** 获取正在处理的最后一次节点信息(最后一次和当前节点可能并不一致,比如skip时,当前为n,last为n-1) */
-  @Deprecated
-  public ASTNode peekLast();
-
-  //  public boolean peekNextTokenFlags(int flags);
-
   /** 下标重新调整为last节点,即回到上一次执行的位置 */
   public void back();
 
-  /** 返回当前节点往回的N个节点,当前状态不变化,暂不支持 */
-  @Deprecated
-  public ASTNode nodesBack(int offset);
-
-  /** 返回当前节点往后的N个节点,当前状态不变化 */
-  @Deprecated
-  public ASTNode nodesAhead(int offset);
-
   /** 是否还有更多的节点要处理 */
   public boolean hasMoreNodes();
-
-  /** 显示节点处理链,暂不支持 */
-  @Deprecated
-  public String showNodeChain();
 
   /** 返回第1个节点,当前状态不变化 */
   public ASTNode firstNode();

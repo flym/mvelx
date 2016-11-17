@@ -28,25 +28,6 @@ public class Convertable extends ASTNode {
 
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    try {
-
-      //与编译运行相一致,不过相应的过程转为解释运行
-      Object o = stmt.getReducedValue(ctx, thisValue, factory);
-      if (o == null) return false;
-
-      Class i = (Class) clsStmt.getReducedValue(ctx, thisValue, factory);
-      if (i == null) throw new ClassCastException();
-
-
-      return DataConversion.canConvert(i, o.getClass());
-    }
-    catch (ClassCastException e) {
-      throw new RuntimeException("not a class reference: " + clsStmt.getName());
-    }
-
-  }
-
   /** 出参类型为boolean,即a instanceof C */
   public Class getEgressType() {
     return Boolean.class;

@@ -38,11 +38,6 @@ public class Or extends BooleanNode {
         || ((Boolean) right.getReducedValueAccelerated(ctx, thisValue, factory)));
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //不支持解释运行
-    throw new RuntimeException("improper use of AST element");
-  }
-
   /** 设置最右侧节点,即同一运行级别最右侧的 */
   public void setRightMost(ASTNode right) {
     Or n = this;

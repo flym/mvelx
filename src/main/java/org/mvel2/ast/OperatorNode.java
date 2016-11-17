@@ -59,9 +59,4 @@ public class OperatorNode extends ASTNode {
   public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
     throw new CompileException("illegal use of operator: " + getOperatorSymbol(operator), expr, start);
   }
-
-  /** 标记节点不可执行 */
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    throw new CompileException("illegal use of operator: " + getOperatorSymbol(operator), expr, start);
-  }
 }

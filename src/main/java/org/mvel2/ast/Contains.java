@@ -41,11 +41,6 @@ public class Contains extends ASTNode {
     return containsCheck(stmt.getReducedValueAccelerated(ctx, thisValue, factory), stmt2.getReducedValueAccelerated(ctx, thisValue, factory));
   }
 
-  /** 不支持解释运行 */
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    throw new RuntimeException("operation not supported");
-  }
-
   /** 返回值即为boolean */
   public Class getEgressType() {
     return Boolean.class;

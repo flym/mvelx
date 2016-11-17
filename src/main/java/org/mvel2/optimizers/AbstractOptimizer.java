@@ -1,20 +1,3 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.mvel2.optimizers;
 
 import org.mvel2.CompileException;
@@ -39,8 +22,6 @@ public class AbstractOptimizer extends AbstractParser {
   protected static final int METH = 1;
   /** 表示集合访问 */
   protected static final int COL = 2;
-  /** 表示特殊的with访问 */
-  protected static final int WITH = 3;
 
   /** 当前处理是否是集合 */
   protected boolean collection = false;
@@ -216,12 +197,6 @@ public class AbstractOptimizer extends AbstractParser {
       //集合调用
       case '[':
         return COL;
-      //with调用
-      case '{':
-        if (expr[cursor - 1] == '.') {
-          return WITH;
-        }
-        break;
       //属性调用,如果.后接一个?号，表示当前属性的值结果可能是null的
       case '.':
         if ((start + 1) != end) {
@@ -235,9 +210,6 @@ public class AbstractOptimizer extends AbstractParser {
 
               fields = -1;
               break;
-            //.后面接{,表示with调用
-            case '{':
-              return WITH;
             default:
               if (isWhitespace(expr[tkStart])) {
                 skipWhitespace();

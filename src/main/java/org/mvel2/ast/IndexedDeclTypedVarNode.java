@@ -43,12 +43,6 @@ public class IndexedDeclTypedVarNode extends ASTNode implements Assignment {
     factory.createIndexedVariable(register, null, egressType);
     return ctx;
   }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    factory.createIndexedVariable(register, null, egressType);
-    return null;
-  }
-
   public String getAssignmentVar() {
     return null;
   }

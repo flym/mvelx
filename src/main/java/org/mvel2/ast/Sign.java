@@ -51,12 +51,6 @@ public class Sign extends ASTNode {
     return sign(stmt.getValue(ctx, thisValue, factory));
   }
 
-  @Override
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //相应的结果采用解释模式来运行
-    return sign(MVEL.eval(expr, start, offset, thisValue, factory));
-  }
-
   /** 执行取负操作,即根据相应的取负器来进行处理 */
   private Object sign(Object o) {
     if (o == null) return null;

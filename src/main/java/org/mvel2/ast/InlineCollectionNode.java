@@ -111,13 +111,6 @@ public class InlineCollectionNode extends ASTNode {
 
   }
 
-  /** 采用解释运行方式进行解释并获取相应的数据 */
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    parseGraph(false, egressType, pCtx);
-
-    return execGraph(collectionGraph, egressType, ctx, factory);
-  }
-
   private void parseGraph(boolean compile, Class type, ParserContext pCtx) {
     CollectionParser parser = new CollectionParser();
 
@@ -135,75 +128,5 @@ public class InlineCollectionNode extends ASTNode {
     trailingOffset = offset - (trailingStart - start);
 
     if (this.egressType == null) this.egressType = collectionGraph.getClass();
-  }
-
-  /** 采用解释方式来运行相应的内部集合处理 */
-  private Object execGraph(Object o, Class type, Object ctx, VariableResolverFactory factory) {
-    //当前对象为集合，采用集合方式运行
-    if (o instanceof List) {
-      ArrayList list = new ArrayList(((List) o).size());
-
-      for (Object item : (List) o) {
-        list.add(execGraph(item, type, ctx, factory));
-      }
-
-      return list;
-    }
-    //map,分别对key和value进行解释运行
-    else if (o instanceof Map) {
-      HashMap map = new HashMap();
-
-      for (Object item : ((Map) o).keySet()) {
-        map.put(execGraph(item, type, ctx, factory), execGraph(((Map) o).get(item), type, ctx, factory));
-      }
-
-      return map;
-    }
-    //数组处理
-    else if (o instanceof Object[]) {
-      int dim = 0;
-
-      //这里根据相应的数组创建出相应的多维数据结构
-      if (type != null) {
-        String nm = type.getName();
-        while (nm.charAt(dim) == '[') dim++;
-      }
-      else {
-        type = Object[].class;
-        dim = 1;
-      }
-
-      Object newArray = Array.newInstance(getSubComponentType(type), ((Object[]) o).length);
-
-      try {
-        Class cls = dim > 1 ? findClass(null, repeatChar('[', dim - 1) + "L" + getBaseComponentType(type).getName() + ";", pCtx) : type;
-
-        //这里仅处理最外层的维度，因为在解析时，会自动生成相应的多维结构,然后在内层时，会在进行解析时自动进行维度的递进(如[[ 会在第一个[解析时，跳到第2个[
-        int c = 0;
-        for (Object item : (Object[]) o) {
-          Array.set(newArray, c++, execGraph(item, cls, ctx, factory));
-        }
-
-        return newArray;
-      }
-      catch (IllegalArgumentException e) {
-        throw new CompileException("type mismatch in array", expr, start, e);
-      }
-      catch (ClassNotFoundException e) {
-        throw new RuntimeException("this error should never throw:" + getBaseComponentType(type).getName(), e);
-      }
-    }
-    //这里即表示在进行解释时，已经解释到了具体的每一个子项，因此直接采用eval解释运行即可
-    else {
-      //这里的类型为数组，但进行到这里，表示这里的类型仅表示数据的类型，并不表示当前的对象的类型，因此需要将相应的数据类型转换为实际的基本类型进行处理
-      //因为如 int[][] 在处理时，前面的当前对象会进行相应数组的处理逻辑，因此这里仅表示最内部的每一项是什么类型
-      if (type.isArray()) {
-        return MVEL.eval((String) o, ctx, factory, getBaseComponentType(type));
-      }
-      //非数组，直接进行解释运行
-      else {
-        return MVEL.eval((String) o, ctx, factory);
-      }
-    }
   }
 }

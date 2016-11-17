@@ -31,7 +31,6 @@ import java.io.Serializable;
 
 import static java.lang.Thread.currentThread;
 import static org.mvel2.Operator.NOOP;
-import static org.mvel2.PropertyAccessor.get;
 import static org.mvel2.optimizers.OptimizerFactory.*;
 import static org.mvel2.util.CompilerTools.getInjectedImports;
 import static org.mvel2.util.ParseTools.*;
@@ -95,9 +94,6 @@ public class ASTNode implements Cloneable, Serializable {
 
   /** 表示当前节点是一个静态全称访问，即通过全类型名来访问一个属性，通常指静态属性访问 */
   public static final int FQCN = 1 << 20;
-
-  /** 表示当前节点为StackLang类型 */
-  public static final int STACKLANG = 1 << 22;
 
   public static final int DEFERRED_TYPE_RES = 1 << 23;
   /** 当前处理是否是强类型处理 */
@@ -232,11 +228,6 @@ public class ASTNode implements Cloneable, Serializable {
           .optimizeAccessor(pCtx, expr, start, offset, ctx, thisValue, factory, true, null));
     }
 
-    //如果没有访问器，则表示访问本身无法进行工作，则切换为解释模式
-    if (accessor == null) {
-      return get(expr, start, offset, ctx, factory, thisValue, pCtx);
-    }
-
     //相应的优化器，会在产生访问器时默认就已经计算了相应的值，因此这里直接给出相应的结果
     if (retVal == null) {
       retVal = optimizer.getResultOptPass();
@@ -248,37 +239,6 @@ public class ASTNode implements Cloneable, Serializable {
     }
 
     return retVal;
-  }
-
-
-  /**
-   * 获取相应的执行值，采用解释模式运行
-   * 解释模式即最简单的方式，通过逐步读取信息，然后通过读取下一步的字符来判定下一步的走向
-   * 在mvel中，解释模式会在编译时改写为优化方式，因此大部分的节点都不支持解释运行
-   * 解释模式的运行主要应用于如字段的读取或者访问地调用，在这些地方如果优化模式不能调用，将最终退化为解释模式运行
-   * <p>
-   * 解释模式主要用于在MvelInterpretedRuntime(即通过MVEL.eval调用的)时候，完成基本的解释调用处理
-   * 主要的功能由四则混合运算以及bean(数组)访问来完成,其中混合运行通过ExecutionStack来完成，而属性访问则
-   * 通过PropertyAccessor来完成，在解释过程中，能够进入到这里的，肯定只会有属性解释,因此默认的执行即是通过调用属性访问来获取相应的结果
-   */
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //如果是常量节点，则直接返回相应的常量信息
-    if ((fields & (LITERAL)) != 0) {
-      return literal;
-    }
-    else {
-      //调用解释模式来获取相应的数据信息
-      return get(expr, start, offset, ctx, factory, thisValue, pCtx);
-    }
-  }
-
-  /** 无用方法,即拿到最前面的第一个表达式头的名字 */
-  @Deprecated
-  protected String getAbsoluteRootElement() {
-    if ((fields & (DEEP_PROPERTY | COLLECTION)) != 0) {
-      return new String(expr, start, getAbsoluteFirstPart());
-    }
-    return nameCache;
   }
 
   public Class getEgressType() {

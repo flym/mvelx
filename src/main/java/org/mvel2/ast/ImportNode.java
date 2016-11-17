@@ -106,12 +106,6 @@ public class ImportNode extends ASTNode {
     return null;
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //解释运行与编译运行一致
-    return getReducedValueAccelerated(ctx, thisValue, factory);
-  }
-
-
   /** 获取已引入的类(如果是类引用) */
   public Class getImportClass() {
     return importClass;

@@ -36,7 +36,6 @@ import static org.mvel2.DataTypes.BIG_DECIMAL;
 import static org.mvel2.DataTypes.EMPTY;
 import static org.mvel2.Operator.*;
 import static org.mvel2.util.ParseTools.*;
-import static org.mvel2.util.Soundex.soundex;
 
 /**
  * 数学处理，进行各项数学运算
@@ -389,10 +388,6 @@ public strictfp class MathProcessor {
         else {
           return Boolean.FALSE;
         }
-
-
-      case SOUNDEX:
-        return soundex(String.valueOf(val1)).equals(soundex(String.valueOf(val2)));
 
       // #操作,直接字符串拼接
       case STR_APPEND:

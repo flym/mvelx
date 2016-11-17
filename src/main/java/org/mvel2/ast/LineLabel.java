@@ -60,12 +60,6 @@ public class LineLabel extends ASTNode {
     return null;
   }
 
-  /** 不需要处理数据 */
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    return null;
-  }
-
-
   public String toString() {
     return "[SourceLine:" + lineNumber + "]";
   }

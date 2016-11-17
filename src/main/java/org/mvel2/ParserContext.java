@@ -20,7 +20,6 @@ package org.mvel2;
 
 import org.mvel2.ast.Function;
 import org.mvel2.ast.LineLabel;
-import org.mvel2.ast.Proto;
 import org.mvel2.compiler.AbstractParser;
 import org.mvel2.compiler.CompiledExpression;
 import org.mvel2.compiler.Parser;
@@ -441,17 +440,6 @@ public class ParserContext implements Serializable {
     return parserConfiguration.hasImport(name);
   }
 
-  /** 是否存在相应的引用,并且此引用为一个原型引用 */
-  public boolean hasProtoImport(String name) {
-    if (parserConfiguration.getImports() == null) return false;
-    Object o = parserConfiguration.getImports().get(name);
-    return o != null && o instanceof Proto;
-  }
-
-  public Proto getProtoImport(String name) {
-    return (Proto) parserConfiguration.getImports().get(name);
-  }
-
   /**
    * 往解析配置中添加一个类,使用类的简名simpleName作为引用名,后续可以直接进行类引用
    * Adds an import for the specified <tt>Class</tt>.
@@ -460,12 +448,6 @@ public class ParserContext implements Serializable {
    */
   public void addImport(Class cls) {
     addImport(cls.getSimpleName(), cls);
-  }
-
-  /** 往解析配置中添加一个原型引用 */
-  public void addImport(Proto proto) {
-    parserConfiguration.addImport(proto.getName(), proto);
-
   }
 
   /**

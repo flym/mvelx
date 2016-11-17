@@ -22,7 +22,6 @@ import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.optimizers.AccessorOptimizer;
 import org.mvel2.optimizers.OptimizerFactory;
 
-import static org.mvel2.PropertyAccessor.get;
 import static org.mvel2.optimizers.OptimizerFactory.getThreadAccessorOptimizer;
 
 /**
@@ -60,9 +59,5 @@ public class LiteralDeepPropertyNode extends ASTNode {
         OptimizerFactory.clearThreadAccessorOptimizer();
       }
     }
-  }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    return get(expr, start, offset, literal, factory, thisValue, pCtx);
   }
 }

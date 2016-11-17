@@ -51,11 +51,6 @@ public class LiteralNode extends ASTNode {
     return literal;
   }
 
-  /** 直接返回此值 */
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    return literal;
-  }
-
   public Object getLiteralValue() {
     return literal;
   }

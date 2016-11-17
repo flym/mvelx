@@ -55,9 +55,7 @@ public class ASTBinaryTree {
         switch (((OperatorNode)root).getOperator()) {
           //boolean型操作
             case CONTAINS:
-            case SOUNDEX:
             case INSTANCEOF:
-            case SIMILARITY:
             case REGEX:
                 return Boolean.class;
             //+操作,先判断是否是字符串拼接,其它情况进行宽化处理,认为返回double类型

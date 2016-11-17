@@ -40,12 +40,6 @@ public class IsDef extends ASTNode {
     return factory.isResolveable(nameCache) || (thisValue != null && getFieldOrAccessor(thisValue.getClass(), nameCache) != null);
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //与编译运行相同
-    return factory.isResolveable(nameCache) || (thisValue != null && getFieldOrAccessor(thisValue.getClass(), nameCache) != null);
-
-  }
-
   /** isDef 返回类型为boolean */
   public Class getEgressType() {
     return Boolean.class;

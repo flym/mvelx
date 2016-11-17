@@ -66,19 +66,4 @@ public class AssertNode extends ASTNode {
     }
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    try {
-      //采用解释模式来评估相应的值
-      if (!((Boolean) MVEL.eval(this.expr, ctx, factory))) {
-        throw new AssertionError("assertion failed in expression: " + new String(this.expr, start, offset));
-      }
-      else {
-        return true;
-      }
-    }
-    //出现cast异常,表示类型转换失败,则丢异常
-    catch (ClassCastException e) {
-      throw new CompileException("assertion does not contain a boolean statement", expr, start);
-    }
-  }
 }

@@ -22,7 +22,6 @@ import org.mvel2.ParserContext;
 import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
 
-import static org.mvel2.MVEL.eval;
 import static org.mvel2.util.ParseTools.*;
 
 /**
@@ -77,12 +76,6 @@ public class TypedVarNode extends ASTNode implements Assignment {
     factory.createVariable(name, ctx = statement.getValue(ctx, thisValue, factory), egressType);
     return ctx;
   }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    factory.createVariable(name, ctx = eval(expr, start, offset, thisValue, factory), egressType);
-    return ctx;
-  }
-
 
   public String getName() {
     return name;

@@ -20,13 +20,6 @@ public class IntMult extends BinaryOperation implements IntOptimized {
         * ((Integer) right.getReducedValueAccelerated(ctx, thisValue, factory));
   }
 
-  @Override
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    // a * b,每个节点采用解释运行
-    return ((Integer) left.getReducedValue(ctx, thisValue, factory))
-        * ((Integer) right.getReducedValue(ctx, thisValue, factory));
-  }
-
   /** 整数相乘,结果为整数 */
   @Override
   public Class getEgressType() {

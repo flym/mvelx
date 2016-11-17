@@ -21,17 +21,12 @@ public class NewObjectPrototype extends ASTNode {
   }
 
   @Override
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
+  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
     //因为是new一个对象,因此需要一个新的变量工厂,即作用域
     final MapVariableResolverFactory resolverFactory = new MapVariableResolverFactory(new HashMap<String, Object>(), factory);
     //这里实际上已经作了一次函数块调用,但这个调用没什么用处...
     function.getCompiledBlock().getValue(ctx, thisValue, resolverFactory);
     //这里再返回此函数实例
     return new PrototypalFunctionInstance(function, resolverFactory);
-  }
-
-  @Override
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    return getReducedValue(ctx, thisValue, factory);
   }
 }

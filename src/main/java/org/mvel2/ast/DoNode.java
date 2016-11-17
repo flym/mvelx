@@ -78,18 +78,4 @@ public class DoNode extends BlockNode {
 
     return null;
   }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //循环体内需要新的作用域,因此创建新执行作用域来执行
-    VariableResolverFactory ctxFactory = new MapVariableResolverFactory(new HashMap<String, Object>(0), factory);
-
-    do {
-      compiledBlock.getValue(ctx, thisValue, ctxFactory);
-    }
-    //这里的条件判断还是作用的外部作用域,以与执行体相区分
-    while ((Boolean) condition.getValue(ctx, thisValue, factory));
-
-    return null;
-  }
-
 }

@@ -49,8 +49,4 @@ public class PreFixIncNode extends ASTNode {
     return ctx;
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //与编译期相同
-    return getReducedValueAccelerated(ctx, thisValue, factory);
-  }
 }

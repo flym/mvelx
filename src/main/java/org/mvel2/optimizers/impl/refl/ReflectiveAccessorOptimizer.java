@@ -43,7 +43,6 @@ import static java.lang.Thread.currentThread;
 import static java.lang.reflect.Array.getLength;
 import static org.mvel2.DataConversion.canConvert;
 import static org.mvel2.DataConversion.convert;
-import static org.mvel2.MVEL.eval;
 import static org.mvel2.ast.TypeDescriptor.getClassReference;
 import static org.mvel2.integration.GlobalListenerFactory.*;
 import static org.mvel2.integration.PropertyHandlerFactory.*;
@@ -190,7 +189,8 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
           }
           else {
             //noinspection unchecked
-            ((Map) ctx).put(eval(ex, ctx, variableFactory), convert(value, returnType = verifier.analyze()));
+            //todo 这里的ex将采用编译运行来处理
+//            ((Map) ctx).put(eval(ex, ctx, variableFactory), convert(value, returnType = verifier.analyze()));
 
             addAccessorNode(new MapAccessorNest(ex, returnType));
           }
@@ -203,8 +203,9 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
           }
           else {
             //noinspection unchecked
-            ((List) ctx).set(eval(ex, ctx, variableFactory, Integer.class),
-                convert(value, returnType = verifier.analyze()));
+            //todo 这里的ex将采用编译运行来处理
+//            ((List) ctx).set(eval(ex, ctx, variableFactory, Integer.class),
+//                convert(value, returnType = verifier.analyze()));
 
             addAccessorNode(new ListAccessorNest(ex, returnType));
           }
@@ -221,8 +222,9 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
           }
           else {
             //noinspection unchecked
-            Array.set(ctx, eval(ex, ctx, variableFactory, Integer.class),
-                convert(value, getBaseComponentType(ctx.getClass())));
+            //todo 这里的ex将采用编译运行来处理
+//            Array.set(ctx, eval(ex, ctx, variableFactory, Integer.class),
+//                convert(value, getBaseComponentType(ctx.getClass())));
             addAccessorNode(new ArrayAccessorNest(ex));
           }
           return rootNode;
@@ -334,9 +336,6 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
             case COL:
               curr = getCollectionProperty(curr, capture());
               break;
-            case WITH:
-              curr = getWithProperty(curr);
-              break;
             case DONE:
               break;
           }
@@ -369,9 +368,6 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
               break;
             case COL:
               curr = getCollectionPropertyAO(curr, capture());
-              break;
-            case WITH:
-              curr = getWithProperty(curr);
               break;
             case DONE:
               break;
@@ -437,19 +433,6 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
     else {
       currNode = currNode.setNextNode(an);
     }
-  }
-
-  /** 处理with访问 */
-  private Object getWithProperty(Object ctx) {
-    currType = null;
-    String root = start == cursor ? null : new String(expr, start, cursor - 1).trim();
-
-    int st = cursor + 1;
-    cursor = balancedCaptureWithLineAccounting(expr, cursor, end, '{', pCtx);
-
-    WithAccessor wa = new WithAccessor(pCtx, root, expr, st, cursor++ - st, ingressType);
-    addAccessorNode(wa);
-    return wa.getValue(ctx, thisRef, variableFactory);
   }
 
   /** 支持按照扩展式的访问方式进行处理 */

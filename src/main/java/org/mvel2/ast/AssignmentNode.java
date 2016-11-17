@@ -19,9 +19,7 @@
 package org.mvel2.ast;
 
 import org.mvel2.CompileException;
-import org.mvel2.MVELInterpretedRuntime;
 import org.mvel2.ParserContext;
-import org.mvel2.PropertyAccessor;
 import org.mvel2.compiler.CompiledAccExpression;
 import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
@@ -143,23 +141,6 @@ public class AssignmentNode extends ASTNode implements Assignment {
       return null;
     }
   }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    checkNameSafety(varName);
-
-    //采用解释的方式来进行运行,则尝试通过属性访问的方式来进行处理
-    MVELInterpretedRuntime runtime = new MVELInterpretedRuntime(expr, start, offset, ctx, factory, pCtx);
-
-    if (col) {
-      PropertyAccessor.set(factory.getVariableResolver(varName).getValue(), factory, index, ctx = runtime.parse(), pCtx);
-    }
-    else {
-      return factory.createVariable(varName, runtime.parse()).getValue();
-    }
-
-    return ctx;
-  }
-
 
   public String getAssignmentVar() {
     return assignmentVar;

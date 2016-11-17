@@ -50,9 +50,4 @@ public class IndexedPostFixDecNode extends ASTNode {
         ctx, Operator.SUB, DataTypes.INTEGER, 1));
     return ctx;
   }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //与编译执行相同
-    return getReducedValueAccelerated(ctx, thisValue, factory);
-  }
 }

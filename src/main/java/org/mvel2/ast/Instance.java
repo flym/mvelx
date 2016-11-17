@@ -25,20 +25,6 @@ public class Instance extends ASTNode {
     return ((Class) clsStmt.getReducedValueAccelerated(ctx, thisValue, factory)).isInstance(stmt.getReducedValueAccelerated(ctx, thisValue, factory));
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    try {
-      //采用class.isInstance,这里采用的是解释运行,分别计算出class和object对象
-      Class i = (Class) clsStmt.getReducedValue(ctx, thisValue, factory);
-      if (i == null) throw new ClassCastException();
-
-      return i.isInstance(stmt.getReducedValue(ctx, thisValue, factory));
-    }
-    catch (ClassCastException e) {
-      throw new RuntimeException("not a class reference: " + clsStmt.getName());
-    }
-
-  }
-
   /** instanceOf 返回类型为 boolean */
   public Class getEgressType() {
     return Boolean.class;

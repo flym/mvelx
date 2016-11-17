@@ -46,10 +46,6 @@ public class EndOfStatement extends ASTNode {
     return null;
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    return null;
-  }
-
   public Integer getOperator() {
     return Operator.END_OF_STMT;
   }

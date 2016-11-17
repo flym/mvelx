@@ -18,7 +18,6 @@
 
 package org.mvel2.ast;
 
-import org.mvel2.MVEL;
 import org.mvel2.ParserContext;
 import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
@@ -46,11 +45,6 @@ public class Substatement extends ASTNode {
     //执行时,直接返回内部的执行即可
     return statement.getValue(ctx, thisValue, factory);
   }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    return MVEL.eval(this.expr, start, offset, ctx, factory);
-  }
-
 
   /** 返回内部的执行节点 */
   public ExecutableStatement getStatement() {

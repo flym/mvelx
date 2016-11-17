@@ -26,7 +26,6 @@ import org.mvel2.integration.impl.MapVariableResolverFactory;
 
 import java.util.HashMap;
 
-import static org.mvel2.MVEL.eval;
 import static org.mvel2.util.CompilerTools.expectType;
 import static org.mvel2.util.ParseTools.subCompileExpression;
 
@@ -90,22 +89,6 @@ public class IfNode extends BlockNode implements NestedStatement {
       return elseBlock.getValue(ctx, thisValue, idxAlloc ? factory : new MapVariableResolverFactory(new HashMap(0), factory));
     }
     //只有if,并且if不满足条件,返回null
-    else {
-      return null;
-    }
-  }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //相应的条件执行,语句执行都采用解释模式来完成
-    if ((Boolean) eval(expr, start, offset, ctx, factory)) {
-      return eval(expr, blockStart, blockOffset, ctx, new MapVariableResolverFactory(new HashMap(0), factory));
-    }
-    else if (elseIf != null) {
-      return elseIf.getReducedValue(ctx, thisValue, new MapVariableResolverFactory(new HashMap(0), factory));
-    }
-    else if (elseBlock != null) {
-      return elseBlock.getValue(ctx, thisValue, new MapVariableResolverFactory(new HashMap(0), factory));
-    }
     else {
       return null;
     }

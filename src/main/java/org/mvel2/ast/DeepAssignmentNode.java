@@ -25,8 +25,6 @@ import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
 
 import static org.mvel2.MVEL.compileSetExpression;
-import static org.mvel2.MVEL.eval;
-import static org.mvel2.PropertyAccessor.set;
 import static org.mvel2.util.ParseTools.*;
 
 /**
@@ -103,11 +101,6 @@ public class DeepAssignmentNode extends ASTNode implements Assignment {
     //在之前已经将statement,转换为a+b,因此这里整个表达式即为a = a +b,即对后面进行求值,再重新设置回去
     //如果本身没有+= 这种操作符,则直接即为a = b这种
     acc.setValue(ctx, thisValue, factory, ctx = statement.getValue(ctx, thisValue, factory));
-    return ctx;
-  }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    set(ctx, factory, property, ctx = eval(expr, this.start, this.offset, ctx, factory), pCtx);
     return ctx;
   }
 

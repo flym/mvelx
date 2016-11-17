@@ -19,7 +19,6 @@ package org.mvel2.ast;
 
 import org.mvel2.CompileException;
 import org.mvel2.DataConversion;
-import org.mvel2.MVEL;
 import org.mvel2.ParserContext;
 import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
@@ -139,57 +138,6 @@ public class ForEachNode extends BlockNode {
         }
 
         break;
-    }
-
-    return null;
-  }
-
-  /** 执行逻辑与编译相同,但执行过程采用解释运行 */
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    ItemResolverFactory.ItemResolver itemR = new ItemResolverFactory.ItemResolver(item);
-    ItemResolverFactory itemFactory = new ItemResolverFactory(itemR, new DefaultLocalVariableResolverFactory(factory));
-
-    Object iterCond = MVEL.eval(expr, start, offset, thisValue, factory);
-
-    if (itemType != null && itemType.isArray())
-      enforceTypeSafety(itemType, getBaseComponentType(iterCond.getClass()));
-
-    this.compiledBlock = (ExecutableStatement) subCompileExpression(expr, blockStart, blockOffset, pCtx);
-
-    Object v;
-    if (iterCond instanceof Iterable) {
-      for (Object o : (Iterable) iterCond) {
-        itemR.setValue(o);
-        v = compiledBlock.getValue(ctx, thisValue, itemFactory);
-        if (itemFactory.tiltFlag()) return v;
-      }
-    }
-    else if (iterCond != null && iterCond.getClass().isArray()) {
-      int len = Array.getLength(iterCond);
-      for (int i = 0; i < len; i++) {
-        itemR.setValue(Array.get(iterCond, i));
-        v = compiledBlock.getValue(ctx, thisValue, itemFactory);
-        if (itemFactory.tiltFlag()) return v;
-      }
-    }
-    else if (iterCond instanceof CharSequence) {
-      for (Object o : iterCond.toString().toCharArray()) {
-        itemR.setValue(o);
-        v = compiledBlock.getValue(ctx, thisValue, itemFactory);
-        if (itemFactory.tiltFlag()) return v;
-      }
-    }
-    else if (iterCond instanceof Integer) {
-      int max = (Integer) iterCond + 1;
-      for (int i = 1; i != max; i++) {
-        itemR.setValue(i);
-        v = compiledBlock.getValue(ctx, thisValue, itemFactory);
-        if (itemFactory.tiltFlag()) return v;
-      }
-    }
-    else {
-      throw new CompileException("non-iterable type: "
-          + (iterCond != null ? iterCond.getClass().getName() : "null"), expr, start);
     }
 
     return null;

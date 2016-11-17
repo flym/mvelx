@@ -68,14 +68,4 @@ public class UntilNode extends BlockNode {
     return null;
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //与编译执行相同
-    VariableResolverFactory ctxFactory = new MapVariableResolverFactory(new HashMap(0), factory);
-
-    while (!(Boolean) condition.getValue(ctx, thisValue, factory)) {
-      compiledBlock.getValue(ctx, thisValue, ctxFactory);
-    }
-    return null;
-  }
-
 }

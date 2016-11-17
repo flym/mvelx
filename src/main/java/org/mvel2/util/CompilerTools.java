@@ -21,30 +21,8 @@ package org.mvel2.util;
 import org.mvel2.CompileException;
 import org.mvel2.Operator;
 import org.mvel2.ParserContext;
-import org.mvel2.ast.ASTNode;
-import org.mvel2.ast.And;
-import org.mvel2.ast.BinaryOperation;
-import org.mvel2.ast.BooleanNode;
-import org.mvel2.ast.Contains;
-import org.mvel2.ast.Convertable;
-import org.mvel2.ast.DeclTypedVarNode;
-import org.mvel2.ast.Function;
-import org.mvel2.ast.Instance;
-import org.mvel2.ast.IntAdd;
-import org.mvel2.ast.IntDiv;
-import org.mvel2.ast.IntMult;
-import org.mvel2.ast.IntOptimized;
-import org.mvel2.ast.IntSub;
-import org.mvel2.ast.LiteralNode;
-import org.mvel2.ast.Or;
-import org.mvel2.ast.RegExMatchNode;
-import org.mvel2.ast.Soundslike;
-import org.mvel2.ast.Strsim;
-import org.mvel2.compiler.Accessor;
-import org.mvel2.compiler.BlankLiteral;
-import org.mvel2.compiler.CompiledExpression;
-import org.mvel2.compiler.ExecutableAccessor;
-import org.mvel2.compiler.ExecutableLiteral;
+import org.mvel2.ast.*;
+import org.mvel2.compiler.*;
 import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.integration.impl.ClassImportResolverFactory;
 
@@ -399,12 +377,6 @@ public class CompilerTools {
       //转换操作
       case Operator.CONVERTABLE_TO:
         optimizedAst.addTokenNode((new Convertable(tk, astLinkedList.nextNode(), pCtx)));
-        break;
-      case Operator.SIMILARITY:
-        optimizedAst.addTokenNode(new Strsim(tk, astLinkedList.nextNode(), pCtx));
-        break;
-      case Operator.SOUNDEX:
-        optimizedAst.addTokenNode(new Soundslike(tk, astLinkedList.nextNode(), pCtx));
         break;
 
       //默认情况，不知道如何优化，先直接添加到链表中

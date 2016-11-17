@@ -20,7 +20,6 @@ package org.mvel2.ast;
 import org.mvel2.CompileException;
 import org.mvel2.ErrorDetail;
 import org.mvel2.ParserContext;
-import org.mvel2.PropertyAccessor;
 import org.mvel2.compiler.Accessor;
 import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.compiler.PropertyVerifier;
@@ -31,16 +30,13 @@ import org.mvel2.util.ArrayTools;
 import org.mvel2.util.ErrorUtil;
 
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.List;
 
 import static java.lang.reflect.Array.newInstance;
 import static org.mvel2.DataConversion.convert;
 import static org.mvel2.MVEL.analyze;
-import static org.mvel2.MVEL.eval;
 import static org.mvel2.optimizers.OptimizerFactory.getThreadAccessorOptimizer;
-import static org.mvel2.util.ArrayTools.findFirst;
 import static org.mvel2.util.CompilerTools.getInjectedImports;
 import static org.mvel2.util.ParseTools.*;
 import static org.mvel2.util.ReflectionUtil.toPrimitiveArrayType;
@@ -258,95 +254,6 @@ public class NewObjectNode extends ASTNode {
     }
 
     return newObjectOptimizer.getValue(ctx, thisValue, factory);
-  }
-
-
-  /** 以解释运行的方式来解析相应的new 对象的过程 */
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    try {
-      //如果是对象,则仍按照对象的初始化来进行
-      if (typeDescr.isArray()) {
-        Class cls = findClass(factory, typeDescr.getClassName(), pCtx);
-
-        //以解释运行的方式处理对象构建
-        int[] s = new int[typeDescr.getArrayLength()];
-        ArraySize[] arraySize = typeDescr.getArraySize();
-
-        for (int i = 0; i < s.length; i++) {
-          s[i] = convert(eval(arraySize[i].value, ctx, factory), Integer.class);
-        }
-
-        return newInstance(cls, s);
-      }
-      else {
-        String[] cnsRes = captureContructorAndResidual(name, 0, name.length);
-        List<char[]> constructorParms = parseMethodOrConstructor(cnsRes[0].toCharArray());
-
-        //这里表示是存在函数或方法调用的
-        if (constructorParms != null) {
-          //从第一个( 往前找出相应的类型信息
-          Class cls = findClass(factory, new String(subset(name, 0, findFirst('(', 0, name.length, name))).trim(), pCtx);
-
-          //参数使用解释模式来进行处理
-          Object[] parms = new Object[constructorParms.size()];
-          for (int i = 0; i < constructorParms.size(); i++) {
-            parms[i] = eval(constructorParms.get(i), ctx, factory);
-          }
-
-          //查找到有效的构造函数
-          Constructor cns = getBestConstructorCandidate(parms, cls, false);
-
-          if (cns == null)
-            throw new CompileException("unable to find constructor for: " + cls.getName(), expr, start);
-
-          //可能存在的参数类型转换
-          for (int i = 0; i < parms.length; i++) {
-            //noinspection unchecked
-            parms[i] = convert(parms[i], cns.getParameterTypes()[i]);
-          }
-
-          //因为可能存在new a(xx).b 这样的级联访问,因此继续采用解释模式来获取相应的属性
-          if (cnsRes.length > 1) {
-            return PropertyAccessor.get(cnsRes[1], cns.newInstance(parms), factory, thisValue, pCtx);
-          }
-          else {
-            return cns.newInstance(parms);
-          }
-        }
-        else {
-          Constructor<?> cns = Class.forName(typeDescr.getClassName(), true, pCtx.getParserConfiguration().getClassLoader())
-              .getConstructor(EMPTYCLS);
-
-          if (cnsRes.length > 1) {
-            return PropertyAccessor.get(cnsRes[1], cns.newInstance(), factory, thisValue, pCtx);
-          }
-          else {
-            return cns.newInstance();
-          }
-        }
-      }
-    }
-    catch (CompileException e) {
-      throw e;
-    }
-    catch (ClassNotFoundException e) {
-      throw new CompileException("unable to resolve class: " + e.getMessage(), expr, start, e);
-    }
-    catch (NoSuchMethodException e) {
-      throw new CompileException("cannot resolve constructor: " + e.getMessage(), expr, start, e);
-    }
-    catch (Exception e) {
-      throw new CompileException("could not instantiate class: " + e.getMessage(), expr, start, e);
-    }
-  }
-
-  private boolean isPrototypeFunction() {
-    return pCtx.getFunctions().containsKey(typeDescr.getClassName());
-  }
-
-  private Object createPrototypalObject(Object ctx, Object thisRef, VariableResolverFactory factory) {
-    final Function function = pCtx.getFunction(typeDescr.getClassName());
-    return function.getReducedValueAccelerated(ctx, thisRef, factory);
   }
 
   /** 描述一个new Integer[] 创建数组对象的访问器 */

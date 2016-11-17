@@ -48,10 +48,4 @@ public class PostFixDecNode extends ASTNode {
     return ctx;
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //与编译运行相同
-    return getReducedValueAccelerated(ctx, thisValue, factory);
-  }
-
-
 }

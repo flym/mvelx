@@ -49,15 +49,4 @@ public class Invert extends ASTNode {
     return ~((Integer) stmt.getValue(ctx, thisValue, factory));
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //~X,这里采用eval解释运行方式
-    Object o = MVEL.eval(expr, start, offset, ctx, factory);
-    if (o instanceof Integer) {
-      return ~((Integer) o);
-    }
-    else {
-      throw new CompileException("was expecting type: Integer; but found type: "
-          + (o == null ? "null" : o.getClass().getName()), expr, start);
-    }
-  }
 }

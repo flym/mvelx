@@ -19,7 +19,6 @@
 package org.mvel2.ast;
 
 import org.mvel2.ParserContext;
-import org.mvel2.PropertyAccessor;
 import org.mvel2.compiler.Accessor;
 import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.optimizers.AccessorOptimizer;
@@ -63,13 +62,6 @@ public class Union extends ASTNode {
 
   public Accessor getAccessor() {
       return accessor;
-  }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //因为是解释运行,因此能够执行这里的肯定是属性访问,因此这里采用属性值获取的方式来获取相应的值
-    return PropertyAccessor.get(
-        expr, start, offset,
-        main.getReducedValue(ctx, thisValue, factory), factory, thisValue, pCtx);
   }
 
   /** 返回主节点返回类型 这里也认为是左节点,因为先main,后当前节点 */

@@ -135,12 +135,6 @@ public class BinaryOperation extends BooleanNode {
         right.getReducedValueAccelerated(ctx, thisValue, factory));
   }
 
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //解释模式下,运算由栈来完成
-    throw new RuntimeException("unsupported AST operation");
-  }
-
   public int getOperation() {
     return operation;
   }

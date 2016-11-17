@@ -83,17 +83,6 @@ public class ForNode extends BlockNode {
     return null;
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //与编译执行相同,只不过这里采用解释运行
-    Object v;
-    for (initializer.getValue(ctx, thisValue, factory = new MapVariableResolverFactory(new HashMap<String, Object>(1), factory)); (Boolean) condition.getValue(ctx, thisValue, factory); after.getValue(ctx, thisValue, factory)) {
-      v = compiledBlock.getValue(ctx, thisValue, factory);
-      if (factory.tiltFlag()) return v;
-    }
-
-    return null;
-  }
-
   /** 编译整个for循环语句,并通过变量逸出简单判断是否是死循环 */
   private boolean buildForEach(char[] condition, int start, int offset, int blockStart, int blockEnd, int fields, ParserContext pCtx) {
     int end = start + offset;

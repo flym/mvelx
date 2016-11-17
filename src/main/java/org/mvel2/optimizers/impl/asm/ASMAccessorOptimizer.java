@@ -1,41 +1,13 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.mvel2.optimizers.impl.asm;
 
-import org.mvel2.CompileException;
-import org.mvel2.DataConversion;
-import org.mvel2.MVEL;
-import org.mvel2.OptimizationFailure;
-import org.mvel2.ParserContext;
-import org.mvel2.PropertyAccessException;
+import org.mvel2.*;
 import org.mvel2.asm.ClassWriter;
 import org.mvel2.asm.Label;
 import org.mvel2.asm.MethodVisitor;
 import org.mvel2.asm.Opcodes;
 import org.mvel2.ast.FunctionInstance;
 import org.mvel2.ast.TypeDescriptor;
-import org.mvel2.ast.WithNode;
-import org.mvel2.compiler.Accessor;
-import org.mvel2.compiler.AccessorNode;
-import org.mvel2.compiler.ExecutableAccessor;
-import org.mvel2.compiler.ExecutableLiteral;
-import org.mvel2.compiler.ExecutableStatement;
-import org.mvel2.compiler.PropertyVerifier;
+import org.mvel2.compiler.*;
 import org.mvel2.integration.GlobalListenerFactory;
 import org.mvel2.integration.PropertyHandler;
 import org.mvel2.integration.VariableResolverFactory;
@@ -43,22 +15,11 @@ import org.mvel2.optimizers.AbstractOptimizer;
 import org.mvel2.optimizers.AccessorOptimizer;
 import org.mvel2.optimizers.OptimizationNotSupported;
 import org.mvel2.optimizers.impl.refl.nodes.Union;
-import org.mvel2.util.JITClassLoader;
-import org.mvel2.util.MVELClassLoader;
-import org.mvel2.util.MethodStub;
-import org.mvel2.util.ParseTools;
-import org.mvel2.util.PropertyTools;
-import org.mvel2.util.StringAppender;
+import org.mvel2.util.*;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -72,7 +33,6 @@ import static java.lang.reflect.Modifier.FINAL;
 import static java.lang.reflect.Modifier.STATIC;
 import static org.mvel2.DataConversion.canConvert;
 import static org.mvel2.DataConversion.convert;
-import static org.mvel2.MVEL.eval;
 import static org.mvel2.MVEL.isAdvancedDebugging;
 import static org.mvel2.asm.Opcodes.*;
 import static org.mvel2.asm.Type.*;
@@ -351,7 +311,8 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
           }
           else {
             //noinspection unchecked
-            ((Map) ctx).put(eval(ex, ctx, variableFactory), convert(value, returnType = verifier.analyze()));
+            //todo 这里的ex将采用编译运行来处理
+//            ((Map) ctx).put(eval(ex, ctx, variableFactory), convert(value, returnType = verifier.analyze()));
 
             writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx));
 
@@ -380,8 +341,9 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
           }
           else {
             //noinspection unchecked
-            ((List) ctx).set(eval(ex, ctx, variableFactory, Integer.class),
-                convert(value, returnType = verifier.analyze()));
+            //todo 这里的ex将采用编译运行来处理
+//            ((List) ctx).set(eval(ex, ctx, variableFactory, Integer.class),
+//                convert(value, returnType = verifier.analyze()));
 
             writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx));
             unwrapPrimitive(int.class);
@@ -411,7 +373,9 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
           else {
             Class type = getBaseComponentType(ctx.getClass());
 
-            Object idx = eval(ex, ctx, variableFactory);
+            //todo 这里的ex将采用编译运行来处理
+//            Object idx = eval(ex, ctx, variableFactory);
+            Object idx = null;
 
             writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx), int.class);
             if (!(idx instanceof Integer)) {
@@ -785,9 +749,6 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
             case COL:
               curr = getCollectionProperty(curr, capture());
               break;
-            case WITH:
-              curr = getWithProperty(curr);
-              break;
           }
 
           // check to see if a null safety is enabled on this property.
@@ -834,9 +795,6 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
               break;
             case COL:
               curr = getCollectionPropertyAO(curr, capture());
-              break;
-            case WITH:
-              curr = getWithProperty(curr);
               break;
           }
 
@@ -904,73 +862,6 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
     catch (Exception e) {
       throw new CompileException(e.getMessage(), expr, st, e);
     }
-  }
-
-  private Object getWithProperty(Object ctx) {
-    assert debug("\n  ** ENTER -> {with}");
-
-    if (first) {
-      assert debug("ALOAD 1");
-      mv.visitVarInsn(ALOAD, 1);
-      first = false;
-    }
-
-    String root = new String(expr, 0, cursor - 1).trim();
-
-    int start = cursor + 1;
-    cursor = balancedCaptureWithLineAccounting(expr, cursor, end, '{', pCtx);
-    this.returnType = ctx != null ? ctx.getClass() : null;
-
-    for (WithNode.ParmValuePair aPvp : WithNode.compileWithExpressions(expr, start, cursor++ - start, root, ingressType, pCtx)) {
-      assert debug("DUP");
-      mv.visitInsn(DUP);
-
-      assert debug("ASTORE " + (5 + compileDepth) + " (withctx)");
-      mv.visitVarInsn(ASTORE, 5 + compileDepth);
-
-      aPvp.eval(ctx, variableFactory);
-
-      if (aPvp.getSetExpression() == null) {
-        addSubstatement(aPvp.getStatement());
-      }
-      else {
-        compiledInputs.add((ExecutableStatement) aPvp.getSetExpression());
-
-        // load set expression
-        assert debug("ALOAD 0");
-        mv.visitVarInsn(ALOAD, 0);
-
-        assert debug("GETFIELD p" + (compiledInputs.size() - 1));
-        mv.visitFieldInsn(GETFIELD, className, "p" + (compiledInputs.size() - 1), "L" + NAMESPACE
-            + "compiler/ExecutableStatement;");
-
-        // ctx
-        assert debug("ALOAD " + (5 + compileDepth) + "(withctx)");
-        mv.visitVarInsn(ALOAD, (5 + compileDepth));
-
-        // elCtx
-        assert debug("ALOAD 2");
-        mv.visitVarInsn(ALOAD, 2);
-
-        // variable factory
-        assert debug("ALOAD 3");
-        mv.visitVarInsn(ALOAD, 3);
-
-        // the value to set.
-        addSubstatement(aPvp.getStatement());
-
-        assert debug("INVOKEINTERFACE Accessor.setValue");
-        mv.visitMethodInsn(INVOKEINTERFACE, NAMESPACE + "compiler/ExecutableStatement",
-            "setValue",
-            "(Ljava/lang/Object;Ljava/lang/Object;L"
-                + NAMESPACE + "integration/VariableResolverFactory;Ljava/lang/Object;)Ljava/lang/Object;");
-
-        assert debug("POP");
-        mv.visitInsn(POP);
-      }
-    }
-
-    return ctx;
   }
 
   private Object getBeanPropertyAO(Object ctx, String property)

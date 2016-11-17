@@ -28,7 +28,6 @@ import java.util.regex.PatternSyntaxException;
 
 import static java.lang.String.valueOf;
 import static java.util.regex.Pattern.compile;
-import static org.mvel2.MVEL.eval;
 import static org.mvel2.util.ParseTools.subCompileExpression;
 
 /** 描述一个用于正则匹配的表达式节点 */
@@ -80,16 +79,6 @@ public class RegExMatch extends ASTNode {
     }
     else {
       return p.matcher(valueOf(stmt.getValue(ctx, thisValue, factory))).matches();
-    }
-  }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //与编译运行相同,不过相应的计算过程为解释运行
-    try {
-      return compile(valueOf(eval(expr, patternStart, patternOffset, ctx, factory))).matcher(valueOf(eval(expr, start, offset, ctx, factory))).matches();
-    }
-    catch (PatternSyntaxException e) {
-      throw new CompileException("bad regular expression", expr, patternStart, e);
     }
   }
 

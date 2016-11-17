@@ -105,43 +105,6 @@ public class Fold extends ASTNode {
     return list;
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    ItemResolverFactory.ItemResolver itemR = new ItemResolverFactory.ItemResolver("$");
-    ItemResolverFactory itemFactory = new ItemResolverFactory(itemR, new DefaultLocalVariableResolverFactory(factory));
-
-    List list;
-
-    if (constraintEx != null) {
-      Object x = dataEx.getValue(ctx, thisValue, factory);
-
-      if (!(x instanceof Collection))
-        throw new CompileException("was expecting type: Collection; but found type: "
-            + (x == null ? "null" : x.getClass().getName()), expr, start);
-
-      list = new ArrayList(((Collection) x).size());
-      for (Object o : (Collection) x) {
-        itemR.value = o;
-        if ((Boolean) constraintEx.getValue(ctx, thisValue, itemFactory)) {
-          list.add(subEx.getValue(o, thisValue, itemFactory));
-        }
-      }
-    }
-    else {
-      Object x = dataEx.getValue(ctx, thisValue, factory);
-
-      if (!(x instanceof Collection))
-        throw new CompileException("was expecting type: Collection; but found type: "
-            + (x == null ? "null" : x.getClass().getName()), expr, start);
-
-      list = new ArrayList(((Collection) x).size());
-      for (Object o : (Collection) x) {
-        list.add(subEx.getValue(itemR.value = o, thisValue, itemFactory));
-      }
-    }
-
-    return list;
-  }
-
   public Class getEgressType() {
     return Collection.class;
   }

@@ -70,17 +70,4 @@ public class DoUntilNode extends BlockNode {
 
     return null;
   }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //与编译执行相同
-    VariableResolverFactory lc = new MapVariableResolverFactory(new HashMap(0), factory);
-
-    do {
-      compiledBlock.getValue(ctx, thisValue, lc);
-    }
-    while (!(Boolean) condition.getValue(ctx, thisValue, lc));
-
-    return null;
-  }
-
 }

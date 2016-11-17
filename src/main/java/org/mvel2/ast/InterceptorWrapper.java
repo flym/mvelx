@@ -46,9 +46,4 @@ public class InterceptorWrapper extends ASTNode {
     return ctx;
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    interceptor.doBefore(node, factory);
-    interceptor.doAfter(ctx = node.getReducedValue(ctx, thisValue, factory), node, factory);
-    return ctx;
-  }
 }

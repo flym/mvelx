@@ -1,27 +1,11 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.mvel2.compiler;
 
-import org.mvel2.*;
+import org.mvel2.CompileException;
+import org.mvel2.ErrorDetail;
+import org.mvel2.MVEL;
+import org.mvel2.ParserContext;
 import org.mvel2.ast.Function;
 import org.mvel2.optimizers.AbstractOptimizer;
-import org.mvel2.optimizers.impl.refl.nodes.WithAccessor;
 import org.mvel2.util.ErrorUtil;
 import org.mvel2.util.NullType;
 import org.mvel2.util.ParseTools;
@@ -50,8 +34,6 @@ public class PropertyVerifier extends AbstractOptimizer {
   private static final int METH = 1;
   /** 标记位,数组操作,对应[ */
   private static final int COL = 2;
-  /** 标记位,with操作,对应.{ */
-  private static final int WITH = 3;
 
   /** 无用属性 */
   @Deprecated
@@ -145,11 +127,6 @@ public class PropertyVerifier extends AbstractOptimizer {
         case COL:
           ctx = getCollectionProperty(ctx, capture());
           break;
-        //with,返回当前类型
-        case WITH:
-          ctx = getWithProperty(ctx);
-          break;
-
         //已处理完
         case DONE:
           break;
@@ -777,18 +754,6 @@ public class PropertyVerifier extends AbstractOptimizer {
 
     //默认情况下，仍采用默认的方法从上下文类和方法中找到返回类型
     return getReturnType(ctx, m);
-  }
-
-  /** 处理with中的属性类型 */
-  private Class getWithProperty(Class ctx) {
-    String root = new String(expr, 0, cursor - 1).trim();
-
-    int start = cursor + 1;
-    cursor = balancedCaptureWithLineAccounting(expr, cursor, end, '{', pCtx);
-
-    new WithAccessor(pCtx, root, expr, start, cursor++ - start, ctx);
-
-    return ctx;
   }
 
   /** 返回当前解析中是否需要外部处理 */

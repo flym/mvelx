@@ -25,7 +25,6 @@ import org.mvel2.integration.VariableResolverFactory;
 
 import static org.mvel2.DataConversion.canConvert;
 import static org.mvel2.DataConversion.convert;
-import static org.mvel2.MVEL.eval;
 import static org.mvel2.util.ParseTools.subCompileExpression;
 import static org.mvel2.util.ReflectionUtil.isAssignableFrom;
 
@@ -81,12 +80,6 @@ public class TypeCast extends ASTNode {
     //根据宽化逻辑采用简单的cast 或者是类型转换处理
     //noinspection unchecked
     return widen ? typeCheck(statement.getValue(ctx, thisValue, factory), egressType) : convert(statement.getValue(ctx, thisValue, factory), egressType);
-  }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //noinspection unchecked
-    return widen ? typeCheck(eval(expr, start, offset, ctx, factory), egressType) :
-        convert(eval(expr, start, offset, ctx, factory), egressType);
   }
 
   /** 检查相应的实例类型是否是指定类型的实例 */

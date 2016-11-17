@@ -222,10 +222,6 @@ public class DebugTools {
         return "REGEX";
       case Operator.RETURN:
         return "RETURN";
-      case Operator.SIMILARITY:
-        return "SIMILARITY";
-      case Operator.SOUNDEX:
-        return "SOUNDEX";
       case Operator.STR_APPEND:
         return "+";
       case Operator.SWITCH:
@@ -338,10 +334,6 @@ public class DebugTools {
         return "REGEX";
       case Operator.RETURN:
         return "RETURN";
-      case Operator.SIMILARITY:
-        return "SIMILARITY";
-      case Operator.SOUNDEX:
-        return "SOUNDEX";
       case Operator.STR_APPEND:
         return "STR_APPEND";
       case Operator.SWITCH:

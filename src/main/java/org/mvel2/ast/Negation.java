@@ -52,19 +52,6 @@ public class Negation extends ASTNode {
     return !((Boolean) stmt.getValue(ctx, thisValue, factory));
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    try {
-      //采用 !boolean, 数据采用解释模式运行
-      return !((Boolean) MVEL.eval(expr, start, offset, ctx, factory));
-    }
-    catch (NullPointerException e) {
-      throw new CompileException("negation operator applied to a null value", expr, start, e);
-    }
-    catch (ClassCastException e) {
-      throw new CompileException("negation operator applied to non-boolean expression", expr, start, e);
-    }
-  }
-
   /** 原表达式为boolean,取反也为boolean类型 */
   public Class getEgressType() {
     return Boolean.class;

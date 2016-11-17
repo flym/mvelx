@@ -23,7 +23,6 @@ import org.mvel2.compiler.Accessor;
 import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.integration.impl.StackDemarcResolverFactory;
 
-import static org.mvel2.MVEL.eval;
 import static org.mvel2.util.ParseTools.subCompileExpression;
 
 /**
@@ -55,12 +54,6 @@ public class ReturnNode extends ASTNode {
     //直接使用访问器来处理相应的数据
     //使用StackDemarcResolverFactory来隔离相应的终止标记
     return accessor.getValue(ctx, thisValue, new StackDemarcResolverFactory(factory));
-  }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //使用解释运行方式来处理
-    factory.setTiltFlag(true);
-    return eval(expr, start, offset, ctx, new StackDemarcResolverFactory(factory));
   }
 
   /** return 也算作操作符的一部分，但优先级最低 */

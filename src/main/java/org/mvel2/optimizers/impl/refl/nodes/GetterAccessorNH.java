@@ -1,20 +1,19 @@
 /**
  * MVEL (The MVFLEX Expression Language)
- *
+ * <p>
  * Copyright (C) 2007 Christopher Brock, MVFLEX/Valhalla Project and the Codehaus
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 package org.mvel2.optimizers.impl.refl.nodes;
 
@@ -25,7 +24,6 @@ import org.mvel2.integration.VariableResolverFactory;
 
 import java.lang.reflect.Method;
 
-import static org.mvel2.MVEL.getProperty;
 import static org.mvel2.util.ParseTools.getBestCandidate;
 
 /** 带空值处理器的getter方法访问 */
@@ -49,12 +47,7 @@ public class GetterAccessorNH implements AccessorNode {
           return executeOverrideTarget(o, ctx, elCtx, vars);
         }
       }
-      /**
-       * HACK: Try to access this another way.
-       */
-
-      //退化到属性方法的方式
-      return nullHandle(method.getName(), getProperty(method.getName() + "()", ctx), ctx, elCtx, vars);
+      throw e;
     }
     catch (Exception e) {
       throw new RuntimeException("cannot invoke getter: " + method.getName()
@@ -95,16 +88,6 @@ public class GetterAccessorNH implements AccessorNode {
       if (v == null) v = nullHandler.getProperty(method.getName(), ctx, vars);
       return nextNode.setValue(v, elCtx, vars, value);
 
-    }
-    catch (IllegalArgumentException e) {
-      /**
-       * HACK: Try to access this another way.
-       */
-
-      //参数处理失败,退化到属性访问的方式
-      Object v = getProperty(method.getName() + "()", ctx);
-      if (v == null) v = nullHandler.getProperty(method.getName(), ctx, vars);
-      return nextNode.setValue(v, elCtx, vars, value);
     }
     catch (CompileException e) {
       throw e;

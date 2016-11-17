@@ -24,7 +24,6 @@ import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.math.MathProcessor;
 import org.mvel2.util.ParseTools;
 
-import static org.mvel2.MVEL.eval;
 import static org.mvel2.util.ParseTools.subCompileExpression;
 
 /**
@@ -70,12 +69,6 @@ public class OperativeAssign extends ASTNode {
     //这里直接通过解析器的方式获取相应的值,然后执行相应的操作,再设置回去即可
     VariableResolver resolver = factory.getVariableResolver(varName);
     resolver.setValue(ctx = MathProcessor.doOperations(resolver.getValue(), operation, knownInType, statement.getValue(ctx, thisValue, factory)));
-    return ctx;
-  }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    VariableResolver resolver = factory.getVariableResolver(varName);
-    resolver.setValue(ctx = MathProcessor.doOperations(resolver.getValue(), operation, eval(expr, start, offset, ctx, factory)));
     return ctx;
   }
 }

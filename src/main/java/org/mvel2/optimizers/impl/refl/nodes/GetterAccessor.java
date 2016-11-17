@@ -1,20 +1,19 @@
 /**
  * MVEL (The MVFLEX Expression Language)
- *
+ * <p>
  * Copyright (C) 2007 Christopher Brock, MVFLEX/Valhalla Project and the Codehaus
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 package org.mvel2.optimizers.impl.refl.nodes;
 
@@ -24,9 +23,7 @@ import org.mvel2.integration.VariableResolverFactory;
 
 import java.lang.reflect.Method;
 
-import static org.mvel2.MVEL.getProperty;
 import static org.mvel2.util.ParseTools.getBestCandidate;
-import static org.mvel2.util.ReflectionUtil.getPropertyFromAccessor;
 
 /** 表示访问一个getter方法 访问器 */
 public class GetterAccessor implements AccessorNode {
@@ -54,17 +51,7 @@ public class GetterAccessor implements AccessorNode {
           return executeOverrideTarget(o, ctx, elCtx, vars);
         }
       }
-
-      /**
-       * 仍然不行，则退化到使用属性访问的方式来处理
-       * HACK: Try to access this another way.
-       */
-      if (nextNode != null) {
-        return nextNode.getValue(getProperty(getPropertyFromAccessor(method.getName()), ctx), elCtx, vars);
-      }
-      else {
-        return getProperty(getPropertyFromAccessor(method.getName()), ctx);
-      }
+      throw e;
     }
     catch (NullPointerException e) {
       if (ctx == null) {
@@ -113,19 +100,6 @@ public class GetterAccessor implements AccessorNode {
       else {
         //不需要单独设置值
         throw new RuntimeException("bad payload");
-      }
-    }
-    catch (IllegalArgumentException e) {
-      /**
-       * HACK: Try to access this another way.
-       */
-
-      //如果调用失败,仍然退化到属性访问的方式
-      if (nextNode != null) {
-        return nextNode.setValue(getProperty(getPropertyFromAccessor(method.getName()), ctx), elCtx, vars, value);
-      }
-      else {
-        return getProperty(getPropertyFromAccessor(method.getName()), ctx);
       }
     }
     catch (CompileException e) {

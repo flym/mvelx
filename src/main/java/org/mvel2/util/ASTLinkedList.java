@@ -137,37 +137,8 @@ public class ASTLinkedList implements ASTIterator {
     return current;
   }
 
-  public void removeToken() {
-    if (current != null) {
-      current = current.nextASTNode;
-    }
-  }
-
-  public ASTNode peekLast() {
-    return last;
-  }
-
-  /** 不支持往后查找 */
-  public ASTNode nodesBack(int offset) {
-    throw new RuntimeException("unimplemented");
-  }
-
-  public ASTNode nodesAhead(int offset) {
-    if (current == null) return null;
-    ASTNode cursor = null;
-    for (int i = 0; i < offset; i++) {
-      if ((cursor = current.nextASTNode) == null) return null;
-    }
-    return cursor;
-  }
-
   public void back() {
     current = last;
-  }
-
-  /** 不支持显示处理链 */
-  public String showNodeChain() {
-    throw new RuntimeException("unimplemented");
   }
 
   public int size() {

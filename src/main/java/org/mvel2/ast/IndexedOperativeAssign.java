@@ -24,7 +24,6 @@ import org.mvel2.integration.VariableResolver;
 import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.math.MathProcessor;
 
-import static org.mvel2.MVEL.eval;
 import static org.mvel2.util.ParseTools.subCompileExpression;
 
 /** 描述一个已经在解析上下文中声明过的变量的运算并进行x=赋值操作 */
@@ -55,12 +54,6 @@ public class IndexedOperativeAssign extends ASTNode {
     //直接从相应的下标值获取相应的变量处理器然后执行类似 a = a + b的操作
     VariableResolver resolver = factory.getIndexedVariableResolver(register);
     resolver.setValue(ctx = MathProcessor.doOperations(resolver.getValue(), operation, statement.getValue(ctx, thisValue, factory)));
-    return ctx;
-  }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    VariableResolver resolver = factory.getIndexedVariableResolver(register);
-    resolver.setValue(ctx = MathProcessor.doOperations(resolver.getValue(), operation, eval(expr, start, offset, ctx, factory)));
     return ctx;
   }
 }

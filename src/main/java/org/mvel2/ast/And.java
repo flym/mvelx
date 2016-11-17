@@ -42,11 +42,6 @@ public class And extends BooleanNode {
         && ((Boolean) right.getReducedValueAccelerated(ctx, thisValue, factory)));
   }
 
-  /** 不支持解释模式 */
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    throw new RuntimeException("improper use of AST element");
-  }
-
   public String toString() {
     return "(" + left.toString() + " && " + right.toString() + ")";
   }

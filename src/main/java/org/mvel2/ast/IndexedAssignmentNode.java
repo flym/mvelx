@@ -19,7 +19,6 @@
 package org.mvel2.ast;
 
 import org.mvel2.CompileException;
-import org.mvel2.MVEL;
 import org.mvel2.ParserContext;
 import org.mvel2.compiler.CompiledAccExpression;
 import org.mvel2.compiler.ExecutableStatement;
@@ -157,19 +156,6 @@ public class IndexedAssignmentNode extends ASTNode implements Assignment {
         factory.createVariable(name, statement.getValue(ctx, thisValue, factory));
       }
       return Void.class;
-    }
-
-    return ctx;
-  }
-
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    checkNameSafety(name);
-
-    if (col) {
-      MVEL.setProperty(factory.getIndexedVariableResolver(register).getValue(), new String(index), ctx = MVEL.eval(stmt, ctx, factory));
-    }
-    else {
-      factory.createIndexedVariable(register, name, ctx = MVEL.eval(stmt, ctx, factory));
     }
 
     return ctx;

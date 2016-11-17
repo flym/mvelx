@@ -1,89 +1,14 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.mvel2.compiler;
 
 import org.mvel2.CompileException;
 import org.mvel2.ErrorDetail;
 import org.mvel2.Operator;
 import org.mvel2.ParserContext;
-import org.mvel2.ast.ASTNode;
-import org.mvel2.ast.AssertNode;
-import org.mvel2.ast.AssignmentNode;
-import org.mvel2.ast.BooleanNode;
-import org.mvel2.ast.DeclProtoVarNode;
-import org.mvel2.ast.DeclTypedVarNode;
-import org.mvel2.ast.DeepAssignmentNode;
-import org.mvel2.ast.DoNode;
-import org.mvel2.ast.DoUntilNode;
-import org.mvel2.ast.EndOfStatement;
-import org.mvel2.ast.Fold;
-import org.mvel2.ast.ForEachNode;
-import org.mvel2.ast.ForNode;
-import org.mvel2.ast.Function;
-import org.mvel2.ast.IfNode;
-import org.mvel2.ast.ImportNode;
-import org.mvel2.ast.IndexedAssignmentNode;
-import org.mvel2.ast.IndexedDeclTypedVarNode;
-import org.mvel2.ast.IndexedOperativeAssign;
-import org.mvel2.ast.IndexedPostFixDecNode;
-import org.mvel2.ast.IndexedPostFixIncNode;
-import org.mvel2.ast.IndexedPreFixDecNode;
-import org.mvel2.ast.IndexedPreFixIncNode;
-import org.mvel2.ast.InlineCollectionNode;
-import org.mvel2.ast.InterceptorWrapper;
-import org.mvel2.ast.Invert;
-import org.mvel2.ast.IsDef;
-import org.mvel2.ast.LineLabel;
-import org.mvel2.ast.LiteralDeepPropertyNode;
-import org.mvel2.ast.LiteralNode;
-import org.mvel2.ast.Negation;
-import org.mvel2.ast.NewObjectNode;
-import org.mvel2.ast.NewObjectPrototype;
-import org.mvel2.ast.NewPrototypeNode;
-import org.mvel2.ast.OperativeAssign;
-import org.mvel2.ast.OperatorNode;
-import org.mvel2.ast.PostFixDecNode;
-import org.mvel2.ast.PostFixIncNode;
-import org.mvel2.ast.PreFixDecNode;
-import org.mvel2.ast.PreFixIncNode;
-import org.mvel2.ast.Proto;
-import org.mvel2.ast.ProtoVarNode;
-import org.mvel2.ast.RedundantCodeException;
-import org.mvel2.ast.RegExMatch;
-import org.mvel2.ast.ReturnNode;
-import org.mvel2.ast.Sign;
-import org.mvel2.ast.Stacklang;
-import org.mvel2.ast.StaticImportNode;
-import org.mvel2.ast.Substatement;
-import org.mvel2.ast.ThisWithNode;
-import org.mvel2.ast.TypeCast;
-import org.mvel2.ast.TypeDescriptor;
-import org.mvel2.ast.TypedVarNode;
-import org.mvel2.ast.Union;
-import org.mvel2.ast.UntilNode;
-import org.mvel2.ast.WhileNode;
-import org.mvel2.ast.WithNode;
+import org.mvel2.ast.*;
 import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.util.ErrorUtil;
 import org.mvel2.util.ExecutionStack;
 import org.mvel2.util.FunctionParser;
-import org.mvel2.util.PropertyTools;
-import org.mvel2.util.ProtoParser;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -91,14 +16,11 @@ import java.util.WeakHashMap;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-import static java.lang.Double.parseDouble;
-import static java.lang.Thread.currentThread;
 import static org.mvel2.Operator.*;
 import static org.mvel2.ast.TypeDescriptor.getClassReference;
 import static org.mvel2.util.ArrayTools.findFirst;
 import static org.mvel2.util.ParseTools.*;
 import static org.mvel2.util.PropertyTools.isEmpty;
-import static org.mvel2.util.Soundex.soundex;
 
 /**
  * 核心解析器，用于解析相应的表达式，即词法分析器，将相应的表达式分块转换为节点
@@ -439,11 +361,6 @@ public class AbstractParser implements Parser, Serializable {
                 //如果是函数,则使用函数式的处理方式
                 if (pCtx.getFunctions().containsKey(descr.getClassName())) {
                   return lastNode = new NewObjectPrototype(pCtx, pCtx.getFunction(descr.getClassName()));
-                }
-
-                //如果是相应的原型引用,则使用新建原型节点来描述
-                if (pCtx.hasProtoImport(descr.getClassName())) {
-                  return lastNode = new NewPrototypeNode(descr, pCtx);
                 }
 
                 //默认情况下,创建正常的新建对象节点
@@ -1066,13 +983,6 @@ public class AbstractParser implements Parser, Serializable {
                 capture = true;
                 continue;
               }
-              expectNextChar_IW('{');
-
-              //处理with节点 .{ 则表示with
-              return lastNode = new ThisWithNode(expr, st, cursor - st - 1
-                  , cursor + 1,
-                  (cursor = balancedCaptureWithLineAccounting(expr,
-                      cursor, end, '{', pCtx) + 1) - 3, fields, pCtx);
             }
 
             //表示引用拦截器 拦截器需要提前通过parseContext进行注入
@@ -1695,18 +1605,6 @@ public class AbstractParser implements Parser, Serializable {
               lastNode.getLiteralValue(), pCtx));
         }
       }
-      //原型节点
-      else if (lastNode instanceof Proto) {
-        captureToEOS();
-        if (decl) {
-          splitAccumulator.add(new DeclProtoVarNode(new String(expr, st, cursor - st),
-              (Proto) lastNode, fields | ASTNode.ASSIGN, pCtx));
-        }
-        else {
-          splitAccumulator.add(new ProtoVarNode(expr, st, cursor - st, fields | ASTNode.ASSIGN, (Proto)
-              lastNode, pCtx));
-        }
-      }
 
       // this redundant looking code is needed to work with the interpreter and MVELSH properly.
       //这里因为不是编译阶段，可能是解释运行阶段，因此尝试从栈中找到上一次的类型信息
@@ -1720,17 +1618,6 @@ public class AbstractParser implements Parser, Serializable {
           else {
             splitAccumulator.add(new TypedVarNode(expr, st, cursor - st,
                 fields | ASTNode.ASSIGN, (Class) stk.pop(), pCtx));
-          }
-        }
-        else if (stk.peek() instanceof Proto) {
-          captureToEOS();
-          if (decl) {
-            splitAccumulator.add(new DeclProtoVarNode(new String(expr, st, cursor - st),
-                (Proto) stk.pop(), fields | ASTNode.ASSIGN, pCtx));
-          }
-          else {
-            splitAccumulator.add(new ProtoVarNode(expr, st, cursor - st, fields | ASTNode.ASSIGN, (Proto)
-                stk.pop(), pCtx));
           }
         }
         else {
@@ -1809,7 +1696,7 @@ public class AbstractParser implements Parser, Serializable {
       case ASTNode.BLOCK_DO_UNTIL:
         return new DoUntilNode(expr, condStart, condOffset, blockStart, blockOffset, pCtx);
       default:
-        return new WithNode(expr, condStart, condOffset, blockStart, blockOffset, fields, pCtx);
+        return null;
     }
   }
 
@@ -1923,51 +1810,6 @@ public class AbstractParser implements Parser, Serializable {
         cursor = parser.getCursor();
 
         return lastNode = function;
-      }
-      //原型解析，不作翻译
-      case PROTO: {
-        if (ProtoParser.isUnresolvedWaiting()) {
-          ProtoParser.checkForPossibleUnresolvedViolations(expr, cursor, pCtx);
-        }
-
-        int st = cursor;
-        captureToNextTokenJunction();
-
-        if (isReservedWord(name = createStringTrimmed(expr, st, cursor - st))
-            || isNotValidNameorLabel(name))
-          throw new CompileException("illegal prototype name or use of reserved word", expr, cursor);
-
-        if (expr[cursor = nextNonBlank()] != '{') {
-          throw new CompileException("expected '{' but found: " + expr[cursor], expr, cursor);
-        }
-
-        cursor = balancedCaptureWithLineAccounting(expr, st = cursor + 1, end, '{', pCtx);
-
-        ProtoParser parser = new ProtoParser(expr, st, cursor, name, pCtx, fields, splitAccumulator);
-        Proto proto = parser.parse();
-
-        pCtx.addImport(proto);
-
-        proto.setCursorPosition(st, cursor);
-        cursor = parser.getCursor();
-
-        ProtoParser.notifyForLateResolution(proto);
-
-        return lastNode = proto;
-      }
-      //描述指令集节点，没有条件集
-      case STACKLANG: {
-        if (expr[cursor = nextNonBlank()] != '{') {
-          throw new CompileException("expected '{' but found: " + expr[cursor], expr, cursor);
-        }
-        int st;
-        cursor = balancedCaptureWithLineAccounting(expr, st = cursor + 1, end, '{', pCtx);
-
-        Stacklang stacklang = new Stacklang(expr, st, cursor - st, fields, pCtx);
-        cursor++;
-
-        return lastNode = stacklang;
-
       }
       default:
         //存在条件处理,因此需要使用(来捕获相应的参数信息
@@ -2683,8 +2525,6 @@ public class AbstractParser implements Parser, Serializable {
         operatorsTable.put("instanceof", INSTANCEOF);
         operatorsTable.put("is", INSTANCEOF);
         operatorsTable.put("contains", CONTAINS);
-        operatorsTable.put("soundslike", SOUNDEX);
-        operatorsTable.put("strsim", SIMILARITY);
         operatorsTable.put("convertable_to", CONVERTABLE_TO);
         operatorsTable.put("isdef", ISDEF);
 
@@ -2777,7 +2617,7 @@ public class AbstractParser implements Parser, Serializable {
 
         //因为这里优先级比前面高，加到辅助栈中
         //同时重置当前操作符为后面的这个操作符
-        dStack.push(operator = operator2, tk.getReducedValue(ctx, ctx, variableFactory));
+        dStack.push(operator = operator2, tk.getReducedValueAccelerated(ctx, ctx, variableFactory));
 
         //对后面的连续调用进行处理，直到不再是算术处理
         while (true) {
@@ -2797,7 +2637,7 @@ public class AbstractParser implements Parser, Serializable {
              * This operator is of higher precedence, or the same level precedence.  push to the RHS.
              */
             //将新优先级的放入辅助栈，继续支持同样的流程
-            dStack.push(operator = operator2, nextToken().getReducedValue(ctx, ctx, variableFactory));
+            dStack.push(operator = operator2, nextToken().getReducedValueAccelerated(ctx, ctx, variableFactory));
 
             continue;
           }
@@ -2820,7 +2660,7 @@ public class AbstractParser implements Parser, Serializable {
                */
 
               //因为是同优先级，因此直接放到辅助栈中,可以认为与优先级大于左边相同
-              dStack.push(operator = operator2, nextToken().getReducedValue(ctx, ctx, variableFactory));
+              dStack.push(operator = operator2, nextToken().getReducedValueAccelerated(ctx, ctx, variableFactory));
 
               continue;
             }
@@ -2884,7 +2724,7 @@ public class AbstractParser implements Parser, Serializable {
 
               //低优先级,直接按中缀加入到主栈中
               default:
-                stk.push(operator, tk.getReducedValue(ctx, ctx, variableFactory));
+                stk.push(operator, tk.getReducedValueAccelerated(ctx, ctx, variableFactory));
             }
           }
         }
@@ -3003,15 +2843,6 @@ public class AbstractParser implements Parser, Serializable {
         //contains 处理,处理逻辑与 pop 相似，这里的peek2 和 pop2 能达到两次pop相同的结果
         case CONTAINS:
           stk.push(containsCheck(stk.peek2(), stk.pop2()));
-          break;
-
-        case SOUNDEX:
-          stk.push(soundex(java.lang.String.valueOf(stk.pop()))
-              .equals(soundex(java.lang.String.valueOf(stk.pop()))));
-          break;
-
-        case SIMILARITY:
-          stk.push(similarity(java.lang.String.valueOf(stk.pop()), java.lang.String.valueOf(stk.pop())));
           break;
 
         //默认情况下，认为为位移操作，因此进行位移相应处理

@@ -136,10 +136,6 @@ public interface Operator {
   public static final int INSTANCEOF = 25;
   /** contains 包含 */
   public static final int CONTAINS = 26;
-  /** soundslike */
-  public static final int SOUNDEX = 27;
-  /** strsim */
-  public static final int SIMILARITY = 28;
 
   /** ? */
   public static final int TERNARY = 29;

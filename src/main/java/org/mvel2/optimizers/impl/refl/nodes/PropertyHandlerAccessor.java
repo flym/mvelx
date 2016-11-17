@@ -1,6 +1,5 @@
 package org.mvel2.optimizers.impl.refl.nodes;
 
-import org.mvel2.MVEL;
 import org.mvel2.integration.PropertyHandler;
 import org.mvel2.integration.VariableResolverFactory;
 
@@ -24,16 +23,6 @@ public class PropertyHandlerAccessor extends BaseAccessor {
   }
 
   public Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory) {
-    //如果类型与处理类型不一致，则使用原生的处理方式(不再由当前处理)
-    //什么情况下会出现,可以认为根据具体相关,因为accessor是可重用的.在下一次调用时,可能相应的值类型就与相应处理器所不一致了
-    if (!conversionType.isAssignableFrom(ctx.getClass())) {
-      if (nextNode != null) {
-        return nextNode.getValue(MVEL.getProperty(propertyName, ctx), elCtx, variableFactory);
-      }
-      else {
-        return MVEL.getProperty(propertyName, ctx);
-      }
-    }
     //正常的处理流程
     try {
       if (nextNode != null) {

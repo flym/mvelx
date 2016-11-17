@@ -2,16 +2,16 @@
  * MVEL 2.0
  * Copyright (C) 2007 The Codehaus
  * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -45,16 +45,8 @@ public class CompileException extends RuntimeException {
   /** 出错的列,该行中第几列 */
   private int column = 0;
 
-  /** 无用字段 */
-  @Deprecated
-  private int lastLineStart = 0;
-
   /** 有哪些错误信息,错误详情列表 */
   private List<ErrorDetail> errors;
-
-  /** 出错时上下文,没有实际使用 */
-  @Deprecated
-  private Object evaluationContext;
 
   /** 根据相应的信息,以及错误列表,编译上下文构建出相应的编译异常 */
   public CompileException(String message, List<ErrorDetail> errors, char[] expr, int cursor, ParserContext ctx) {
@@ -71,11 +63,6 @@ public class CompileException extends RuntimeException {
     }
 
     this.errors = errors;
-  }
-
-  @Deprecated
-  public void setEvaluationContext(Object evaluationContext) {
-    this.evaluationContext = evaluationContext;
   }
 
   public String toString() {
@@ -252,9 +239,7 @@ public class CompileException extends RuntimeException {
 
     calcRowAndColumn();
 
-    if (evaluationContext != null) {
-      appender.append("\n").append("In ").append(evaluationContext);
-    } else if (lineNumber != -1) {
+    if (lineNumber != -1) {
       appender.append("\n")
           .append("[Line: " + lineNumber + ", Column: " + (column) + "]");
     }
@@ -303,13 +288,5 @@ public class CompileException extends RuntimeException {
 
   public void setCursor(int cursor) {
     this.cursor = cursor;
-  }
-
-  public int getLastLineStart() {
-    return lastLineStart;
-  }
-
-  public void setLastLineStart(int lastLineStart) {
-    this.lastLineStart = lastLineStart;
   }
 }

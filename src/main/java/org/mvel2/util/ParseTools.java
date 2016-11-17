@@ -18,31 +18,14 @@
 
 package org.mvel2.util;
 
-import org.mvel2.CompileException;
-import org.mvel2.DataTypes;
-import org.mvel2.MVEL;
-import org.mvel2.Operator;
-import org.mvel2.OptimizationFailure;
-import org.mvel2.ParserContext;
+import org.mvel2.*;
 import org.mvel2.ast.ASTNode;
-import org.mvel2.compiler.AbstractParser;
-import org.mvel2.compiler.BlankLiteral;
-import org.mvel2.compiler.CompiledExpression;
-import org.mvel2.compiler.ExecutableAccessor;
-import org.mvel2.compiler.ExecutableAccessorSafe;
-import org.mvel2.compiler.ExecutableLiteral;
-import org.mvel2.compiler.ExpressionCompiler;
+import org.mvel2.compiler.*;
 import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.integration.impl.ClassImportResolverFactory;
 import org.mvel2.math.MathProcessor;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -52,14 +35,7 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
 
 import static java.lang.Class.forName;
 import static java.lang.Double.parseDouble;
@@ -1564,163 +1540,6 @@ public class ParseTools {
     }
 
     return cursor;
-  }
-
-
-  public static void parseWithExpressions(String nestParm,
-                                          char[] block,
-                                          int start,
-                                          int offset,
-                                          Object ctx,
-                                          VariableResolverFactory factory) {
-    /**
-     *
-     * MAINTENANCE NOTE: A COMPILING VERSION OF THIS CODE IS DUPLICATED IN: WithNode
-     *
-     */
-    int _st = start;
-    int _end = -1;
-
-    int end = start + offset;
-
-    int oper = -1;
-    String parm = "";
-
-
-    for (int i = start; i < end; i++) {
-      switch (block[i]) {
-        case '{':
-        case '[':
-        case '(':
-        case '\'':
-        case '"':
-          i = balancedCapture(block, i, end, block[i]);
-          continue;
-
-
-        case '/':
-          if (i < end && block[i + 1] == '/') {
-            while (i < end && block[i] != '\n') block[i++] = ' ';
-            if (parm == null) _st = i;
-          }
-          else if (i < end && block[i + 1] == '*') {
-            int len = end - 1;
-            while (i < len && !(block[i] == '*' && block[i + 1] == '/')) {
-              block[i++] = ' ';
-            }
-            block[i++] = ' ';
-            block[i++] = ' ';
-
-            if (parm == null) _st = i;
-          }
-          else if (i < end && block[i + 1] == '=') {
-            oper = Operator.DIV;
-          }
-          continue;
-
-        case '%':
-        case '*':
-        case '-':
-        case '+':
-          if (i + 1 < end && block[i + 1] == '=') {
-            oper = opLookup(block[i]);
-          }
-          continue;
-
-        case '=':
-          parm = new String(block, _st, i - _st - (oper != -1 ? 1 : 0)).trim();
-          _st = i + 1;
-          continue;
-
-        case ',':
-          if (_end == -1) _end = i;
-
-          if (parm == null) {
-            try {
-              if (nestParm == null) {
-                MVEL.eval(new String(block, _st, _end - _st), ctx, factory);
-              }
-              else {
-                MVEL.eval(new StringBuilder(nestParm).append('.')
-                    .append(block, _st, _end - _st).toString(), ctx, factory);
-              }
-            }
-            catch (CompileException e) {
-              e.setCursor(_st + (e.getCursor() - (e.getExpr().length - offset)));
-              e.setExpr(block);
-              throw e;
-            }
-
-            oper = -1;
-            _st = ++i;
-          }
-          else {
-            try {
-              if (oper != -1) {
-                if (nestParm == null) {
-                  throw new CompileException("operative assignment not possible here", block, start);
-                }
-
-                String rewrittenExpr = new String(
-                    createShortFormOperativeAssignment(nestParm + "." + parm, block, _st, _end - _st, oper));
-
-                MVEL.setProperty(ctx, parm, MVEL.eval(rewrittenExpr, ctx, factory));
-              }
-              else {
-                MVEL.setProperty(ctx, parm, MVEL.eval(block, _st, _end - _st, ctx, factory));
-              }
-            }
-            catch (CompileException e) {
-              e.setCursor(_st + (e.getCursor() - (e.getExpr().length - offset)));
-              e.setExpr(block);
-              throw e;
-            }
-
-            parm = null;
-            oper = -1;
-            _st = ++i;
-          }
-
-          _end = -1;
-          break;
-      }
-    }
-
-    if (_st != (_end = end)) {
-      try {
-        if (parm == null || "".equals(parm)) {
-          if (nestParm == null) {
-            MVEL.eval(new String(block, _st, _end - _st), ctx, factory);
-          }
-          else {
-            MVEL.eval(new StringAppender(nestParm).append('.')
-                .append(block, _st, _end - _st).toString(), ctx, factory);
-          }
-        }
-        else {
-          if (oper != -1) {
-            if (nestParm == null) {
-              throw new CompileException("operative assignment not possible here", block, start);
-            }
-
-            MVEL.setProperty(ctx, parm,
-                MVEL.eval(
-                    new String(createShortFormOperativeAssignment(nestParm + "." + parm, block, _st, _end - _st, oper)),
-                    ctx, factory
-                )
-            );
-          }
-          else {
-            MVEL.setProperty(ctx, parm, MVEL.eval(block, _st, end - _st, ctx, factory));
-          }
-        }
-      }
-      catch (CompileException e) {
-        e.setCursor(_st + (e.getCursor() - (e.getExpr().length - offset)));
-        e.setExpr(block);
-        throw e;
-      }
-    }
   }
 
   /** 处理类型转换，并且判断相应的实际类型 */

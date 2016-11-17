@@ -18,7 +18,6 @@
 
 package org.mvel2;
 
-import org.mvel2.ast.Proto;
 import org.mvel2.compiler.AbstractParser;
 import org.mvel2.integration.Interceptor;
 import org.mvel2.util.MethodStub;
@@ -27,13 +26,7 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.mvel2.util.ParseTools.forNameWithInner;
@@ -45,10 +38,6 @@ import static org.mvel2.util.ParseTools.forNameWithInner;
  * The reuseable parser configuration object.
  */
 public class ParserConfiguration implements Serializable {
-  /** 无用属性 */
-  @Deprecated
-  private static final int MAX_NEGATIVE_CACHE_SIZE;
-
   /** 使用到的引用的类名或方法名(不全是类名).也可能为方法句柄，或者是静态字段值等 */
   protected Map<String, Object> imports;
   /** 使用到的引用的包名 */
@@ -69,16 +58,6 @@ public class ParserConfiguration implements Serializable {
    * 此值会影响到Mvel.compileExpression中的行为，即开启二次优化
    */
   private boolean allowBootstrapBypass = true;
-
-  static {
-    String negCacheSize = System.getProperty("mvel2.compiler.max_neg_cache_size");
-    if (negCacheSize != null) {
-      MAX_NEGATIVE_CACHE_SIZE = Integer.parseInt(negCacheSize);
-    }
-    else {
-      MAX_NEGATIVE_CACHE_SIZE = 1000;
-    }
-  }
 
   public ParserConfiguration() {
   }
@@ -254,12 +233,6 @@ public class ParserConfiguration implements Serializable {
     this.imports.put(name, cls);
   }
 
-  /** 使用别名对原型进行引用 */
-  public void addImport(String name, Proto proto) {
-    initImports();
-    this.imports.put(name, proto);
-  }
-
   /** 使用别名对方法进行引用，这里采用方法句柄来进行描述 */
   public void addImport(String name, Method method) {
     addImport(name, new MethodStub(method));
@@ -299,9 +272,6 @@ public class ParserConfiguration implements Serializable {
       }
       else if (val instanceof MethodStub) {
         addImport(entry.getKey(), (MethodStub) val);
-      }
-      else if (val instanceof Proto) {
-        addImport(entry.getKey(), (Proto) entry.getValue());
       }
       else {
         throw new RuntimeException("invalid element in imports map: " + entry.getKey() + " (" + val + ")");

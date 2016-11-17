@@ -55,13 +55,6 @@ public class DeclTypedVarNode extends ASTNode implements Assignment {
     return null;
   }
 
-  public Object getReducedValue(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    if (!factory.isResolveable(name)) factory.createVariable(name, null, egressType);
-    else throw new CompileException("variable defined within scope: " + name, expr, start);
-
-    return null;
-  }
-
   public String getName() {
     return name;
   }
