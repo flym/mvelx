@@ -1,21 +1,3 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.mvel2.util;
 
 import org.mvel2.CompileException;
@@ -50,7 +32,7 @@ public class CompilerTools {
     //操作对象A,操作符1,操作符2
     ASTNode tk, tkOp, tkOp2;
 
-    /**
+    /*
      * Re-process the AST and optimize it.
      */
     while (astLinkedList.hasMoreNodes()) {
@@ -83,7 +65,7 @@ public class CompilerTools {
             bo = boOptimize(op, tk, tk2, pCtx);
           }
           else {
-            /**
+            /*
              * 以下逻辑用于解决 二进制操作和加减法优先级问题
              * Let's see if we can simply the expression more.
              */
@@ -143,7 +125,7 @@ public class CompilerTools {
 
           tkOp2 = null;
 
-          /**
+          /*
            * 以下解析乘法除法问题优先级问题,以及和加减法问题,同样涉及到优先级问题(实际上这段代码已经替换掉上面代码中的else部分)
            * 以下逻辑涉及到3个操作符 bop,op,op2，其中bop表示在bo操作中的操作符,op表示在解析过程中上一次操作符，op2表示当前操作符
            * If we have a chain of math/comparitive operators then we fill them into the tree
@@ -241,7 +223,7 @@ public class CompilerTools {
 
     //开始优化 boolean 操作
     if (secondPassOptimization) {
-      /**
+      /*
        * boolean条件优化
        * Perform a second pass optimization for boolean conditions.
        */
@@ -402,11 +384,10 @@ public class CompilerTools {
    * 从一个表达式执行单元中提取所有的函数信息，按照 函数名和函数定义放入map中并返回
    * Returns an ordered Map of all functions declared within an compiled script.
    *
-   * @param compile
    * @return - ordered Map
    */
   public static Map<String, Function> extractAllDeclaredFunctions(CompiledExpression compile) {
-    Map<String, Function> allFunctions = new LinkedHashMap<String, Function>();
+    Map<String, Function> allFunctions = new LinkedHashMap<>();
     ASTIterator instructions = new ASTLinkedList(compile.getFirstNode());
 
     ASTNode n;

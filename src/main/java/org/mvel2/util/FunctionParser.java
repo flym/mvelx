@@ -64,7 +64,7 @@ public class FunctionParser {
 
     //该函数有相应的参数定义信息
     if (expr[cursor = ParseTools.nextNonBlank(expr, cursor)] == '(') {
-      /**
+      /*
        * 这里因为是(，表示有参数定义了，这里找到()之内的定义信息
        * 同时认为是相应的参数信息定义的结束位置
        * If we discover an opening bracket after the function name, we check to see
@@ -91,18 +91,18 @@ public class FunctionParser {
       }
     }
     else {
-      /**
+      /*
        * 没有参数定义，按照有 { 和没有{的两种处理逻辑
        * This function has not parameters.
        */
       if (expr[cursor] == '{') {
-        /**
+        /*
          * This function is bracketed.  We capture the entire range in the brackets.
          */
         blockEnd = cursor = balancedCaptureWithLineAccounting(expr, blockStart = cursor, end, '{', pCtx);
       }
       else {
-        /**
+        /*
          * 单指令函数
          * This is a single statement function declaration.  We only capture the statement.
          */
@@ -112,7 +112,7 @@ public class FunctionParser {
       }
     }
 
-    /**
+    /*
      * Trim any whitespace from the captured block range.
      */
     blockStart = ParseTools.trimRight(expr, blockStart + 1);
@@ -120,18 +120,18 @@ public class FunctionParser {
 
     cursor++;
 
-    /**
+    /*
      * 没有结束点，这里手动地添加一个截止标记
      * Check if the function is manually terminated.
      */
     if (splitAccumulator != null && ParseTools.isStatementNotManuallyTerminated(expr, cursor)) {
-      /**
+      /*
        * Add an EndOfStatement to the split accumulator in the parser.
        */
       splitAccumulator.add(new EndOfStatement(pCtx));
     }
 
-    /**
+    /*
      * 根据最终解析到的各种数据构建出相应的函数对象
      * Produce the funciton node.
      */

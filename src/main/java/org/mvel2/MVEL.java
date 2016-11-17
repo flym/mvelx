@@ -451,11 +451,6 @@ public class MVEL {
     }
   }
 
-  /** 使用指定的宏来翻译表达式 */
-  public static String parseMacros(String input, Map<String, Macro> macros) {
-    return new MacroProcessor(macros).parse(input);
-  }
-
   /** 使用预处理器来处理表达式 */
   public static String preprocess(char[] input, PreProcessor[] preprocessors) {
     char[] ex = input;

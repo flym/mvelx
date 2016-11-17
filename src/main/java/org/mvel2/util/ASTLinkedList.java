@@ -1,21 +1,3 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.mvel2.util;
 
 import org.mvel2.ast.ASTNode;
@@ -34,20 +16,9 @@ public class ASTLinkedList implements ASTIterator {
   public ASTLinkedList() {
   }
 
-  /** 基于一个之前的链来进行构建 */
-  public ASTLinkedList(ASTIterator iter) {
-    this.current = this.firstASTNode = iter.firstNode();
-  }
-
   /** 基于一个节点来进行构建,此节点即为第1个节点 */
   public ASTLinkedList(ASTNode firstASTNode) {
     this.current = this.firstASTNode = firstASTNode;
-  }
-
-  /** 基于一个节点进行构建,并声明当前链的长度 */
-  public ASTLinkedList(ASTNode firstASTNode, int size) {
-    this.current = this.firstASTNode = firstASTNode;
-    this.size = size;
   }
 
   /** 添加新的节点 */
@@ -119,11 +90,6 @@ public class ASTLinkedList implements ASTIterator {
     }
   }
 
-  public void skipNode() {
-    if (current != null)
-      current = current.nextASTNode;
-  }
-
   public ASTNode peekNext() {
     if (current != null && current.nextASTNode != null)
       return current.nextASTNode;
@@ -143,15 +109,6 @@ public class ASTLinkedList implements ASTIterator {
 
   public int size() {
     return size;
-  }
-
-  /** 不支持处理下标 */
-  public int index() {
-    return -1;
-  }
-
-  public void setCurrentNode(ASTNode node) {
-    this.current = node;
   }
 
   /** 去掉中间被废掉的节点重新处理整个调用链 */

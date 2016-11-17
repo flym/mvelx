@@ -1,21 +1,3 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.mvel2.util;
 
 import org.mvel2.CompileException;
@@ -91,7 +73,7 @@ public class CollectionParser {
   }
 
   /** 解析一个集合的属性表达式，并根据其传入的声明子类型进行定义和解析 */
-  public Object parseCollection(char[] property, int start, int offset, boolean subcompile, Class colType, ParserContext pCtx) {
+  public Object parseCollection(char[] property, int start, int offset, boolean subCompile, Class colType, ParserContext pCtx) {
     if (colType != null) this.colType = getBaseComponentType(colType);
     this.property = property;
 
@@ -105,7 +87,7 @@ public class CollectionParser {
 
     this.pCtx = pCtx;
 
-    return parseCollection(subcompile);
+    return parseCollection(subCompile);
   }
 
   /**
@@ -114,9 +96,10 @@ public class CollectionParser {
    * 针对为{a:b}的这种类型，返回的数据为List<Map> 类型
    * 因为默认的type即为0，因此默认返回的类型均是List类型
    *
-   * @param subcompile 是否要对每一项进行编译
+   * @param subCompile 是否要对每一项进行编译
    */
-  private Object parseCollection(boolean subcompile) {
+  @SuppressWarnings("ConstantConditions")
+  private Object parseCollection(boolean subCompile) {
     //首尾相同,即[]或{}这种,默认为空数组
     if (end - start == 0) {
       if (type == LIST) return new ArrayList();
@@ -164,7 +147,7 @@ public class CollectionParser {
             newType = LIST;
           }
 
-          /**
+          /*
            * 处理在数组中存在[new int[]{1,2}]的这种情况
            * 这里会定位于后面的{1,2},这样进行判定,同时相应的类型由外层的单个数据类型来决定
            * 对于map，则认为这里已经到达 {a:[1,2]}的这种情况，那么相应的 key值肯定已经确定，只需要将后面的[1,2]解析为list,然后再以
@@ -174,7 +157,7 @@ public class CollectionParser {
            */
           //这里拿到内层的数据值,通过传入一个参考的过程对象的类型进行解析
           Object o = new CollectionParser(newType).parseCollection(property, (st = cursor) + 1,
-              (cursor = balancedCapture(property, st, end, property[st])) - st - 1, subcompile, colType, pCtx);
+              (cursor = balancedCapture(property, st, end, property[st])) - st - 1, subCompile, colType, pCtx);
 
           //如果外层为map,放到map中即可
           if (type == MAP) {
@@ -225,7 +208,7 @@ public class CollectionParser {
           }
 
           //语法及类型效验，在子编译的过程中进行
-          if (subcompile) {
+          if (subCompile) {
             subCompile(st, cursor - st);
           }
 
@@ -238,14 +221,14 @@ public class CollectionParser {
         // 则重新认为要解析的数据为map类型,因此重新设置值进行处理
         case ':':
           if (type != MAP) {
-            map = new HashMap<Object, Object>();
+            map = new HashMap<>();
             type = MAP;
           }
           //认为之前的解析值为key,认为直接是一个字符串
           curr = createStringTrimmed(property, st, cursor - st);
 
           //key也需要进行编译和校验
-          if (subcompile) {
+          if (subCompile) {
             subCompile(st, cursor - st);
           }
 
@@ -279,7 +262,7 @@ public class CollectionParser {
         list.add(createStringTrimmed(property, st, cursor - st));
       }
 
-      if (subcompile) subCompile(st, cursor - st);
+      if (subCompile) subCompile(st, cursor - st);
     }
 
     //根据实际的类型再进行处理，同时返回其正确的类型信息

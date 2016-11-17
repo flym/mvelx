@@ -17,8 +17,6 @@ import org.mvel2.optimizers.OptimizationNotSupported;
 import org.mvel2.optimizers.impl.refl.nodes.Union;
 import org.mvel2.util.*;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,17 +62,7 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
   private static final int OPCODES_VERSION;
 
   static {
-    final String javaVersion = PropertyTools.getJavaVersion();
-    if (javaVersion.startsWith("1.4"))
-      OPCODES_VERSION = Opcodes.V1_4;
-    else if (javaVersion.startsWith("1.5"))
-      OPCODES_VERSION = Opcodes.V1_5;
-    else if (javaVersion.startsWith("1.6") || javaVersion.startsWith("1.7") || javaVersion.startsWith("1.8"))
-      OPCODES_VERSION = Opcodes.V1_6;
-    else if (javaVersion.startsWith("1.8"))
-      OPCODES_VERSION = Opcodes.V1_8;
-    else
-      OPCODES_VERSION = Opcodes.V1_2;
+    OPCODES_VERSION = Opcodes.V1_8;
 
     String defaultNameSapce = getProperty("mvel2.namespace");
     if (defaultNameSapce == null) NAMESPACE = "org/mvel2/";

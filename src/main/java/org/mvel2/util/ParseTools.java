@@ -1,21 +1,3 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.mvel2.util;
 
 import org.mvel2.*;
@@ -442,7 +424,7 @@ public class ParseTools {
       return parms;
     }
     else {
-      CONSTRUCTOR_PARMS_CACHE.put(cns, new WeakReference<Class[]>(parms = cns.getParameterTypes()));
+      CONSTRUCTOR_PARMS_CACHE.put(cns, new WeakReference<>(parms = cns.getParameterTypes()));
       return parms;
     }
   }
@@ -527,7 +509,7 @@ public class ParseTools {
         }
       }
 
-      cache.put(className, new WeakReference<Class>(cls));
+      cache.put(className, new WeakReference<>(cls));
       return cls;
     }
   }
@@ -541,7 +523,7 @@ public class ParseTools {
       return cns;
     }
     else {
-      CLASS_CONSTRUCTOR_CACHE.put(cls, new WeakReference<Constructor[]>(cns = cls.getConstructors()));
+      CLASS_CONSTRUCTOR_CACHE.put(cls, new WeakReference<>(cns = cls.getConstructors()));
       return cns;
     }
   }
@@ -1023,7 +1005,7 @@ public class ParseTools {
     return newArray;
   }
 
-  private static final HashMap<Class, Integer> typeResolveMap = new HashMap<Class, Integer>();
+  private static final HashMap<Class, Integer> typeResolveMap = new HashMap<>();
 
   static {
     Map<Class, Integer> t = typeResolveMap;
@@ -1063,7 +1045,7 @@ public class ParseTools {
     else return __resolveType(o.getClass());
   }
 
-  private static final Map<Class, Integer> typeCodes = new HashMap<Class, Integer>(30, 0.5f);
+  private static final Map<Class, Integer> typeCodes = new HashMap<>(30, 0.5f);
 
   static {
     typeCodes.put(Integer.class, DataTypes.W_INTEGER);
@@ -1139,7 +1121,7 @@ public class ParseTools {
   private static Method determineActualTargetMethod(Class clazz, Method method) {
     String name = method.getName();
 
-    /**
+    /*
      * Follow our way up the class heirarchy until we find the physical target method.
      */
     for (Class cls : clazz.getInterfaces()) {
@@ -2017,7 +1999,7 @@ public class ParseTools {
   }
 
   public static Serializable optimizeTree(final CompiledExpression compiled) {
-    /**
+    /*
      * If there is only one token, and it's an identifier, we can optimize this as an accessor expression.
      */
     if (!compiled.isImportInjectionRequired() &&
@@ -2030,7 +2012,7 @@ public class ParseTools {
   }
 
   private static Serializable _optimizeTree(final CompiledExpression compiled) {
-    /**
+    /*
      * If there is only one token, and it's an identifier, we can optimize this as an accessor expression.
      */
     if (compiled.isSingleNode()) {

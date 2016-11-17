@@ -958,11 +958,11 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
     Object o = ctx != null ? method.invoke(ctx, normalizeArgsForVarArgs(parameterTypes, args, m.isVarArgs())) : null;
 
     if (hasNullMethodHandler()) {
-      addAccessorNode(new MethodAccessorNH(method, (ExecutableStatement[]) es, getNullMethodHandler()));
+      addAccessorNode(new MethodAccessorNH(method, es, getNullMethodHandler()));
       if (o == null) o = getNullMethodHandler().getProperty(m.getName(), ctx, variableFactory);
     }
     else {
-      addAccessorNode(new MethodAccessor(method, (ExecutableStatement[]) es));
+      addAccessorNode(new MethodAccessor(method, es));
     }
 
     /*

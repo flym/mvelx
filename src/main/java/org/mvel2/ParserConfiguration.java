@@ -1,21 +1,3 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.mvel2;
 
 import org.mvel2.compiler.AbstractParser;
@@ -65,20 +47,8 @@ public class ParserConfiguration implements Serializable {
     this.interceptors = interceptors;
   }
 
-  /** 使用指定的引入+指定的包引入+拦截器创建起解析配置 */
-  public ParserConfiguration(Map<String, Object> imports, HashSet<String> packageImports,
-                             Map<String, Interceptor> interceptors) {
-    addAllImports(imports);
-    this.packageImports = packageImports;
-    this.interceptors = interceptors;
-  }
-
   public HashSet<String> getPackageImports() {
     return packageImports;
-  }
-
-  public void setPackageImports(HashSet<String> packageImports) {
-    this.packageImports = packageImports;
   }
 
   /** 通过引用名获取之前已import进来的类名，并且期望相应的类型为class类型 */
@@ -106,7 +76,7 @@ public class ParserConfiguration implements Serializable {
    * 注：或通过在代码中 import T.*;这种也可以达到相同的效果
    */
   public void addPackageImport(String packageName) {
-    if (packageImports == null) packageImports = new LinkedHashSet<String>();
+    if (packageImports == null) packageImports = new LinkedHashSet<>();
     packageImports.add(packageName);
     if (!addClassMemberStaticImports(packageName)) packageImports.add(packageName);
   }
@@ -210,7 +180,7 @@ public class ParserConfiguration implements Serializable {
 
   private void initImports() {
     if (this.imports == null) {
-      this.imports = new ConcurrentHashMap<String, Object>();
+      this.imports = new ConcurrentHashMap<>();
     }
   }
 

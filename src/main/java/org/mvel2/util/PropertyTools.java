@@ -1,21 +1,3 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.mvel2.util;
 
 import org.mvel2.ParserContext;
@@ -28,9 +10,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import static java.lang.String.valueOf;
-import static java.lang.reflect.Modifier.PUBLIC;
-import static java.lang.reflect.Modifier.STATIC;
-import static java.lang.reflect.Modifier.isPublic;
+import static java.lang.reflect.Modifier.*;
 import static org.mvel2.DataConversion.canConvert;
 import static org.mvel2.util.ParseTools.boxPrimitive;
 
@@ -57,10 +37,10 @@ public class PropertyTools {
   public static Method getSetter(Class clazz, String property) {
     property = ReflectionUtil.getSetter(property);
 
-    for (Method meth : clazz.getMethods()) {
-      if ((meth.getModifiers() & PUBLIC) != 0 && meth.getParameterTypes().length == 1
-          && property.equals(meth.getName())) {
-        return meth;
+    for (Method method : clazz.getMethods()) {
+      if ((method.getModifiers() & PUBLIC) != 0 && method.getParameterTypes().length == 1
+          && property.equals(method.getName())) {
+        return method;
       }
     }
 
@@ -166,7 +146,7 @@ public class PropertyTools {
   /**
    * 判断两个对象之间是否能进行contains计算,如果能进行处理
    * 支持的类型包括字符串,集合,map,数组
-   *  */
+   */
   public static boolean contains(Object toCompare, Object testValue) {
     if (toCompare == null)
       return false;
@@ -201,7 +181,7 @@ public class PropertyTools {
       return 0d;
     }
     else if (type == long.class) {
-      return 0l;
+      return 0L;
     }
     else if (type == float.class) {
       return 0f;
@@ -218,20 +198,8 @@ public class PropertyTools {
   }
 
   /** 指定源是否可声明为目标类型 */
+  @SuppressWarnings("unchecked")
   public static boolean isAssignable(Class to, Class from) {
     return (to.isPrimitive() ? boxPrimitive(to) : to).isAssignableFrom(from.isPrimitive() ? boxPrimitive(from) : from);
-  }
-
-  /**
-   * 获取相应的jvm版本信息
-   * Get the JVM version
-   * @return first <code>mvel.java.version</code>, then <code>java.version</code>
-   * @see System.getProperty("mvel.java.version");
-   * @see System.getProperty("java.version");
-   */
-  public static String getJavaVersion() {
-    return System.getProperty("mvel.java.version") != null ?
-        System.getProperty("mvel.java.version") :
-        System.getProperty("java.version");
   }
 }

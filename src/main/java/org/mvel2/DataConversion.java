@@ -116,6 +116,7 @@ public class DataConversion {
       return (T) ah.convertFrom(in);
     }
     else {
+      assert h != null;
       return (T) h.convertFrom(in);
     }
   }
