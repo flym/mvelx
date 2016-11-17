@@ -23,6 +23,9 @@
     </developers>
 
     <properties>
+        <!-- 基础开发服务 -->
+        <lombok.version>1.16.10</lombok.version>
+
         <!-- 基础环境 -->
         <!-- 编译 -->
         <maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
@@ -39,6 +42,16 @@
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
 
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
     <build>
 
         <plugins>

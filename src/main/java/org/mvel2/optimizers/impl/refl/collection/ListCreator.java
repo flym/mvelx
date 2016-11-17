@@ -41,7 +41,7 @@ public class ListCreator implements Accessor {
     for (int i = 0; i < getValues().length; i++) {
       template[i] = getValues()[i].getValue(ctx, elCtx, variableFactory);
     }
-    return new ArrayList<Object>(Arrays.asList(template));
+    return new ArrayList<>(Arrays.asList(template));
   }
 
   /** 通过已知的值访问器来创建出相应的访问器 */

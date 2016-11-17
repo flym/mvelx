@@ -35,9 +35,6 @@ public class PropertyVerifier extends AbstractOptimizer {
   /** 标记位,数组操作,对应[ */
   private static final int COL = 2;
 
-  /** 无用属性 */
-  @Deprecated
-  private List<String> inputs = new LinkedList<String>();
   /** 逻辑处理,当前是否在首次处理.即在处理上刚处理到第1个节点 */
   private boolean first = false;
   /** 是否是类常量 */
@@ -85,16 +82,6 @@ public class PropertyVerifier extends AbstractOptimizer {
 
     this.pCtx = parserContext;
     this.ctx = root;
-  }
-
-  @Deprecated
-  public List<String> getInputs() {
-    return inputs;
-  }
-
-  @Deprecated
-  public void setInputs(List<String> inputs) {
-    this.inputs = inputs;
   }
 
   /**
@@ -221,7 +208,7 @@ public class PropertyVerifier extends AbstractOptimizer {
             //这里的classArgs指申明的泛型信息
             Type[] classArgs = ((Class) pt.getRawType()).getTypeParameters();
 
-            if (gpt.length > 0 && paramTypes == null) paramTypes = new HashMap<String, Type>();
+            if (gpt.length > 0 && paramTypes == null) paramTypes = new HashMap<>();
             //设置起相应的泛型信息
             for (int i = 0; i < gpt.length; i++) {
               paramTypes.put(classArgs[i].toString(), gpt[i]);
@@ -316,14 +303,6 @@ public class PropertyVerifier extends AbstractOptimizer {
       }
     }
 
-    //如果运行伪方法调用，则认为此属性实际上是一个方法名
-    if (pCtx != null && pCtx.getParserConfiguration() != null ? pCtx.getParserConfiguration().isAllowNakedMethCall() : MVEL.COMPILER_OPT_ALLOW_NAKED_METH_CALL) {
-      Class cls = getMethod(ctx, property);
-      if (cls != Object.class) {
-        return cls;
-      }
-    }
-
     if (pCtx.isStrictTypeEnforcement()) {
       throw new CompileException("unqualified type in strict mode for: " + property, expr, tkStart);
     }
@@ -410,7 +389,7 @@ public class PropertyVerifier extends AbstractOptimizer {
 
     //这里表示之前可能已经有解析相应的返回类型信息,那么就直接使用之前的解析信息，如之前解析为 List<X> 这次就直接返回List<X>类型
     if (paramTypes != null && paramTypes.containsKey(returnTypeArg)) {
-      /**
+      /*
        * If the paramTypes Map contains the known type, return that type.
        */
       return (Class) paramTypes.get(returnTypeArg);
@@ -508,7 +487,7 @@ public class PropertyVerifier extends AbstractOptimizer {
   private Class getMethod(Class ctx, String name) {
     int st = cursor;
 
-    /**
+    /*
      * Check to see if this is the first element in the statement.
      */
     if (first) {
@@ -516,7 +495,7 @@ public class PropertyVerifier extends AbstractOptimizer {
       //当前是首节点，并且调用到这里，就表示当前是一个方法调用
       methodCall = true;
 
-      /**
+      /*
        * It's the first element in the statement, therefore we check to see if there is a static import of a
        * native Java method or an MVEL function.
        * 先尝试从解析上下文中查找相应的定义，如果有，则表示是提前引用导入的
@@ -525,7 +504,7 @@ public class PropertyVerifier extends AbstractOptimizer {
         Method m = pCtx.getStaticImport(name).getMethod();
 
         //因为解析中有此相应的引用，因此相应的上下文类和方法类强制从解析中读取，而忽略相应的参数信息
-        /**
+        /*
          * Replace the method parameters.
          */
         ctx = m.getDeclaringClass();
@@ -555,7 +534,7 @@ public class PropertyVerifier extends AbstractOptimizer {
     }
 
     //处理参数信息，以便后续通过参数个数以及相应的类型来找到正确的方法,以处理方法重载的问题
-    /**
+    /*
      * Get the arguments for the method.
      */
     String tk;
@@ -569,7 +548,7 @@ public class PropertyVerifier extends AbstractOptimizer {
 
     cursor++;
 
-    /**
+    /*
      * Parse out the arguments list.
      */
     Class[] args;
@@ -586,7 +565,7 @@ public class PropertyVerifier extends AbstractOptimizer {
       //   ParserContext subCtx = pCtx.createSubcontext();
       args = new Class[subtokens.size()];
 
-      /**
+      /*
        *  Subcompile all the arguments to determine their known types.
        */
       //  ExpressionCompiler compiler;
@@ -628,14 +607,14 @@ public class PropertyVerifier extends AbstractOptimizer {
       }
     }
 
-    /**
+    /*
      * If the target object is an instance of java.lang.Class itself then do not
      * adjust the Class scope target.
      */
 
     Method m;
 
-    /**
+    /*
      * If we have not cached the method then we need to go ahead and try to resolve it.
      */
     //尝试从公共方法以及私有方法中找到相应的方法
@@ -666,7 +645,7 @@ public class PropertyVerifier extends AbstractOptimizer {
     }
 
     //到这里，表示已经找到方法了，那么尝试进一步处理相应的泛型信息
-    /**
+    /*
      * If we're in strict mode, we look for generic type information.
      */
     //这里的方法签名上是有泛型信息的
@@ -683,11 +662,11 @@ public class PropertyVerifier extends AbstractOptimizer {
         if (gpt[i] instanceof ParameterizedType) {
           pt = (ParameterizedType) gpt[i];
           if ((z = pCtx.getImport(new String(subtokens.get(i)))) != null) {
-            /**
+            /*
              * We record the value of the type parameter to our typeArgs Map.
              */
             if (pt.getRawType().equals(Class.class)) {
-              /**
+              /*
                * If this is an instance of Class, we deal with the special parameterization case.
                */
               typeArgs.put(pt.getActualTypeArguments()[0].toString(), z);
@@ -710,7 +689,7 @@ public class PropertyVerifier extends AbstractOptimizer {
       }
 
       //这里尝试通过相应的最近处理参数映射以及刚从泛型参数中解析到的映射中查找相应的返回类型
-      /**
+      /*
        * Get the return type argument
        */
       Type parametricReturnType = m.getGenericReturnType();
@@ -722,13 +701,13 @@ public class PropertyVerifier extends AbstractOptimizer {
       }
 
       if (paramTypes != null && paramTypes.containsKey(returnTypeArg)) {
-        /**
+        /*
          * If the paramTypes Map contains the known type, return that type.
          */
         return (Class) paramTypes.get(returnTypeArg);
       }
       else if (typeArgs.containsKey(returnTypeArg)) {
-        /**
+        /*
          * If the generic type was declared as part of the method, it will be in this
          * Map.
          */

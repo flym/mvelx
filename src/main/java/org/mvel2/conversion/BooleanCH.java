@@ -32,7 +32,7 @@ import static java.lang.String.valueOf;
  */
 public class BooleanCH implements ConversionHandler {
   private static final Map<Class, Converter> CNV =
-      new HashMap<Class, Converter>();
+      new HashMap<>();
 
   /**
    * 字符串转换为boolean,支持常用的false,no,off,0，以及空字符串，都认为是false
@@ -66,19 +66,11 @@ public class BooleanCH implements ConversionHandler {
 
     //通用对象，将其string化
     CNV.put(Object.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return stringConverter.convert(valueOf(o));
-          }
-        }
+        o -> stringConverter.convert(valueOf(o))
     );
 
     CNV.put(Boolean.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return o;
-          }
-        }
+        o -> o
     );
 
     //数字类，则认为>0之类的都是true
@@ -131,7 +123,7 @@ public class BooleanCH implements ConversionHandler {
         new Converter() {
 
           public Boolean convert(Object o) {
-            return Boolean.valueOf((Boolean) o);
+            return (Boolean) o;
           }
         }
     );
@@ -141,7 +133,7 @@ public class BooleanCH implements ConversionHandler {
         new Converter() {
 
           public Boolean convert(Object o) {
-            return Boolean.valueOf(((BigDecimal) o).doubleValue() > 0);
+            return ((BigDecimal) o).doubleValue() > 0;
           }
         }
     );

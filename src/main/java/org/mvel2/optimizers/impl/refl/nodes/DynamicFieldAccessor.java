@@ -33,9 +33,6 @@ public class DynamicFieldAccessor implements AccessorNode {
   /** 字段信息的声明类型,或者是期望的类型 */
   private Class targetType;
 
-  public DynamicFieldAccessor() {
-  }
-
   /** 使用字段进行构建相应的访问器 */
   public DynamicFieldAccessor(Field field) {
     setField(field);

@@ -27,9 +27,9 @@ import org.mvel2.ast.ASTNode;
  * @author Christopher Brock
  */
 public interface Interceptor {
-  public static final int NORMAL_FLOW = 0;
-  public static final int SKIP = 1;
-  public static final int END = 2;
+  int NORMAL_FLOW = 0;
+  int SKIP = 1;
+  int END = 2;
 
   /**
    * 在实际的node调用前执行
@@ -40,7 +40,7 @@ public interface Interceptor {
    * @param factory The variable factory
    * @return The response code.  Should return 0.
    */
-  public int doBefore(ASTNode node, VariableResolverFactory factory);
+  int doBefore(ASTNode node, VariableResolverFactory factory);
 
   /**
    * 在实际的node调用后执行
@@ -53,5 +53,5 @@ public interface Interceptor {
    * @param factory        The variable factory
    * @return The response code.  Should return 0.
    */
-  public int doAfter(Object exitStackValue, ASTNode node, VariableResolverFactory factory);
+  int doAfter(Object exitStackValue, ASTNode node, VariableResolverFactory factory);
 }

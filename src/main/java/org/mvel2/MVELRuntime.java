@@ -36,7 +36,6 @@ import static org.mvel2.util.PropertyTools.isEmpty;
  */
 @SuppressWarnings({"CaughtExceptionImmediatelyRethrown"})
 public class MVELRuntime {
-  // public static final ImmutableDefaultFactory IMMUTABLE_DEFAULT_FACTORY = new ImmutableDefaultFactory();
   /** 描述相应的调试断点上下文，以支持在处理过程中设置相应的调试断点，并进行相应的断点处理 */
   private static ThreadLocal<DebuggerContext> debuggerContext;
 

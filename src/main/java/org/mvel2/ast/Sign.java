@@ -82,7 +82,7 @@ public class Sign extends ASTNode {
   /** 取 -接口,根据不同的类型进行处理 */
   private interface Signer extends Serializable {
     /** 返回一个数字的 取负形式(即-x的结果) */
-    public Object sign(Object o);
+    Object sign(Object o);
   }
 
   /** 整数取负 */

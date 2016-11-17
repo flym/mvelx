@@ -28,9 +28,6 @@ public class IndexedCharSeqAccessorNest implements AccessorNode {
   /** 下标执行单元 */
   private ExecutableStatement index;
 
-  public IndexedCharSeqAccessorNest() {
-  }
-
   public IndexedCharSeqAccessorNest(ExecutableStatement index) {
     this.index = index;
   }

@@ -70,10 +70,6 @@ public class Union implements Accessor {
     }
   }
 
-  public Class getLeftIngressType() {
-    return accessor.getKnownEgressType();
-  }
-
   public Class getKnownEgressType() {
     return nextAccessor.getKnownEgressType();
   }

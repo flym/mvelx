@@ -24,5 +24,5 @@ package org.mvel2;
  */
 public interface Macro {
   /** 执行相应的宏替换操作 */
-  public String doMacro();
+  String doMacro();
 }

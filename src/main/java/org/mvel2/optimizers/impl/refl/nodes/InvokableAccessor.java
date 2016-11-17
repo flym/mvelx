@@ -50,9 +50,4 @@ public abstract class InvokableAccessor extends BaseAccessor {
     }
     return values;
   }
-
-  /** 返回相应的参数类型信息 */
-  public Class[] getParameterTypes() {
-    return parameterTypes;
-  }
 }

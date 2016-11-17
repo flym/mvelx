@@ -29,6 +29,7 @@ import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import static java.lang.String.valueOf;
 import static org.mvel2.DataConversion.convert;
@@ -298,6 +299,7 @@ public strictfp class MathProcessor {
   }
 
   /** 非数字运算 */
+  @SuppressWarnings("unchecked")
   private static Object doOperationNonNumeric(int type1, final Object val1, final int operation, final Object val2) {
     switch (operation) {
       //集合
@@ -389,7 +391,7 @@ public strictfp class MathProcessor {
           return Boolean.FALSE;
         }
 
-      // #操作,直接字符串拼接
+        // #操作,直接字符串拼接
       case STR_APPEND:
         return valueOf(val1) + valueOf(val2);
     }
@@ -402,21 +404,16 @@ public strictfp class MathProcessor {
 
   /** 安全地eq判定,即处理null值,避免null.equals 的操作 */
   private static Boolean safeEquals(final Object val1, final Object val2) {
-    if (val1 != null) {
-      return val1.equals(val2) ? Boolean.TRUE : Boolean.FALSE;
-    }
-    else return val2 == null || (val2.equals(val1) ? Boolean.TRUE : Boolean.FALSE);
+    return Objects.equals(val1, val2);
   }
 
   /** 安全地notEq判定,即处理null值 */
   private static Boolean safeNotEquals(final Object val1, final Object val2) {
-    if (val1 != null) {
-      return !val1.equals(val2) ? Boolean.TRUE : Boolean.FALSE;
-    }
-    else return (val2 != null && !val2.equals(val1)) ? Boolean.TRUE : Boolean.FALSE;
+    return !Objects.equals(val1, val2);
   }
 
   /** 同类型操作 */
+  @SuppressWarnings("unchecked")
   private static Object doOperationsSameType(int type1, Object val1, int operation, Object val2) {
     switch (type1) {
       //集合操作，支持[] + []
@@ -768,7 +765,7 @@ public strictfp class MathProcessor {
         return ((Number) in).doubleValue();
       case DataTypes.CHAR:
       case DataTypes.W_CHAR:
-        return Double.parseDouble(String.valueOf((Character) in));
+        return Double.parseDouble(String.valueOf(in));
       case DataTypes.BOOLEAN:
       case DataTypes.W_BOOLEAN:
         return ((Boolean) in) ? 1d : 0d;

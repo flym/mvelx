@@ -18,10 +18,6 @@
 
 package org.mvel2.util;
 
-import java.lang.reflect.Field;
-
-import sun.misc.Unsafe;
-
 /**
  * 内部统一使用的类加载器
  * 提供统一的加载访问,避免随便引用

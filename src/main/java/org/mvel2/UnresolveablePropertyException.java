@@ -18,8 +18,6 @@
 
 package org.mvel2;
 
-import org.mvel2.ast.ASTNode;
-
 /**
  * 描述一个不能正确解析指定属性变量的异常
  * 即当前解析器工厂不能解析此变量
@@ -30,16 +28,6 @@ public class UnresolveablePropertyException extends RuntimeException {
 
   /** 不能解析的变量名 */
   private String name;
-
-  public UnresolveablePropertyException(ASTNode astNode, Throwable throwable) {
-    super("unable to resolve token: " + astNode.getName(), throwable);
-    this.name = astNode.getName();
-  }
-
-  public UnresolveablePropertyException(ASTNode astNode) {
-    super("unable to resolve token: " + astNode.getName());
-    this.name = astNode.getName();
-  }
 
   public UnresolveablePropertyException(String name) {
     super("unable to resolve token: " + name);

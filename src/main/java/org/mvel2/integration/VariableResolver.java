@@ -32,7 +32,7 @@ public interface VariableResolver extends Serializable {
    *
    * @return A string representing the variable name.
    */
-  public String getName();
+  String getName();
 
   /**
    * 获取相应变量的类型
@@ -44,13 +44,7 @@ public interface VariableResolver extends Serializable {
    *
    * @return A Class instance representing the type of the target variable.
    */
-  public Class getType();
-
-  /**
-   * 设置静态类型，好像没什么用处
-   * If this is a declared variable of a static type, MVEL will make it known by passing the type here.
-   */
-  public void setStaticType(Class type);
+  Class getType();
 
   /**
    * 为变量设置特别的标记，以用于后续对此变量的一些定制处理
@@ -62,7 +56,7 @@ public interface VariableResolver extends Serializable {
    *
    * @return Bitset of special flags.
    */
-  public int getFlags();
+  int getFlags();
 
   /**
    * 获取变量的值
@@ -70,7 +64,7 @@ public interface VariableResolver extends Serializable {
    *
    * @return The actual variable value.
    */
-  public Object getValue();
+  Object getValue();
 
   /**
    * 设置相应的值
@@ -79,5 +73,5 @@ public interface VariableResolver extends Serializable {
    * @param value The new value.
    * @return value after any conversion
    */
-  public void setValue(Object value);
+  void setValue(Object value);
 }

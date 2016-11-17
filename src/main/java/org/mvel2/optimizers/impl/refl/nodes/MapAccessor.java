@@ -29,9 +29,6 @@ public class MapAccessor implements AccessorNode {
   /** 属性值 */
   private Object property;
 
-  public MapAccessor() {
-  }
-
   public MapAccessor(Object property) {
     this.property = property;
   }

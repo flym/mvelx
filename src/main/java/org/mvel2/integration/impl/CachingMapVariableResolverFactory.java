@@ -28,7 +28,6 @@ import java.util.Set;
 
 /**
  * 使用当前工厂记录相应的解析器，并在特定时间将当前存储转换到外部存储的解析器工厂
- * 其遭到<code>{@link CachedMapVariableResolverFactory}</code>大部分相同，所不一样的是，添加新的解析器，新的存储值和映射
  * 并不是实时地添加到相应的map中，而是通过某个一方法<code>externalize</code>再回复到相应的map当中
  * 即一个为实时，一个是初始处理+结果返回
  */
@@ -124,12 +123,12 @@ public class CachingMapVariableResolverFactory extends BaseVariableResolverFacto
 
   public Set<String> getKnownVariables() {
     if (nextFactory == null) {
-      if (variables != null) return new HashSet<String>(variables.keySet());
-      return new HashSet<String>(0);
+      if (variables != null) return new HashSet<>(variables.keySet());
+      return new HashSet<>(0);
     }
     else {
-      if (variables != null) return new HashSet<String>(variables.keySet());
-      return new HashSet<String>(0);
+      if (variables != null) return new HashSet<>(variables.keySet());
+      return new HashSet<>(0);
     }
   }
 

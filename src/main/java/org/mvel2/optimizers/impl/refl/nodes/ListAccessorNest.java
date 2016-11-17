@@ -36,9 +36,6 @@ public class ListAccessorNest implements AccessorNode {
   private Class conversionType;
 
 
-  public ListAccessorNest() {
-  }
-
   /** 通过下标表达式+相应的值类型构建出相应的访问器 */
   public ListAccessorNest(String index, Class conversionType) {
     this.index = (ExecutableStatement) subCompileExpression(index.toCharArray());
@@ -61,6 +58,7 @@ public class ListAccessorNest implements AccessorNode {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public Object setValue(Object ctx, Object elCtx, VariableResolverFactory vars, Object value) {
     //noinspection unchecked
     //根据是否有next来决定是否转发请求

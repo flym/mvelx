@@ -29,9 +29,6 @@ public class ArrayAccessor implements AccessorNode {
   /** 数组下标 */
   private int index;
 
-  public ArrayAccessor() {
-  }
-
   public ArrayAccessor(int index) {
     this.index = index;
   }

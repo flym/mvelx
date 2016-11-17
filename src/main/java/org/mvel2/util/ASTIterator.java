@@ -34,42 +34,42 @@ import java.io.Serializable;
  */
 public interface ASTIterator extends Serializable {
   /** 重置,即回到第一个节点 */
-  public void reset();
+  void reset();
 
   /** 返回并将下标指向下一个节点 */
-  public ASTNode nextNode();
+  ASTNode nextNode();
 
   /** 获取下一个节点(执行状态不作处理) */
-  public ASTNode peekNext();
+  ASTNode peekNext();
 
   /** 获取当前节点(执行状态不作处理) */
-  public ASTNode peekNode();
+  ASTNode peekNode();
 
   /** 下标重新调整为last节点,即回到上一次执行的位置 */
-  public void back();
+  void back();
 
   /** 是否还有更多的节点要处理 */
-  public boolean hasMoreNodes();
+  boolean hasMoreNodes();
 
   /** 返回第1个节点,当前状态不变化 */
-  public ASTNode firstNode();
+  ASTNode firstNode();
 
   /** 当前节点链的长度 */
-  public int size();
+  int size();
 
   /** 当前处理下标,暂不支持 */
-  public int index();
+  int index();
 
   /**
    * 完成节点链处理,并重新调整相应的状态,回到初始状态
    * 与reset类似,但此方法会作一些节点整理操作,以优化节点处理
    */
-  public void finish();
+  void finish();
 
   /** 在当前处理下标处添加新的节点 */
-  public void addTokenNode(ASTNode node);
+  void addTokenNode(ASTNode node);
 
   /** 在当前处理下标处理处添加2个新的节点 */
-  public void addTokenNode(ASTNode node1, ASTNode node2);
+  void addTokenNode(ASTNode node1, ASTNode node2);
 
 }

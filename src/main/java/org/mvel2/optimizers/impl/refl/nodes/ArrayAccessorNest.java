@@ -38,9 +38,6 @@ public class ArrayAccessorNest implements AccessorNode {
   /** 设置值时是否需要类型转换 */
   private boolean requireConversion;
 
-  public ArrayAccessorNest() {
-  }
-
   /** 使用下标表达式来构建出相应的数组访问器 */
   public ArrayAccessorNest(String index) {
     this.index = (ExecutableStatement) ParseTools.subCompileExpression(index.toCharArray());

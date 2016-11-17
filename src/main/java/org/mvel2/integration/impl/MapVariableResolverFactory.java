@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 与MapVarResolver相对应，但实际上此类的实现与<code>{@link org.mvel2.integration.impl.CachedMapVariableResolverFactory}</code>
  * 是一样的，因此任何使用此类的地方，均可以使用Cached来进行替换
  * 这里的map,可以认为用在一些context感知的地方,即需要重建scope,在用完之后,马上就会释放的场景,如执行时新建上下文,
  * 主要是在如for循环 while循环 if语句等这些需要处理语法块,但处理完之后,作用域就抛弃的情况
@@ -60,8 +59,9 @@ public class MapVariableResolverFactory extends BaseVariableResolverFactory {
 
   /**
    * 与下面方法相同
-   * @see MapVariableResolverFactory(Map)
+   *
    * @param cachingSafe 无用参数
+   * @see MapVariableResolverFactory(Map)
    */
   public MapVariableResolverFactory(Map<String, Object> variables, boolean cachingSafe) {
     this.variables = variables;
@@ -140,12 +140,12 @@ public class MapVariableResolverFactory extends BaseVariableResolverFactory {
 
   public Set<String> getKnownVariables() {
     if (nextFactory == null) {
-      if (variables != null) return new HashSet<String>(variables.keySet());
-      return new HashSet<String>(0);
+      if (variables != null) return new HashSet<>(variables.keySet());
+      return new HashSet<>(0);
     }
     else {
-      if (variables != null) return new HashSet<String>(variables.keySet());
-      return new HashSet<String>(0);
+      if (variables != null) return new HashSet<>(variables.keySet());
+      return new HashSet<>(0);
     }
   }
 

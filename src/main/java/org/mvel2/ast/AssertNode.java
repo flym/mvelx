@@ -34,8 +34,6 @@ import static org.mvel2.util.ParseTools.subCompileExpression;
 public class AssertNode extends ASTNode {
   /** 断言的表达式 */
   public ExecutableStatement assertion;
-  //无用语句
-  public ExecutableStatement fail;
 
   public AssertNode(char[] expr, int start, int offset, int fields, ParserContext pCtx) {
     super(pCtx);

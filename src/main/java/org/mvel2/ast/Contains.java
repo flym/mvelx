@@ -45,14 +45,4 @@ public class Contains extends ASTNode {
   public Class getEgressType() {
     return Boolean.class;
   }
-
-  /** 返回first节点,主操作节点 */
-  public ASTNode getFirstStatement() {
-    return stmt;
-  }
-
-  /** 返回second节点,子操作节点 */
-  public ASTNode getSecondStatement() {
-    return stmt2;
-  }
 }

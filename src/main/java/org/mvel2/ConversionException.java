@@ -23,10 +23,10 @@ public class ConversionException extends RuntimeException {
 
 
   public ConversionException(String message) {
-    super(message);    //To change body of overridden methods use File | Settings | File Templates.
+    super(message);
   }
 
   public ConversionException(String message, Throwable cause) {
-    super(message, cause);    //To change body of overridden methods use File | Settings | File Templates.
+    super(message, cause);
   }
 }

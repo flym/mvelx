@@ -153,8 +153,8 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
     synchronized (Runtime.getRuntime()) {
       cw.visit(OPCODES_VERSION, Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER, className = "ASMAccessorImpl_"
-          + valueOf(cw.hashCode()).replaceAll("\\-", "_") + (System.currentTimeMillis() / 10) +
-          ((int) Math.random() * 100),
+              + valueOf(cw.hashCode()).replaceAll("\\-", "_") + (System.currentTimeMillis() / 10) +
+              ((int) Math.random() * 100),
           null, "java/lang/Object", new String[]{NAMESPACE + "compiler/Accessor"});
     }
 
@@ -184,8 +184,8 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
     synchronized (Runtime.getRuntime()) {
       cw.visit(OPCODES_VERSION, Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER, className = "ASMAccessorImpl_"
-          + valueOf(cw.hashCode()).replaceAll("\\-", "_") + (System.currentTimeMillis() / 10) +
-          ((int) Math.random() * 100),
+              + valueOf(cw.hashCode()).replaceAll("\\-", "_") + (System.currentTimeMillis() / 10) +
+              ((int) Math.random() * 100),
           null, "java/lang/Object", new String[]{NAMESPACE + "compiler/Accessor"});
     }
 
@@ -306,100 +306,85 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
 
         if (ctx instanceof Map) {
-          if (MVEL.COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING && hasPropertyHandler(Map.class)) {
-            propHandlerByteCodePut(ex, ctx, Map.class, value);
-          }
-          else {
-            //noinspection unchecked
-            //todo 这里的ex将采用编译运行来处理
+          //noinspection unchecked
+          //todo 这里的ex将采用编译运行来处理
 //            ((Map) ctx).put(eval(ex, ctx, variableFactory), convert(value, returnType = verifier.analyze()));
 
-            writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx));
+          writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx));
 
-            assert debug("ALOAD 4");
-            mv.visitVarInsn(ALOAD, 4);
+          assert debug("ALOAD 4");
+          mv.visitVarInsn(ALOAD, 4);
 
-            if (value != null && returnType != value.getClass()) {
-              dataConversion(returnType);
-              checkcast(returnType);
-            }
-
-            assert debug("INVOKEINTERFACE Map.put");
-            mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "put",
-                "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
-
-            assert debug("POP");
-            mv.visitInsn(POP);
-
-            assert debug("ALOAD 4");
-            mv.visitVarInsn(ALOAD, 4);
+          if (value != null && returnType != value.getClass()) {
+            dataConversion(returnType);
+            checkcast(returnType);
           }
+
+          assert debug("INVOKEINTERFACE Map.put");
+          mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "put",
+              "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+
+          assert debug("POP");
+          mv.visitInsn(POP);
+
+          assert debug("ALOAD 4");
+          mv.visitVarInsn(ALOAD, 4);
         }
         else if (ctx instanceof List) {
-          if (MVEL.COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING && hasPropertyHandler(List.class)) {
-            propHandlerByteCodePut(ex, ctx, List.class, value);
-          }
-          else {
-            //noinspection unchecked
-            //todo 这里的ex将采用编译运行来处理
+          //noinspection unchecked
+          //todo 这里的ex将采用编译运行来处理
 //            ((List) ctx).set(eval(ex, ctx, variableFactory, Integer.class),
 //                convert(value, returnType = verifier.analyze()));
 
-            writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx));
-            unwrapPrimitive(int.class);
+          writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx));
+          unwrapPrimitive(int.class);
 
-            assert debug("ALOAD 4");
-            mv.visitVarInsn(ALOAD, 4);
+          assert debug("ALOAD 4");
+          mv.visitVarInsn(ALOAD, 4);
 
-            if (value != null && !value.getClass().isAssignableFrom(returnType)) {
-              dataConversion(returnType);
-              checkcast(returnType);
-            }
-
-            assert debug("INVOKEINTERFACE List.set");
-            mv.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "set", "(ILjava/lang/Object;)Ljava/lang/Object;");
-
-            assert debug("ALOAD 4");
-            mv.visitVarInsn(ALOAD, 4);
+          if (value != null && !value.getClass().isAssignableFrom(returnType)) {
+            dataConversion(returnType);
+            checkcast(returnType);
           }
+
+          assert debug("INVOKEINTERFACE List.set");
+          mv.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "set", "(ILjava/lang/Object;)Ljava/lang/Object;");
+
+          assert debug("ALOAD 4");
+          mv.visitVarInsn(ALOAD, 4);
         }
-        else if (MVEL.COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING && hasPropertyHandler(ctx.getClass())) {
+        else if (hasPropertyHandler(ctx.getClass())) {
           propHandlerByteCodePut(ex, ctx, ctx.getClass(), value);
         }
         else if (ctx.getClass().isArray()) {
-          if (MVEL.COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING && hasPropertyHandler(Array.class)) {
-            propHandlerByteCodePut(ex, ctx, Array.class, value);
-          }
-          else {
-            Class type = getBaseComponentType(ctx.getClass());
+          Class type = getBaseComponentType(ctx.getClass());
 
-            //todo 这里的ex将采用编译运行来处理
+          //todo 这里的ex将采用编译运行来处理
 //            Object idx = eval(ex, ctx, variableFactory);
-            Object idx = null;
+          Object idx = null;
 
-            writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx), int.class);
-            if (!(idx instanceof Integer)) {
-              dataConversion(Integer.class);
-              idx = DataConversion.convert(idx, Integer.class);
-              unwrapPrimitive(int.class);
-            }
-
-            assert debug("ALOAD 4");
-            mv.visitVarInsn(ALOAD, 4);
-
-            if (type.isPrimitive()) unwrapPrimitive(type);
-            else if (!type.equals(value.getClass())) {
-              dataConversion(type);
-            }
-
-            arrayStore(type);
-
-            //noinspection unchecked
-            Array.set(ctx, (Integer) idx, convert(value, type));
-
-            assert debug("ALOAD 4");
-            mv.visitVarInsn(ALOAD, 4);
+          writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx), int.class);
+          if (!(idx instanceof Integer)) {
+            dataConversion(Integer.class);
+            idx = DataConversion.convert(idx, Integer.class);
+            unwrapPrimitive(int.class);
           }
+
+          assert debug("ALOAD 4");
+          mv.visitVarInsn(ALOAD, 4);
+
+          if (type.isPrimitive()) unwrapPrimitive(type);
+          else if (!type.equals(value.getClass())) {
+            dataConversion(type);
+          }
+
+          arrayStore(type);
+
+          //noinspection unchecked
+          Array.set(ctx, (Integer) idx, convert(value, type));
+
+          assert debug("ALOAD 4");
+          mv.visitVarInsn(ALOAD, 4);
         }
         else {
           throw new PropertyAccessException("cannot bind to collection property: " + new String(expr)
@@ -430,7 +415,7 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
         mv.visitVarInsn(ALOAD, 4);
         mv.visitMethodInsn(INVOKESTATIC, NAMESPACE + "integration/GlobalListenerFactory",
             "notifySetListeners", "(Ljava/lang/Object;Ljava/lang/String;L" + NAMESPACE
-            + "integration/VariableResolverFactory;Ljava/lang/Object;)V");
+                + "integration/VariableResolverFactory;Ljava/lang/Object;)V");
 
         GlobalListenerFactory.notifySetListeners(ctx, tk, variableFactory, value);
       }
@@ -686,9 +671,10 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
   private void visitConstantClass(Class<?> clazz) {
     if (clazz == null) clazz = Object.class;
     if (clazz.isPrimitive()) {
-        mv.visitFieldInsn(GETSTATIC, toNonPrimitiveType(clazz).getName().replace(".", "/"), "TYPE", "Ljava/lang/Class;");
-    } else {
-        mv.visitLdcInsn(org.mvel2.asm.Type.getType(clazz));
+      mv.visitFieldInsn(GETSTATIC, toNonPrimitiveType(clazz).getName().replace(".", "/"), "TYPE", "Ljava/lang/Class;");
+    }
+    else {
+      mv.visitLdcInsn(org.mvel2.asm.Type.getType(clazz));
     }
   }
 
@@ -737,98 +723,49 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
     Object curr = ctx;
 
     try {
-      if (!MVEL.COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING) {
-        while (cursor < end) {
-          switch (nextSubToken()) {
-            case BEAN:
-              curr = getBeanProperty(curr, capture());
-              break;
-            case METH:
-              curr = getMethod(curr, capture());
-              break;
-            case COL:
-              curr = getCollectionProperty(curr, capture());
-              break;
-          }
+      while (cursor < end) {
+        switch (nextSubToken()) {
+          case BEAN:
+            curr = getBeanProperty(curr, capture());
+            break;
+          case METH:
+            curr = getMethod(curr, capture());
+            break;
+          case COL:
+            curr = getCollectionProperty(curr, capture());
+            break;
+        }
 
-          // check to see if a null safety is enabled on this property.
-          if (fields == -1) {
-            if (curr == null) {
-              if (nullSafe) {
-                throw new OptimizationNotSupported();
-              }
-              break;
+        // check to see if a null safety is enabled on this property.
+        if (fields == -1) {
+          if (curr == null) {
+            if (nullSafe) {
+              throw new OptimizationNotSupported();
             }
-            else {
-              fields = 0;
-            }
+            break;
           }
-
-          first = false;
-
-          if (nullSafe && cursor < end) {
-
-            assert debug("DUP");
-            mv.visitInsn(DUP);
-
-            Label j = new Label();
-
-            assert debug("IFNONNULL : jump");
-            mv.visitJumpInsn(IFNONNULL, j);
-
-            assert debug("ARETURN");
-            mv.visitInsn(ARETURN);
-
-            assert debug("LABEL:jump");
-            mv.visitLabel(j);
+          else {
+            fields = 0;
           }
         }
-      }
-      else {
-        while (cursor < end) {
-          switch (nextSubToken()) {
-            case BEAN:
-              curr = getBeanPropertyAO(curr, capture());
-              break;
-            case METH:
-              curr = getMethod(curr, capture());
-              break;
-            case COL:
-              curr = getCollectionPropertyAO(curr, capture());
-              break;
-          }
 
-          // check to see if a null safety is enabled on this property.
-          if (fields == -1) {
-            if (curr == null) {
-              if (nullSafe) {
-                throw new OptimizationNotSupported();
-              }
-              break;
-            }
-            else {
-              fields = 0;
-            }
-          }
+        first = false;
 
-          first = false;
+        if (nullSafe && cursor < end) {
 
-          if (nullSafe && cursor < end) {
+          assert debug("DUP");
+          mv.visitInsn(DUP);
 
-            assert debug("DUP");
-            mv.visitInsn(DUP);
+          Label j = new Label();
 
-            Label j = new Label();
+          assert debug("IFNONNULL : jump");
+          mv.visitJumpInsn(IFNONNULL, j);
 
-            assert debug("IFNONNULL : jump");
-            mv.visitJumpInsn(IFNONNULL, j);
+          assert debug("ARETURN");
+          mv.visitInsn(ARETURN);
 
-            assert debug("ARETURN");
-            mv.visitInsn(ARETURN);
-
-            assert debug("LABEL:jump");
-            mv.visitLabel(j);
-          }
+          assert debug("LABEL:jump");
+          mv.visitLabel(j);
         }
       }
 
@@ -1099,24 +1036,10 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
         Class c = (Class) ctx;
         for (Method m : c.getMethods()) {
           if (property.equals(m.getName())) {
-            if (pCtx!=null&& pCtx.getParserConfiguration()!=null?pCtx.getParserConfiguration().isAllowNakedMethCall():MVEL.COMPILER_OPT_ALLOW_NAKED_METH_CALL) {
-              assert debug("POP");
-              mv.visitInsn(POP);
-              assert debug("INVOKESTATIC " + m.getName());
-              mv.visitMethodInsn(INVOKESTATIC, getInternalName(m.getDeclaringClass()), m.getName(),
-                  getMethodDescriptor(m));
-
-              returnType = m.getReturnType();
-
-              return m.invoke(null, EMPTY_OBJ_ARR);
-            }
-            else {
-              writeFunctionPointerStub(c, m);
-              return m;
-            }
+            writeFunctionPointerStub(c, m);
+            return m;
           }
         }
-
 
         try {
           Class subClass = findClass(variableFactory, c.getName() + "$" + property, pCtx);
@@ -1127,9 +1050,6 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
           // fall through.
         }
 
-      }
-      else if (pCtx!=null&& pCtx.getParserConfiguration()!=null?pCtx.getParserConfiguration().isAllowNakedMethCall():MVEL.COMPILER_OPT_ALLOW_NAKED_METH_CALL) {
-        return getMethod(ctx, property);
       }
 
       if (ctx == null) {
@@ -1142,58 +1062,57 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
     }
   }
 
-private Object optimizeFieldMethodProperty(Object ctx, String property, Class<?> cls, Member member)
-    throws IllegalAccessException
-{
+  private Object optimizeFieldMethodProperty(Object ctx, String property, Class<?> cls, Member member)
+      throws IllegalAccessException {
     Object o = ((Field) member).get(ctx);
 
-      if (((member.getModifiers() & STATIC) != 0)) {
-        // Check if the static field reference is a constant and a primitive.
-        if ((member.getModifiers() & FINAL) != 0 && (o instanceof String || ((Field) member).getType().isPrimitive())) {
-          o = ((Field) member).get(null);
-          assert debug("LDC " + valueOf(o));
-          mv.visitLdcInsn(o);
-          wrapPrimitive(o.getClass());
+    if (((member.getModifiers() & STATIC) != 0)) {
+      // Check if the static field reference is a constant and a primitive.
+      if ((member.getModifiers() & FINAL) != 0 && (o instanceof String || ((Field) member).getType().isPrimitive())) {
+        o = ((Field) member).get(null);
+        assert debug("LDC " + valueOf(o));
+        mv.visitLdcInsn(o);
+        wrapPrimitive(o.getClass());
 
-          if (hasNullPropertyHandler()) {
-            if (o == null) {
-              o = getNullPropertyHandler().getProperty(member.getName(), ctx, variableFactory);
-            }
-
-            writeOutNullHandler(member, 0);
+        if (hasNullPropertyHandler()) {
+          if (o == null) {
+            o = getNullPropertyHandler().getProperty(member.getName(), ctx, variableFactory);
           }
-          return o;
-        }
-        else {
-          assert debug("GETSTATIC " + getDescriptor(member.getDeclaringClass()) + "."
-              + member.getName() + "::" + getDescriptor(((Field) member).getType()));
 
-          mv.visitFieldInsn(GETSTATIC, getInternalName(member.getDeclaringClass()),
-              member.getName(), getDescriptor(returnType = ((Field) member).getType()));
+          writeOutNullHandler(member, 0);
         }
+        return o;
       }
       else {
-        assert debug("CHECKCAST " + getInternalName(cls));
-        mv.visitTypeInsn(CHECKCAST, getInternalName(cls));
+        assert debug("GETSTATIC " + getDescriptor(member.getDeclaringClass()) + "."
+            + member.getName() + "::" + getDescriptor(((Field) member).getType()));
 
-        assert debug("GETFIELD " + property + ":" + getDescriptor(((Field) member).getType()));
-        mv.visitFieldInsn(GETFIELD, getInternalName(cls), property, getDescriptor(returnType = ((Field) member)
-            .getType()));
+        mv.visitFieldInsn(GETSTATIC, getInternalName(member.getDeclaringClass()),
+            member.getName(), getDescriptor(returnType = ((Field) member).getType()));
+      }
+    }
+    else {
+      assert debug("CHECKCAST " + getInternalName(cls));
+      mv.visitTypeInsn(CHECKCAST, getInternalName(cls));
+
+      assert debug("GETFIELD " + property + ":" + getDescriptor(((Field) member).getType()));
+      mv.visitFieldInsn(GETFIELD, getInternalName(cls), property, getDescriptor(returnType = ((Field) member)
+          .getType()));
+    }
+
+    returnType = ((Field) member).getType();
+
+    if (hasNullPropertyHandler()) {
+      if (o == null) {
+        o = getNullPropertyHandler().getProperty(member.getName(), ctx, variableFactory);
       }
 
-      returnType = ((Field) member).getType();
+      writeOutNullHandler(member, 0);
+    }
 
-      if (hasNullPropertyHandler()) {
-        if (o == null) {
-          o = getNullPropertyHandler().getProperty(member.getName(), ctx, variableFactory);
-        }
-
-        writeOutNullHandler(member, 0);
-      }
-
-      currType = toNonPrimitiveType(returnType);
-      return o;
-}
+    currType = toNonPrimitiveType(returnType);
+    return o;
+  }
 
 
   private void writeFunctionPointerStub(Class c, Method m) {
@@ -1782,33 +1701,34 @@ private Object optimizeFieldMethodProperty(Object ctx, String property, Class<?>
       }
     }
 
-    if (es != null && m != null && m.isVarArgs() && (es.length != parameterTypes.length || !(es[es.length-1] instanceof ExecutableAccessor))) {
+    if (es != null && m != null && m.isVarArgs() && (es.length != parameterTypes.length || !(es[es.length - 1] instanceof ExecutableAccessor))) {
       // normalize ExecutableStatement for varargs
       ExecutableStatement[] varArgEs = new ExecutableStatement[parameterTypes.length];
-      int varArgStart = parameterTypes.length-1;
+      int varArgStart = parameterTypes.length - 1;
       for (int i = 0; i < varArgStart; i++) varArgEs[i] = es[i];
 
-      String varargsTypeName = parameterTypes[parameterTypes.length-1].getComponentType().getName();
+      String varargsTypeName = parameterTypes[parameterTypes.length - 1].getComponentType().getName();
       String varArgExpr;
-      if("null".equals(tk)){ //if null is the token no need for wrapping
-            varArgExpr = tk;
-      } else{
-         StringBuilder sb = new StringBuilder("new ").append(varargsTypeName).append("[] {");
-         for (int i = varArgStart; i < subtokens.size(); i++) {
-           sb.append(subtokens.get(i));
-           if (i < subtokens.size()-1) sb.append(",");
-         }
+      if ("null".equals(tk)) { //if null is the token no need for wrapping
+        varArgExpr = tk;
+      }
+      else {
+        StringBuilder sb = new StringBuilder("new ").append(varargsTypeName).append("[] {");
+        for (int i = varArgStart; i < subtokens.size(); i++) {
+          sb.append(subtokens.get(i));
+          if (i < subtokens.size() - 1) sb.append(",");
+        }
         varArgExpr = sb.append("}").toString();
       }
       char[] token = varArgExpr.toCharArray();
-      varArgEs[varArgStart] = ((ExecutableStatement)subCompileExpression(token, pCtx));
+      varArgEs[varArgStart] = ((ExecutableStatement) subCompileExpression(token, pCtx));
       es = varArgEs;
 
-      if (preConvArgs.length == parameterTypes.length-1) {
+      if (preConvArgs.length == parameterTypes.length - 1) {
         // empty vararg
         Object[] preConvArgsForVarArg = new Object[parameterTypes.length];
         for (int i = 0; i < preConvArgs.length; i++) preConvArgsForVarArg[i] = preConvArgs[i];
-        preConvArgsForVarArg[parameterTypes.length-1] = Array.newInstance(parameterTypes[parameterTypes.length-1].getComponentType(), 0);
+        preConvArgsForVarArg[parameterTypes.length - 1] = Array.newInstance(parameterTypes[parameterTypes.length - 1].getComponentType(), 0);
         preConvArgs = preConvArgsForVarArg;
       }
     }
@@ -1909,17 +1829,17 @@ private Object optimizeFieldMethodProperty(Object ctx, String property, Class<?>
           mv.visitTypeInsn(CHECKCAST, getInternalName(cls));
         }
 
-          Class<?> aClass = m.getParameterTypes()[m.getParameterTypes().length - 1];
-          if(m.isVarArgs()){
-              if(es == null || es.length == (m.getParameterTypes().length - 1) ){
-                  ExecutableStatement[] executableStatements = new ExecutableStatement[m.getParameterTypes().length];
-                  if(es != null){
-                      System.arraycopy(es,0,executableStatements,0,es.length);
-                  }
-                  executableStatements[executableStatements.length -1 ]= new ExecutableLiteral(Array.newInstance(aClass,0));
-                  es = executableStatements;
-              }
+        Class<?> aClass = m.getParameterTypes()[m.getParameterTypes().length - 1];
+        if (m.isVarArgs()) {
+          if (es == null || es.length == (m.getParameterTypes().length - 1)) {
+            ExecutableStatement[] executableStatements = new ExecutableStatement[m.getParameterTypes().length];
+            if (es != null) {
+              System.arraycopy(es, 0, executableStatements, 0, es.length);
+            }
+            executableStatements[executableStatements.length - 1] = new ExecutableLiteral(Array.newInstance(aClass, 0));
+            es = executableStatements;
           }
+        }
 
         for (int i = 0; es != null && i < es.length; i++) {
           if (es[i] instanceof ExecutableLiteral) {
@@ -2131,8 +2051,8 @@ private Object optimizeFieldMethodProperty(Object ctx, String property, Class<?>
      */
     ContextClassLoader contextClassLoader = getContextClassLoader();
     return contextClassLoader == null ?
-            classLoader.defineClassX(className, b, 0, b.length) :
-            contextClassLoader.defineClass(className, b);
+        classLoader.defineClassX(className, b, 0, b.length) :
+        contextClassLoader.defineClass(className, b);
   }
 
   private boolean debug(String instruction) {
@@ -2808,14 +2728,14 @@ private Object optimizeFieldMethodProperty(Object ctx, String property, Class<?>
 
   private Class writeLiteralOrSubexpression(Object stmt, Class desiredTarget, Class knownIngressType) {
     if (stmt instanceof ExecutableLiteral) {
-        Object literalValue = ((ExecutableLiteral) stmt).getLiteral();
+      Object literalValue = ((ExecutableLiteral) stmt).getLiteral();
 
       // Handle the case when the literal is null MVEL-312 
-      if(literalValue == null){
+      if (literalValue == null) {
         mv.visitInsn(ACONST_NULL);
         return null;
-      }        
-        
+      }
+
       Class type = literalValue == null ? desiredTarget : literalValue.getClass();
 
       assert debug("*** type:" + type + ";desired:" + desiredTarget);

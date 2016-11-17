@@ -36,7 +36,7 @@ import java.util.Map;
  */
 public class BigDecimalCH implements ConversionHandler {
   private static final Map<Class, Converter> CNV =
-      new HashMap<Class, Converter>();
+      new HashMap<>();
 
 
   public Object convertFrom(Object in) {
@@ -92,7 +92,7 @@ public class BigDecimalCH implements ConversionHandler {
     CNV.put(Double.class,
         new Converter() {
           public BigDecimal convert(Object o) {
-            return new BigDecimal(((Double) o).doubleValue(), MathContext.DECIMAL128);
+            return new BigDecimal((Double) o, MathContext.DECIMAL128);
           }
         }
     );

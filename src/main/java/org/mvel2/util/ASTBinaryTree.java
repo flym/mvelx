@@ -52,7 +52,7 @@ public class ASTBinaryTree {
         Class<?> leftType = left.getReturnType(strongTyping);
         Class<?> rightType = right.getReturnType(strongTyping);
       //root为操作符,根据操作符来进行判断
-        switch (((OperatorNode)root).getOperator()) {
+        switch (root.getOperator()) {
           //boolean型操作
             case CONTAINS:
             case INSTANCEOF:
@@ -112,7 +112,7 @@ public class ASTBinaryTree {
         if (!(node1 instanceof OperatorNode) && !(node2 instanceof OperatorNode)) return 0;
       //两个都是操作节点,则按照操作节点的优先级来处理
         if (node1 instanceof OperatorNode && node2 instanceof OperatorNode) {
-            return PTABLE[((OperatorNode)node1).getOperator()] - PTABLE[((OperatorNode)node2).getOperator()];
+            return PTABLE[node1.getOperator()] - PTABLE[node2.getOperator()];
         }
         //哪个为操作节点,哪个的优先级就低
         return node1 instanceof OperatorNode ? -1 : 1;

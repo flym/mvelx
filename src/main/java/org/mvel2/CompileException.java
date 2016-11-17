@@ -137,14 +137,9 @@ public class CompileException extends RuntimeException {
     int firstCr;
     int lastCr;
 
-    try {
-      cs = copyValueOf(expr, start, end - start).trim();
-    }
-    catch (StringIndexOutOfBoundsException e) {
-      throw e;
-    }
+    cs = copyValueOf(expr, start, end - start).trim();
 
-    int matchStart = -1;
+    int matchStart;
     int matchOffset = 0;
     String match = null;
 
@@ -182,7 +177,7 @@ public class CompileException extends RuntimeException {
 
       int matchIndex = match == null ? 0 : cs.indexOf(match);
 
-      if (firstCr != -1 && firstCr == lastCr) {
+      if (firstCr == lastCr) {
         if (firstCr > matchIndex) {
           cs = cs.substring(0, firstCr);
         }

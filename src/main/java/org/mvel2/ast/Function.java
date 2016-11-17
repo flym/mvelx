@@ -92,7 +92,7 @@ public class Function extends ASTNode implements Safe {
       ctx.declareFunction(this);
     }
 
-    /**
+    /*
      * 显示的加入变量当中,以避免当外面有一个同名的参数时存在参数覆盖的问题
      * To prevent the function parameters from being counted as
      * external inputs, we must add them explicitly here.
@@ -102,7 +102,7 @@ public class Function extends ASTNode implements Safe {
       ctx.addIndexedInput(s);
     }
 
-    /**
+    /*
      * 检测代码块的表达式是否合法,即进行验证式编译
      * Compile the expression so we can determine the input-output delta.
      */
@@ -113,7 +113,7 @@ public class Function extends ASTNode implements Safe {
 
     ctx.setIndexAllocation(true);
 
-    /**
+    /*
      * 这里认为在父上下文中的变量信息均已经存在,因此当前上下文中认为这里都是外部已输入的
      * Add globals as inputs
      */
@@ -209,10 +209,6 @@ public class Function extends ASTNode implements Safe {
 
   public String[] getParameters() {
     return parameters;
-  }
-
-  public boolean hasParameters() {
-    return this.parameters != null && this.parameters.length != 0;
   }
 
   public void checkArgumentCount(int passing) {

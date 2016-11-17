@@ -11,8 +11,6 @@ import static org.mvel2.util.ParseTools.getBestCandidate;
 
 /** 描述一个setter方法的访问器 */
 public class SetterAccessor implements AccessorNode {
-  /** 无用字段,因为set方法都返回void,因此不可能继续往下传递 */
-  @Deprecated
   private AccessorNode nextNode;
 
   /** 当前所对应的方法 */
@@ -75,12 +73,10 @@ public class SetterAccessor implements AccessorNode {
     return method;
   }
 
-  @Deprecated
   public AccessorNode setNextNode(AccessorNode nextNode) {
     return this.nextNode = nextNode;
   }
 
-  @Deprecated
   public AccessorNode getNextNode() {
     return nextNode;
   }

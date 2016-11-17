@@ -26,7 +26,7 @@ import java.util.Map;
 /** 对象数组转字符串数组，即将每个对象string化 */
 public class StringArrayCH implements ConversionHandler {
   private static final Map<Class, Converter> CNV =
-      new HashMap<Class, Converter>();
+      new HashMap<>();
 
 
   public Object convertFrom(Object in) {

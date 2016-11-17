@@ -30,8 +30,8 @@ import java.io.Serializable;
  * */
 public interface AccessorNode extends Accessor, Serializable {
   /** 获取下一个节点 */
-  public AccessorNode getNextNode();
+  AccessorNode getNextNode();
 
   /** 设置下一个节点 */
-  public AccessorNode setNextNode(AccessorNode accessorNode);
+  AccessorNode setNextNode(AccessorNode accessorNode);
 }

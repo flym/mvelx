@@ -42,21 +42,11 @@ import static org.mvel2.util.ParseTools.optimizeTree;
  * MVEL.  The vast majority of MVEL's core functionality can be directly accessed through methods in this class.
  */
 public class MVEL {
-  public static final String NAME = "MVEL (MVFLEX Expression Language)";
-  public static final String VERSION = "2.1";
-  public static final String VERSION_SUB = "0";
-  public static final String CODENAME = "liberty";
   static boolean DEBUG_FILE = getBoolean("mvel2.debug.fileoutput");
   static String ADVANCED_DEBUGGING_FILE = System.getProperty("mvel2.debugging.file") == null ? "mvel_debug.txt" : System.getProperty("mvel2.debugging.file");
   static boolean ADVANCED_DEBUG = getBoolean("mvel2.advanced_debugging");
-  static boolean WEAK_CACHE = getBoolean("mvel2.weak_caching");
-  static boolean NO_JIT = getBoolean("mvel2.disable.jit");
   /** 在抛出有cause异常的执行异常时是否throw相应的的cause异常,而不是直接将当前异常进行包装显示 */
   public static boolean INVOKED_METHOD_EXCEPTIONS_BUBBLE = getBoolean("mvel2.invoked_meth_exceptions_bubble");
-  /** 是否允许伪方法调用，即将 a.bc 代替a.bc()这种处理方式 */
-  public static boolean COMPILER_OPT_ALLOW_NAKED_METH_CALL = getBoolean("mvel2.compiler.allow_naked_meth_calls");
-  /** 编译器是否允许重写相应的属性处理器(重写之后，重写即表示在过程中可以进行控制相应的流程，包括一些nullHandler，methodHandler等) */
-  public static boolean COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING = getBoolean("mvel2.compiler.allow_override_all_prophandling");
   /** 是否支持java样式的class常量调用，即通过A.class这种方式来获取相应的class属性 */
   public static boolean COMPILER_OPT_SUPPORT_JAVA_STYLE_CLASS_LITERALS = getBoolean("mvel2.compiler.support_java_style_class_literals");
   /**
@@ -64,16 +54,6 @@ public class MVEL {
    * 如 import java.lang.String;String 这种处理
    */
   public static boolean COMPILER_OPT_ALLOCATE_TYPE_LITERALS_TO_SHARED_SYMBOL_TABLE = getBoolean("mvel2.compiler.allocate_type_literals_to_shared_symbol_table");
-
-  /** 此字段实际上当前未使用到 */
-  static boolean OPTIMIZER = true;
-
-  /** 以下静态块无实际作用 */
-  static {
-    if (System.getProperty("mvel2.optimizer") != null) {
-      OPTIMIZER = getBoolean("mvel2.optimizer");
-    }
-  }
 
   private MVEL() {
   }

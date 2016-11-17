@@ -31,7 +31,7 @@ import static java.lang.String.valueOf;
 /** 各种类型转double */
 public class DoubleCH implements ConversionHandler {
   private static final Map<Class, Converter> CNV =
-      new HashMap<Class, Converter>();
+      new HashMap<>();
 
   /** 已实现的字符串转double */
   private static Converter stringConverter = new Converter() {
@@ -89,11 +89,7 @@ public class DoubleCH implements ConversionHandler {
 
     //double,自身原样返回
     CNV.put(Double.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return o;
-          }
-        }
+        o -> o
     );
 
     //float转,宽化转换

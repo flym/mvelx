@@ -57,15 +57,6 @@ public class MapVariableResolver implements VariableResolver {
     this.name = name;
   }
 
-  public void setStaticType(Class knownType) {
-    this.knownType = knownType;
-  }
-
-  /** 改变相应的存储map(可能会有用,当前没有被使用) */
-  public void setVariableMap(Map<String, Object> variableMap) {
-    this.variableMap = variableMap;
-  }
-
   public String getName() {
     return name;
   }

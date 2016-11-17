@@ -22,6 +22,7 @@ import org.mvel2.integration.VariableResolverFactory;
 
 /**
  * 用于描述一个特定的调试的代码行标记,同时表示当前节点为调试节点
+ *
  * @author Christopher Brock
  */
 public class LineLabel extends ASTNode {
@@ -42,18 +43,9 @@ public class LineLabel extends ASTNode {
     return sourceFile;
   }
 
-  public void setSourceFile(String sourceFile) {
-    this.sourceFile = sourceFile;
-  }
-
   public int getLineNumber() {
     return lineNumber;
   }
-
-  public void setLineNumber(int lineNumber) {
-    this.lineNumber = lineNumber;
-  }
-
 
   /** 不需要处理数据 */
   public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {

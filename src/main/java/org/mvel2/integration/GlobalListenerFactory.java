@@ -1,6 +1,5 @@
 package org.mvel2.integration;
 
-import java.util.LinkedList;
 import java.util.List;
 
 /** 全局使用的监听器工厂，用于维护全局的set和get监听器 */
@@ -18,18 +17,6 @@ public class GlobalListenerFactory {
     return propertySetListeners != null && !propertySetListeners.isEmpty();
   }
 
-  /** 注册相应的get调用时监听器 */
-  public static boolean registerGetListener(Listener getListener) {
-    if (propertyGetListeners == null) propertyGetListeners = new LinkedList<Listener>();
-    return propertyGetListeners.add(getListener);
-  }
-
-  public static boolean registerSetListener(Listener getListener) {
-    if (propertySetListeners == null) propertySetListeners = new LinkedList<Listener>();
-    return propertySetListeners.add(getListener);
-  }
-
-
   /** 通知相应的get访问调用 */
   public static void notifyGetListeners(Object target, String name, VariableResolverFactory variableFactory) {
     if (propertyGetListeners != null) {
@@ -46,10 +33,5 @@ public class GlobalListenerFactory {
         l.onEvent(target, name, variableFactory, value);
       }
     }
-  }
-
-  public static void disposeAll() {
-    propertyGetListeners = null;
-    propertySetListeners = null;
   }
 }

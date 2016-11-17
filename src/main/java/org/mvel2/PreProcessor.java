@@ -24,8 +24,8 @@ package org.mvel2;
  */
 public interface PreProcessor {
   /** 处理字符数组，进行翻译 */
-  public char[] parse(char[] input);
+  char[] parse(char[] input);
 
   /** 翻译字符串 */
-  public String parse(String input);
+  String parse(String input);
 }

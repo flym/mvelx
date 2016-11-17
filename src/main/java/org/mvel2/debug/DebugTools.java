@@ -44,18 +44,7 @@ import static org.mvel2.Operator.SUB;
  */
 public class DebugTools {
 
-  /** 对一个表达式进行反编译,即返回可看懂的执行情况.这里的反编译即一种更易懂的toString表示 */
-  public static String decompile(Serializable expr) {
-    if (expr instanceof CompiledExpression) return decompile((CompiledExpression) expr);
-    else if (expr instanceof ExecutableAccessor)
-      return "CANNOT DECOMPILE OPTIMIZED STATEMENT (Run with -Dmvel.optimizer=false)";
-    else if (expr instanceof ExecutableLiteral) {
-      return "LITERAL: " + ((ExecutableLiteral) expr).getValue(null, null);
-    }
-    else return "NOT A KNOWN PAYLOAD: " + expr.getClass().getName();
-  }
-
-  /** 对可运行表达式进行反编译,返回可视化toString形式 */
+  /** 对可运行表达式进行反编译,返回可视化tostring形式 */
   public static String decompile(CompiledExpression cExp) {
     return decompile(cExp, false, new DecompileContext());
   }
@@ -70,7 +59,7 @@ public class DebugTools {
     ASTIterator iter = new ASTLinkedList(cExp.getFirstNode());
     ASTNode tk;
 
-    StringBuffer sbuf = new StringBuffer();
+    StringBuilder sbuf = new StringBuilder();
 
     if (!nest) {
       sbuf.append("Expression Decompile\n-------------\n");
@@ -235,9 +224,6 @@ public class DebugTools {
       case Operator.CHOR:
         return "or";
 
-      case Operator.STACKLANG:
-        return "stacklang";
-
     }
 
     return "UNKNOWN_OPERATOR";
@@ -346,40 +332,10 @@ public class DebugTools {
         return "WHILE";
       case Operator.CHOR:
         return "CHAINED_OR";
-      case Operator.STACKLANG:
-        return "STACKLANG";
 
     }
 
 
     return "UNKNOWN_OPERATOR";
   }
-
-  public static Class determineType(String name, CompiledExpression compiledExpression) {
-    ASTIterator iter = new ASTLinkedList(compiledExpression.getFirstNode());
-    ASTNode node;
-    while (iter.hasMoreNodes()) {
-      if (name.equals((node = iter.nextNode()).getName()) && node.isAssignment()) {
-        return node.getEgressType();
-      }
-    }
-
-    return null;
-  }
-
-  public static Map<String, VariableResolver> getAllVariableResolvers(VariableResolverFactory rootFactory) {
-
-    Map<String, VariableResolver> allVariableResolvers = new HashMap<String, VariableResolver>();
-
-    VariableResolverFactory vrf = rootFactory;
-    do {
-      for (String var : vrf.getKnownVariables()) {
-        allVariableResolvers.put(var, vrf.getVariableResolver(var));
-      }
-    }
-    while ((vrf = vrf.getNextFactory()) != null);
-
-    return allVariableResolvers;
-  }
-
 }

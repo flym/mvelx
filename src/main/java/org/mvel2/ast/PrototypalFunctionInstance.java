@@ -20,10 +20,6 @@ public class PrototypalFunctionInstance extends FunctionInstance {
     return function.call(ctx, thisValue, new InvokationContextFactory(factory, resolverFactory), parms);
   }
 
-  public VariableResolverFactory getResolverFactory() {
-    return resolverFactory;
-  }
-
   public String toString() {
     return "function_prototype:" + function.getName();
   }

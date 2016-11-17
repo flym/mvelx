@@ -33,9 +33,6 @@ public class MacroProcessor extends AbstractParser implements PreProcessor {
   /** 已注册的宏信息,其中key为定义时的占位符 */
   private Map<String, Macro> macros;
 
-  public MacroProcessor() {
-  }
-
   /** 基于已有的宏进行相应的处理器构造 */
   public MacroProcessor(Map<String, Macro> macros) {
     this.macros = macros;

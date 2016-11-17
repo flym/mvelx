@@ -159,9 +159,6 @@ public class MethodAccessorNH implements AccessorNode {
     this.parms = parms;
   }
 
-  public MethodAccessorNH() {
-  }
-
   /** 使用定义方法,相应的参数处理单元,以及相应的空值处理器来进行方法访问器构建 */
   public MethodAccessorNH(Method method, ExecutableStatement[] parms, PropertyHandler handler) {
     this.method = method;

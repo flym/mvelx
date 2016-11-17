@@ -79,7 +79,7 @@ public class ClassImportResolverFactory extends BaseVariableResolverFactory {
 
   /** 直接使用类名引用一个类,即动态期引用,在执行过程中才进行引用 */
   public Class addClass(Class clazz) {
-    if (dynImports == null) dynImports = new HashMap<String, Object>();
+    if (dynImports == null) dynImports = new HashMap<>();
     dynImports.put(clazz.getSimpleName(), clazz);
     return clazz;
   }
@@ -104,10 +104,7 @@ public class ClassImportResolverFactory extends BaseVariableResolverFactory {
           addClass(classLoader.loadClass(s + "." + name));
           return true;
         }
-        catch (ClassNotFoundException e) {
-          // do nothing;
-        }
-        catch (NoClassDefFoundError e) {
+        catch (ClassNotFoundException | NoClassDefFoundError e) {
           // do nothing;
         }
       }
@@ -147,7 +144,7 @@ public class ClassImportResolverFactory extends BaseVariableResolverFactory {
 
   /** 添加包引用 */
   public void addPackageImport(String packageName) {
-    if (packageImports == null) packageImports = new HashSet<String>();
+    if (packageImports == null) packageImports = new HashSet<>();
     packageImports.add(packageName);
   }
 

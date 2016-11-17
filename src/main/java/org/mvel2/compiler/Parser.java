@@ -7,8 +7,8 @@ package org.mvel2.compiler;
  */
 public interface Parser {
   /** 当前处理的语句的下标位置 */
-  public int getCursor();
+  int getCursor();
 
   /** 描述当前处理的表达式 */
-  public char[] getExpression();
+  char[] getExpression();
 }

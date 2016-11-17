@@ -49,8 +49,8 @@ import org.mvel2.integration.VariableResolverFactory;
  */
 public interface ProducesBytecode {
   /** 在进行get调用时产生相应的字节码 */
-  public void produceBytecodeGet(MethodVisitor mv, String propertyName, VariableResolverFactory factory);
+  void produceBytecodeGet(MethodVisitor mv, String propertyName, VariableResolverFactory factory);
 
   /** 在进行set调用时产生相应的字节码 */
-  public void produceBytecodePut(MethodVisitor mv, String propertyName, VariableResolverFactory factory);
+  void produceBytecodePut(MethodVisitor mv, String propertyName, VariableResolverFactory factory);
 }

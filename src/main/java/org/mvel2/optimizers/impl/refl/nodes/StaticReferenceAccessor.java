@@ -52,9 +52,6 @@ public class StaticReferenceAccessor implements AccessorNode {
     this.literal = literal;
   }
 
-  public StaticReferenceAccessor() {
-  }
-
   /** 根据相应的静态引用值来构建出相应的访问器 */
   public StaticReferenceAccessor(Object literal) {
     this.literal = literal;

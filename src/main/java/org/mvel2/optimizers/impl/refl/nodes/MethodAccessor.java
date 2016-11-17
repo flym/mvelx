@@ -127,10 +127,6 @@ public class MethodAccessor extends InvokableAccessor {
           return o.invoke(ctx, executeAndCoerce(o.getParameterTypes(), elCtx, vars, o.isVarArgs()));
         }
       }
-      catch (IllegalAccessException e) {
-        throw new RuntimeException("unable to invoke method (expected target: " + method.getDeclaringClass().getName() + "::" + method.getName() + "; " +
-            "actual target: " + ctx.getClass().getName() + "::" + method.getName() + "; coercionNeeded=" + (coercionNeeded ? "yes" : "no") + ")");
-      }
       catch (Exception e2) {
         throw new RuntimeException("unable to invoke method (expected target: " + method.getDeclaringClass().getName() + "::" + method.getName() + "; " +
             "actual target: " + ctx.getClass().getName() + "::" + method.getName() + "; coercionNeeded=" + (coercionNeeded ? "yes" : "no") + ")");
@@ -192,9 +188,6 @@ public class MethodAccessor extends InvokableAccessor {
 
   public void setParms(ExecutableStatement[] parms) {
     this.parms = parms;
-  }
-
-  public MethodAccessor() {
   }
 
   /** 通过方法以及相应的参数执行单元来进行方法访问器构建 */

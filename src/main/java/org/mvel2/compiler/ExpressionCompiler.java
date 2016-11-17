@@ -2,16 +2,16 @@
  * MVEL 2.0
  * Copyright (C) 2007 The Codehaus
  * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -121,7 +121,7 @@ public class ExpressionCompiler extends AbstractParser {
       fields |= COMPILE_IMMEDIATE;
 
       while ((tk = nextToken()) != null) {
-        /**
+        /*
          * 调试节点？继续处理,同时加入到处理链中
          * If this is a debug symbol, just add it and continue.
          */
@@ -130,9 +130,7 @@ public class ExpressionCompiler extends AbstractParser {
           continue;
         }
 
-        /**
-         * Record the type of the current node..
-         */
+        //Record the type of the current node..
         returnType = tk.getEgressType();
 
         //单独处理子运行程序
@@ -155,7 +153,7 @@ public class ExpressionCompiler extends AbstractParser {
           returnType = rt;
         }
 
-        /**
+        /*
          * 这下面的动作在于进行编译期优化，以减少运行期的信息处理
          * 即当前节点是一个常量节点(可能是数字),如果下一个常量类似于 1 + 2 这种,则可以优化
          * This kludge of code is to handle compileShared-time literal reduction.  We need to avoid
@@ -168,7 +166,7 @@ public class ExpressionCompiler extends AbstractParser {
           if ((tkOp = nextTokenSkipSymbols()) != null && tkOp.isOperator()
               && !tkOp.isOperator(Operator.TERNARY) && !tkOp.isOperator(Operator.TERNARY_ELSE)) {
 
-            /**
+            /*
              * 如果操作符之后的节点是常量节点 则表示可以编译期优化
              * If the next token is ALSO a literal, then we have a candidate for a compileShared-time literal
              * reduction.
@@ -180,7 +178,7 @@ public class ExpressionCompiler extends AbstractParser {
               //先将其推入栈中,以方便计算处理,采用后缀表示法,以方便进行栈式判断和处理
               stk.push(tk.getLiteralValue(), tkLA.getLiteralValue(), op = tkOp.getOperator());
 
-              /**
+              /*
                * 如果是算术运算,则表示是基于的数学处理,则需要根据当前栈以及节点的进一步信息进行处理
                * Reduce the token now.
                */
@@ -197,9 +195,7 @@ public class ExpressionCompiler extends AbstractParser {
               //todo 这里的firstLA不明白是什么意思...
               firstLA = true;
 
-              /**
-               * Now we need to check to see if this is a continuing reduction.
-               */
+              //Now we need to check to see if this is a continuing reduction.
               //这里接下来的数据仍是操作符，因此如果不是操作符，已经在上面进行了相应的continue操作
               while ((tkOp2 = nextTokenSkipSymbols()) != null) {
                 //如果是bool操作节点，因此优先级很低，因此添加到表达式链中
@@ -222,7 +218,7 @@ public class ExpressionCompiler extends AbstractParser {
                   }
                   //不是常量，因此需要将上次的数据重新加入到执行链当中,这里的stk 作为一个数据处理链来使用
                   else {
-                    /**
+                    /*
                      * A reducable line of literals has ended.  We must now terminate here and
                      * leave the rest to be determined at runtime.
                      */
@@ -240,14 +236,14 @@ public class ExpressionCompiler extends AbstractParser {
                 }
                 else {
                   if (firstLA) {
-                    /**
+                    /*
                      * There are more tokens, but we can't reduce anymore.  So
                      * we create a reduced token for what we've got.
                      */
                     astBuild.addTokenNode(new LiteralNode(getStackValueResult(), pCtx));
                   }
                   else {
-                    /**
+                    /*
                      * We have reduced additional tokens, but we can't reduce
                      * anymore.
                      */
@@ -260,7 +256,7 @@ public class ExpressionCompiler extends AbstractParser {
                 }
               }
 
-              /**
+              /*
                * If there are no more tokens left to parse, we check to see if
                * we've been doing any reducing, and if so we create the token
                * now.
@@ -318,7 +314,8 @@ public class ExpressionCompiler extends AbstractParser {
       else {
         try {
           returnType = CompilerTools.getReturnType(astBuild, pCtx.isStrongTyping());
-        } catch (RuntimeException e) {
+        }
+        catch (RuntimeException e) {
           throw new CompileException(e.getMessage(), expr, st, e);
         }
         return null;
@@ -352,7 +349,7 @@ public class ExpressionCompiler extends AbstractParser {
       case -1:
         //以下按照-2的执行执行逻辑，即表示,当前碰到非常量值，并且相应的临时数据被放入了split栈中，因此这里将其提取出来
         //并且按照中缀的方式，即
-        /**
+        /*
          * The reduction failed because we encountered a non-literal,
          * so we must now back out and cleanup.
          */
@@ -369,7 +366,7 @@ public class ExpressionCompiler extends AbstractParser {
       //这里的-1,不知道本意是多少，实际上即使是 -2,也是不正确的
       //如编译 1 + 2 * 3 > 10 and false，在实际中stack的2次pop也会报NPE，因此以下的处理并不了解是什么意思
       case -2:
-        /**
+        /*
          * Back out completely, pull everything back off the stack and add the instructions
          * to the output payload as they are.
          */
@@ -399,7 +396,7 @@ public class ExpressionCompiler extends AbstractParser {
     }
     //将常量节点进行调整，直接转换为常量节点，这样更简化一些判定处理
     else if (tk.isLiteral()) {
-      /**
+      /*
        * 如果当前节点是常量节点(可能为ASTNode，则强制转换为LiteralNode节点，以避免再操作astNode)
        * Convert literal values from the default ASTNode to the more-efficient LiteralNode.
        */
@@ -442,7 +439,7 @@ public class ExpressionCompiler extends AbstractParser {
 
           //分析结果不是方法调用，即表示不能分析出此结果，因此直接报错
           if (!propVerifier.isMethodCall() && !returnType.isEnum() && !pCtx.isOptimizerNotified() &&
-                  pCtx.isStrongTyping() && !pCtx.isVariableVisible(tk.getAbsoluteName()) && !tk.isFQCN()) {
+              pCtx.isStrongTyping() && !pCtx.isVariableVisible(tk.getAbsoluteName()) && !tk.isFQCN()) {
             throw new CompileException("no such identifier: " + tk.getAbsoluteName(), expr, tk.getStart());
           }
         }
@@ -455,7 +452,7 @@ public class ExpressionCompiler extends AbstractParser {
           //    pCtx.makeVisible(a.getAssignmentVar());
 
           PropertyVerifier propVerifier = new PropertyVerifier(a.getAssignmentVar(), pCtx);
-          tk.setEgressType(returnType = propVerifier.analyze( ));
+          tk.setEgressType(returnType = propVerifier.analyze());
 
           //此节点不是新建节点，则表示是之前已经建的节点，并且是由外部解析的，这里加入到解析上下文中，表示有此变量信息
           if (!a.isNewDeclaration() && propVerifier.isResolvedExternally()) {
@@ -467,7 +464,7 @@ public class ExpressionCompiler extends AbstractParser {
 
           //如果是严格类型调用，这里尝试对类型进行判定
           if (pCtx.isStrictTypeEnforcement()) {
-            /**
+            /*
              * If we're using strict type enforcement, we need to see if this coercion can be done now,
              * or fail epicly.
              */
@@ -475,9 +472,7 @@ public class ExpressionCompiler extends AbstractParser {
             if (!returnType.isAssignableFrom(c.getKnownEgressType()) && c.isLiteralOnly()) {
               //如果能进行转换，则直接更换为一个正确类型的常量节点
               if (canConvert(c.getKnownEgressType(), returnType)) {
-                /**
-                 * We convert the literal to the proper type.
-                 */
+                //We convert the literal to the proper type.
                 try {
                   a.setValueStatement(new ExecutableLiteral(convert(c.getValue(null, null), returnType)));
                   return tk;
@@ -489,7 +484,7 @@ public class ExpressionCompiler extends AbstractParser {
               //处理基本类型之间的转换
               else if (returnType.isPrimitive()
                   && unboxPrimitive(c.getKnownEgressType()).equals(returnType)) {
-                /**
+                /*
                  * We ignore boxed primitive cases, since MVEL does not recognize primitives.
                  */
                 return tk;
@@ -528,38 +523,12 @@ public class ExpressionCompiler extends AbstractParser {
     return tk;
   }
 
-  public ExpressionCompiler(String expression) {
-    setExpression(expression);
-  }
-
-  public ExpressionCompiler(String expression, boolean verifying) {
-    setExpression(expression);
-    this.verifying = verifying;
-  }
-
   public ExpressionCompiler(char[] expression) {
     setExpression(expression);
   }
 
   public ExpressionCompiler(String expression, ParserContext ctx) {
     setExpression(expression);
-    this.pCtx = ctx;
-  }
-
-  public ExpressionCompiler(char[] expression, int start, int offset) {
-    this.expr = expression;
-    this.start = start;
-    this.end = start + offset;
-    this.end = trimLeft(this.end);
-    this.length = this.end - start;
-  }
-
-  public ExpressionCompiler(String expression, int start, int offset, ParserContext ctx) {
-    this.expr = expression.toCharArray();
-    this.start = start;
-    this.end = start + offset;
-    this.end = trimLeft(this.end);
-    this.length = this.end - start;
     this.pCtx = ctx;
   }
 
@@ -577,18 +546,6 @@ public class ExpressionCompiler extends AbstractParser {
     this.pCtx = ctx;
   }
 
-  public boolean isVerifying() {
-    return verifying;
-  }
-
-  public void setVerifying(boolean verifying) {
-    this.verifying = verifying;
-  }
-
-  public boolean isVerifyOnly() {
-    return verifyOnly;
-  }
-
   public void setVerifyOnly(boolean verifyOnly) {
     this.verifyOnly = verifyOnly;
   }
@@ -599,10 +556,6 @@ public class ExpressionCompiler extends AbstractParser {
 
   public void setReturnType(Class returnType) {
     this.returnType = returnType;
-  }
-
-  public ParserContext getParserContextState() {
-    return pCtx;
   }
 
   /** 当前表达式是否仅是常量 */

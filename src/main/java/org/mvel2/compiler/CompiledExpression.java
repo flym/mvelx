@@ -149,18 +149,6 @@ public class CompiledExpression implements Serializable, ExecutableStatement {
     optimized = true;
   }
 
-  public boolean isOptimized() {
-    return optimized;
-  }
-
-  public Class<? extends AccessorOptimizer> getAccessorOptimizer() {
-    return accessorOptimizer;
-  }
-
-  public String getSourceName() {
-    return sourceName;
-  }
-
   /** 当前表达式不是整数优化的 */
   public boolean intOptimized() {
     return false;

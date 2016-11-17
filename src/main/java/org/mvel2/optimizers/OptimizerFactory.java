@@ -42,16 +42,14 @@ public class OptimizerFactory {
 
   /** 对当前线程优化器的持有引用，以方便获取和处理 */
   private static ThreadLocal<Class<? extends AccessorOptimizer>> threadOptimizer
-      = new ThreadLocal<Class<? extends AccessorOptimizer>>();
+      = new ThreadLocal<>();
 
   static {
     accessorCompilers.put(SAFE_REFLECTIVE, new ReflectiveAccessorOptimizer());
     accessorCompilers.put(DYNAMIC, new DynamicOptimizer());
-    /**
-     * 因为asm已经内置到mvel中，因此这里的启动一定会成功。这里即启用asm优化器
-     * 并且dynamic优化器也依赖于ASM，从整个代码层面来看，以下的代码一定会成功
-     * By default, activate the JIT if ASM is present in the classpath
-     */
+//     因为as已经内置到mvel中，因此这里的启动一定会成功。这里即启用asm优化器
+//     并且dynamic优化器也依赖于ASM，从整个代码层面来看，以下的代码一定会成功
+//     By default, activate the JIT if ASM is present in the classpath
     try {
       if (OptimizerFactory.class.getClassLoader() != null) {
         OptimizerFactory.class.getClassLoader().loadClass("org.mvel2.asm.ClassWriter");
@@ -139,9 +137,5 @@ public class OptimizerFactory {
   public static void clearThreadAccessorOptimizer() {
     threadOptimizer.set(null);
     threadOptimizer.remove();
-  }
-
-  public static boolean isThreadAccessorOptimizerInitialized() {
-    return threadOptimizer.get() != null;
   }
 }

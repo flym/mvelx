@@ -50,9 +50,6 @@ public class ParserConfiguration implements Serializable {
   /** 用于存储一些实际上不能成功使用的import列表，即在动态引入中实际上引入失效的类,上限为1000 */
   private transient Set<String> nonValidImports;
 
-  /** 是否允许伪方法调用 使用Mvel中的系统变量配置 */
-  private boolean allowNakedMethCall = MVEL.COMPILER_OPT_ALLOW_NAKED_METH_CALL;
-
   /**
    * 即是否在编译的时候就允许二次优化,其值默认为true，即此开关是默认开启的
    * 此值会影响到Mvel.compileExpression中的行为，即开启二次优化
@@ -300,17 +297,10 @@ public class ParserConfiguration implements Serializable {
     if (imports != null) this.imports.putAll(imports);
   }
 
-  /** 未使用到,后面会被删除掉 */
-  @Deprecated
-  public void setImports(HashMap<String, Object> imports) {
-    // TODO: this method is here for backward compatibility. Could it be removed/deprecated?
-    setAllImports(imports);
-  }
-
   /** 将不能引用的信息添加到nonValid集合中,因为有限制，因此去掉超过限制的 */
   private void cacheNegativeHitForDynamicImport(String negativeHit) {
     if (nonValidImports == null) {
-      nonValidImports = new LinkedHashSet<String>();
+      nonValidImports = new LinkedHashSet<>();
     }
     else if (nonValidImports.size() > 1000) {
       Iterator<String> i = nonValidImports.iterator();
@@ -324,14 +314,6 @@ public class ParserConfiguration implements Serializable {
   public void flushCaches() {
     if (nonValidImports != null)
       nonValidImports.clear();
-  }
-
-  public boolean isAllowNakedMethCall() {
-    return allowNakedMethCall;
-  }
-
-  public void setAllowNakedMethCall(boolean allowNakedMethCall) {
-    this.allowNakedMethCall = allowNakedMethCall;
   }
 
   public boolean isAllowBootstrapBypass() {

@@ -47,8 +47,6 @@ public class DynamicSetAccessor implements DynamicAccessor {
   private final Accessor _safeAccessor;
   /** 当前使用的访问器(可能为优化版本) */
   private Accessor _accessor;
-  /** 描述(没什么用) */
-  private String description;
 
   public DynamicSetAccessor(ParserContext context, char[] property, int start, int offset, Accessor _accessor) {
     assert _accessor != null;
@@ -107,14 +105,6 @@ public class DynamicSetAccessor implements DynamicAccessor {
     opt = false;
     runcount = 0;
     stamp = currentTimeMillis();
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
   }
 
   /** 相应的声明类型即安全访问器的声明类型 */

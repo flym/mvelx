@@ -29,28 +29,28 @@ public interface AccessorOptimizer {
    * 注:虽然在实现层面优化器被设计为不是单态的，每次在使用时均会重新newInstance来使用，但init在使用时会被小心的处理
    * 保证只会被初始化一次，也可以理解为此init是专门为静态的初始化准备的
    */
-  public void init();
+  void init();
 
   /** 在相应的解析上下文中，对指定属性，在相应的当前对象以及相应的变量处理中读取相应的属性值信息,创建出相应的优化访问器,并进行访问 */
-  public Accessor optimizeAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx, Object thisRef,
-                                   VariableResolverFactory factory, boolean rootThisRef, Class ingressType);
+  Accessor optimizeAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx, Object thisRef,
+                            VariableResolverFactory factory, boolean rootThisRef, Class ingressType);
 
   /** 创建出相应的设置类优化访问器,对指定的属性 */
-  public Accessor optimizeSetAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx, Object thisRef,
-                                      VariableResolverFactory factory, boolean rootThisRef, Object value, Class ingressType);
+  Accessor optimizeSetAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx, Object thisRef,
+                               VariableResolverFactory factory, boolean rootThisRef, Object value, Class ingressType);
 
   /** 创建一个用于集合访问的优化器,此处的集合为内联集合,即直接{1,2,3}这种直接创建方式 */
-  public Accessor optimizeCollection(ParserContext pCtx, Object collectionGraph, Class type, char[] property, int start, int offset, Object ctx, Object thisRef, VariableResolverFactory factory);
+  Accessor optimizeCollection(ParserContext pCtx, Object collectionGraph, Class type, char[] property, int start, int offset, Object ctx, Object thisRef, VariableResolverFactory factory);
 
   /** 创建一个用于对象创建的访问器 */
-  public Accessor optimizeObjectCreation(ParserContext pCtx, char[] property, int start, int offset, Object ctx, Object thisRef, VariableResolverFactory factory);
+  Accessor optimizeObjectCreation(ParserContext pCtx, char[] property, int start, int offset, Object ctx, Object thisRef, VariableResolverFactory factory);
 
   /** 获取当前创建的优化访问器处理的结果值 */
-  public Object getResultOptPass();
+  Object getResultOptPass();
 
   /** 返回结果的声明类型 */
-  public Class getEgressType();
+  Class getEgressType();
 
   /** 是否是常量优化 */
-  public boolean isLiteralOnly();
+  boolean isLiteralOnly();
 }

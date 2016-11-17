@@ -24,8 +24,8 @@ package org.mvel2;
  */
 public interface Unit extends ConversionHandler {
   /** 传出数据 */
-  public double getValue();
+  double getValue();
 
   /** 传入数据 */
-  public void setValue(double value);
+  void setValue(double value);
 }

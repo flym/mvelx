@@ -24,7 +24,7 @@ package org.mvel2;
 public interface Operator {
 
   /** 表示不作任何操作 */
-  public static final int NOOP = -1;
+  int NOOP = -1;
 
   /**
    * 存储各个操作的优先级，值越大，表示这个操作优先级更高,以用于在计算时判断相应的优先级操作，实现优先处理
@@ -33,7 +33,7 @@ public interface Operator {
    * correspond to the actual operator itself. So ADD is PTABLE[0],
    * SUB is PTABLE[1] and so on.
    */
-  public static final int[] PTABLE = {
+  int[] PTABLE = {
       10,   // ADD
       10,   // SUB
       11,   // MULT
@@ -79,162 +79,137 @@ public interface Operator {
   //---------------------------- 小于20的操作符表示是数学操作 ------------------------------//
 
   /** + */
-  public static final int ADD = 0;
+  int ADD = 0;
   /** - */
-  public static final int SUB = 1;
+  int SUB = 1;
   /** * */
-  public static final int MULT = 2;
+  int MULT = 2;
   /** / */
-  public static final int DIV = 3;
+  int DIV = 3;
   /** % 取模运算 */
-  public static final int MOD = 4;
+  int MOD = 4;
   /** 乘方 */
-  public static final int POWER = 5;
+  int POWER = 5;
 
   /** & 二进制操作 */
-  public static final int BW_AND = 6;
+  int BW_AND = 6;
   /** | 二进制操作 */
-  public static final int BW_OR = 7;
+  int BW_OR = 7;
   /** ^ 二进制操作 */
-  public static final int BW_XOR = 8;
+  int BW_XOR = 8;
   /** >> */
-  public static final int BW_SHIFT_RIGHT = 9;
+  int BW_SHIFT_RIGHT = 9;
   /** << */
-  public static final int BW_SHIFT_LEFT = 10;
+  int BW_SHIFT_LEFT = 10;
   /** >>> */
-  public static final int BW_USHIFT_RIGHT = 11;
+  int BW_USHIFT_RIGHT = 11;
   /** <<< */
-  public static final int BW_USHIFT_LEFT = 12;
+  int BW_USHIFT_LEFT = 12;
   /** ! 二进制操作 */
-  public static final int BW_NOT = 13;
+  int BW_NOT = 13;
 
   /** < */
-  public static final int LTHAN = 14;
+  int LTHAN = 14;
   /** > */
-  public static final int GTHAN = 15;
+  int GTHAN = 15;
   /** <= */
-  public static final int LETHAN = 16;
+  int LETHAN = 16;
   /** >= */
-  public static final int GETHAN = 17;
+  int GETHAN = 17;
 
   /** == */
-  public static final int EQUAL = 18;
+  int EQUAL = 18;
   /** != */
-  public static final int NEQUAL = 19;
+  int NEQUAL = 19;
 
   /** # 字符串拼接操作 */
-  public static final int STR_APPEND = 20;
+  int STR_APPEND = 20;
   /** && */
-  public static final int AND = 21;
+  int AND = 21;
   /** || */
-  public static final int OR = 22;
+  int OR = 22;
   /** 交换操作数操作符 or */
-  public static final int CHOR = 23;
+  int CHOR = 23;
   /** ~= */
-  public static final int REGEX = 24;
+  int REGEX = 24;
   /** instanceof */
-  public static final int INSTANCEOF = 25;
+  int INSTANCEOF = 25;
   /** contains 包含 */
-  public static final int CONTAINS = 26;
+  int CONTAINS = 26;
 
   /** ? */
-  public static final int TERNARY = 29;
+  int TERNARY = 29;
   /** ?号后面的 :操作符 */
-  public static final int TERNARY_ELSE = 30;
+  int TERNARY_ELSE = 30;
   /** = */
-  public static final int ASSIGN = 31;
+  int ASSIGN = 31;
   /** a++ */
-  public static final int INC_ASSIGN = 32;
+  int INC_ASSIGN = 32;
   /** a-- */
-  public static final int DEC_ASSIGN = 33;
+  int DEC_ASSIGN = 33;
   /** new对象 */
-  public static final int NEW = 34;
+  int NEW = 34;
   /** in 操作,即映射 */
-  public static final int PROJECTION = 35;
+  int PROJECTION = 35;
   /** convertable_to 表示是否能转换到目标类型 */
-  public static final int CONVERTABLE_TO = 36;
+  int CONVERTABLE_TO = 36;
   /** 表示一个类似于 ;的操作，表示当前节点执行结束 */
-  public static final int END_OF_STMT = 37;
+  int END_OF_STMT = 37;
 
   /** foreach */
-  public static final int FOREACH = 38;
+  int FOREACH = 38;
   /** if */
-  public static final int IF = 39;
+  int IF = 39;
   /** else */
-  public static final int ELSE = 40;
+  int ELSE = 40;
   /** while */
-  public static final int WHILE = 41;
+  int WHILE = 41;
   /** until */
-  public static final int UNTIL = 42;
+  int UNTIL = 42;
   /** for */
-  public static final int FOR = 43;
+  int FOR = 43;
   /** switch */
-  public static final int SWITCH = 44;
+  int SWITCH = 44;
   /** do */
-  public static final int DO = 45;
-  public static final int WITH = 46;
+  int DO = 45;
+  int WITH = 46;
   /** isdef 是否有定义此变量 */
-  public static final int ISDEF = 47;
-
-  /** 原型指令声明 */
-  public static final int PROTO = 48;
+  int ISDEF = 47;
 
   /** ++ a */
-  public static final int INC = 50;
+  int INC = 50;
   /** -- a */
-  public static final int DEC = 51;
+  int DEC = 51;
   /** += */
-  public static final int ASSIGN_ADD = 52;
+  int ASSIGN_ADD = 52;
   /** -= */
-  public static final int ASSIGN_SUB = 53;
+  int ASSIGN_SUB = 53;
   /** += 字符串拼接 */
-  public static final int ASSIGN_STR_APPEND = 54;
+  int ASSIGN_STR_APPEND = 54;
   /** /= */
-  public static final int ASSIGN_DIV = 55;
+  int ASSIGN_DIV = 55;
   /** %= */
-  public static final int ASSIGN_MOD = 56;
+  int ASSIGN_MOD = 56;
 
-  public static final int ASSIGN_OR = 57;
-  public static final int ASSIGN_AND = 58;
-  public static final int ASSIGN_XOR = 59;
-  public static final int ASSIGN_LSHIFT = 60;
-  public static final int ASSIGN_RSHIFT = 61;
-  public static final int ASSIGN_RUSHIFT = 62;
+  int ASSIGN_OR = 57;
+  int ASSIGN_AND = 58;
+  int ASSIGN_XOR = 59;
+  int ASSIGN_LSHIFT = 60;
+  int ASSIGN_RSHIFT = 61;
+  int ASSIGN_RUSHIFT = 62;
 
   /** import_static 静态引入 */
-  public static final int IMPORT_STATIC = 95;
+  int IMPORT_STATIC = 95;
   /** import 直接引入 */
-  public static final int IMPORT = 96;
+  int IMPORT = 96;
   /** assert */
-  public static final int ASSERT = 97;
+  int ASSERT = 97;
   /** var 声明 */
-  public static final int UNTYPED_VAR = 98;
+  int UNTYPED_VAR = 98;
   /** return 语句 */
-  public static final int RETURN = 99;
+  int RETURN = 99;
 
   /** function 声明 */
-  public static final int FUNCTION = 100;
-  /** stacklang指令声明 */
-  public static final int STACKLANG = 101;
-
-  //---------------------------- stacklang指令集 start ------------------------------//
-
-  public static final int PUSH = 102;
-  public static final int POP = 103;
-  public static final int LOAD = 104;
-  public static final int LDTYPE = 105;
-  public static final int INVOKE = 106;
-  public static final int GETFIELD = 107;
-  public static final int STOREFIELD = 108;
-  public static final int STORE = 109;
-  public static final int DUP = 110;
-  public static final int LABEL = 111;
-  public static final int JUMP = 112;
-  public static final int JUMPIF = 113;
-  public static final int REDUCE = 114;
-  public static final int SWAP = 115;
-  public static final int XSWAP = 116;
-
-  //---------------------------- stacklang指令集 end ------------------------------//
+  int FUNCTION = 100;
 
 }

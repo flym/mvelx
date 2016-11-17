@@ -35,7 +35,7 @@ import java.util.Map;
  */
 public class BigIntegerCH implements ConversionHandler {
   private static final Map<Class, Converter> CNV =
-      new HashMap<Class, Converter>();
+      new HashMap<>();
 
 
   public Object convertFrom(Object in) {

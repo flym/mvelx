@@ -30,10 +30,10 @@ import static java.lang.String.valueOf;
 /**
  * 各种类型转换字符
  * 由于字符串和字符之间容易冲突，因此支持字符串转字符，但前提是此字符串的长度必须为1
- * */
+ */
 public class CharCH implements ConversionHandler {
   private static final Map<Class, Converter> CNV =
-      new HashMap<Class, Converter>();
+      new HashMap<>();
 
   /** 提供的字符串转字符的实现 */
   private static final Converter stringConverter =
@@ -64,40 +64,25 @@ public class CharCH implements ConversionHandler {
 
     //对象,使用其toString形式再转
     CNV.put(Object.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return stringConverter.convert(valueOf(o));
-          }
-        }
+        o -> stringConverter.convert(valueOf(o))
     );
 
     //字符,自身转换
     CNV.put(Character.class,
-        new Converter() {
-          public Object convert(Object o) {
-            //noinspection UnnecessaryBoxing
-            return new Character(((Character) o));
-          }
+        o -> {
+          //noinspection UnnecessaryBoxing
+          return o;
         }
     );
 
     //bigDecimal,窄化为int再转
     CNV.put(BigDecimal.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return (char) ((BigDecimal) o).intValue();
-          }
-        }
+        o -> (char) ((BigDecimal) o).intValue()
     );
 
     //integer,窄化转换
     CNV.put(Integer.class,
-        new Converter() {
-
-          public Object convert(Object o) {
-            return (char) ((Integer) o).intValue();
-          }
-        }
+        o -> (char) ((Integer) o).intValue()
     );
   }
 }

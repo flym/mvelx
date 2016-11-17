@@ -37,19 +37,7 @@ public class DebuggerContext {
   private int debuggerState = 0;
 
   public DebuggerContext() {
-    breakpoints = new HashMap<String, Set<Integer>>();
-  }
-
-  public Map<String, Set<Integer>> getBreakpoints() {
-    return breakpoints;
-  }
-
-  public void setBreakpoints(Map<String, Set<Integer>> breakpoints) {
-    this.breakpoints = breakpoints;
-  }
-
-  public Debugger getDebugger() {
-    return debugger;
+    breakpoints = new HashMap<>();
   }
 
   /** 设置相应的调试器 */
@@ -57,19 +45,11 @@ public class DebuggerContext {
     this.debugger = debugger;
   }
 
-  public int getDebuggerState() {
-    return debuggerState;
-  }
-
-  public void setDebuggerState(int debuggerState) {
-    this.debuggerState = debuggerState;
-  }
-
   // utility methods
 
   /** 对指定的源文件的某一行进行注册,以表示在该行进行调试 */
   public void registerBreakpoint(String sourceFile, int lineNumber) {
-    if (!breakpoints.containsKey(sourceFile)) breakpoints.put(sourceFile, new HashSet<Integer>());
+    if (!breakpoints.containsKey(sourceFile)) breakpoints.put(sourceFile, new HashSet<>());
     breakpoints.get(sourceFile).add(lineNumber);
   }
 
@@ -93,14 +73,6 @@ public class DebuggerContext {
   public boolean hasBreakpoint(LineLabel label) {
     return breakpoints.containsKey(label.getSourceFile()) && breakpoints.get(label.getSourceFile()).
         contains(label.getLineNumber());
-  }
-
-  public boolean hasBreakpoint(String sourceFile, int lineNumber) {
-    return breakpoints.containsKey(sourceFile) && breakpoints.get(sourceFile).contains(lineNumber);
-  }
-
-  public boolean hasDebugger() {
-    return debugger != null;
   }
 
   /**

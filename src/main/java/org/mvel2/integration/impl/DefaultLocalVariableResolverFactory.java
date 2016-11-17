@@ -30,32 +30,15 @@ import java.util.Map;
  * 此类实现LocalVariable，意思即处理的变量为一个在指定区间内工作的,是有作用域限制的
  */
 public class DefaultLocalVariableResolverFactory extends MapVariableResolverFactory implements LocalVariableResolverFactory {
-  public DefaultLocalVariableResolverFactory() {
-    super(new HashMap<String, Object>());
-  }
-
-  public DefaultLocalVariableResolverFactory(Map<String, Object> variables) {
-    super(variables);
-  }
-
-  public DefaultLocalVariableResolverFactory(Map<String, Object> variables, VariableResolverFactory nextFactory) {
-    super(variables, nextFactory);
-  }
-
-  public DefaultLocalVariableResolverFactory(Map<String, Object> variables, boolean cachingSafe) {
-    super(variables);
-  }
-
   public DefaultLocalVariableResolverFactory(VariableResolverFactory nextFactory) {
-    super(new HashMap<String, Object>(), nextFactory);
+    super(new HashMap<>(), nextFactory);
   }
 
   public DefaultLocalVariableResolverFactory(VariableResolverFactory nextFactory, String[] indexedVariables) {
-    super(new HashMap<String, Object>(), nextFactory);
+    super(new HashMap<>(), nextFactory);
     this.indexedVariableNames = indexedVariables;
     this.indexedVariableResolvers = new VariableResolver[indexedVariables.length];
   }
-
 
   /** 实现基于下标访问变量解析器的语义 */
   public VariableResolver getIndexedVariableResolver(int index) {
@@ -132,11 +115,6 @@ public class DefaultLocalVariableResolverFactory extends MapVariableResolverFact
 
   /** 不要终止委托类标记,即当前内部的提前返回,并不需要外层同样进行处理 */
   private boolean noTilt = false;
-
-  public VariableResolverFactory setNoTilt(boolean noTilt) {
-    this.noTilt = noTilt;
-    return this;
-  }
 
   @Override
   public void setTiltFlag(boolean tiltFlag) {

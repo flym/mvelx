@@ -58,10 +58,6 @@ public class SimpleSTValueResolver implements VariableResolver {
     return type;
   }
 
-  public void setStaticType(Class type) {
-    this.type = type;
-  }
-
   /** 根据修改情况返回相应的标记位 */
   public int getFlags() {
     return updated ? -1 : 0;

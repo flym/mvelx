@@ -132,16 +132,6 @@ public class DynamicGetAccessor implements DynamicAccessor {
     stamp = currentTimeMillis();
   }
 
-  /** 上次统计时间 */
-  public long getStamp() {
-    return stamp;
-  }
-
-  /** 运行计数 */
-  public int getRuncount() {
-    return runcount;
-  }
-
   /** 声明类型为安全访问顺的声明类型 */
   public Class getKnownEgressType() {
     return _safeAccessor.getKnownEgressType();

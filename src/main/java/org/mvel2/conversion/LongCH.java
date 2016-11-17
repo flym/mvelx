@@ -31,15 +31,13 @@ import static java.lang.String.valueOf;
 /** 各种类型转长整形 */
 public class LongCH implements ConversionHandler {
   private static final Map<Class, Converter> CNV =
-      new HashMap<Class, Converter>();
+      new HashMap<>();
 
   /** 自实现字符串转long型,采用parseLong来实现 */
-  private static Converter stringConverter = new Converter() {
-    public Object convert(Object o) {
-      if (((String) o).length() == 0) return (long) 0;
+  private static Converter stringConverter = o -> {
+    if (((String) o).length() == 0) return (long) 0;
 
-      return Long.parseLong(((String) o));
-    }
+    return Long.parseLong(((String) o));
   };
 
   public Object convertFrom(Object in) {
@@ -61,11 +59,7 @@ public class LongCH implements ConversionHandler {
 
     //对象转,先转成字符串,再使用字符串转
     CNV.put(Object.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return stringConverter.convert(valueOf(o));
-          }
-        }
+        o -> stringConverter.convert(valueOf(o))
     );
 
     //bigDecimal转,窄化处理
@@ -90,56 +84,42 @@ public class LongCH implements ConversionHandler {
 
     //short,宽化处理
     CNV.put(Short.class,
-        new Converter() {
-          public Object convert(Object o) {
-            //noinspection UnnecessaryBoxing
-            return ((Short) o).longValue();
-          }
+        o -> {
+          //noinspection UnnecessaryBoxing
+          return ((Short) o).longValue();
         }
     );
 
     //long,原样返回
     CNV.put(Long.class,
-        new Converter() {
-          public Object convert(Object o) {
-            //noinspection UnnecessaryBoxing
-            return new Long(((Long) o));
-          }
+        o -> {
+          //noinspection UnnecessaryBoxing
+          return new Long(((Long) o));
         }
     );
 
     //integer,宽化处理
     CNV.put(Integer.class,
-        new Converter() {
-          public Object convert(Object o) {
-            //noinspection UnnecessaryBoxing
-            return ((Integer) o).longValue();
-          }
+        o -> {
+          //noinspection UnnecessaryBoxing
+          return ((Integer) o).longValue();
         }
     );
 
     //double,窄化处理
     CNV.put(Double.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return ((Double) o).longValue();
-          }
-        });
+        o -> ((Double) o).longValue());
 
     //float,窄化处理
     CNV.put(Float.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return ((Float) o).longValue();
-          }
-        });
+        o -> ((Float) o).longValue());
 
     //boolean,true为1,false为0
     CNV.put(Boolean.class,
         new Converter() {
           public Long convert(Object o) {
-            if ((Boolean) o) return 1l;
-            else return 0l;
+            if ((Boolean) o) return 1L;
+            else return 0L;
           }
         }
     );

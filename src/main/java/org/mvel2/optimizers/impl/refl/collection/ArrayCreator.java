@@ -56,11 +56,6 @@ public class ArrayCreator implements Accessor {
     }
   }
 
-  /** 返回相应的数组对象中的访问器 */
-  public Accessor[] getTemplate() {
-    return template;
-  }
-
   /** 使用数组对象值+相应的定义类型进行构建 */
   public ArrayCreator(Accessor[] template, Class arrayType) {
     this.template = template;

@@ -62,11 +62,7 @@ public class FloatCH implements ConversionHandler {
 
     //对象转, 采用其toString形式再转换
     CNV.put(Object.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return stringConverter.convert(valueOf(o));
-          }
-        }
+        o -> stringConverter.convert(valueOf(o))
     );
 
     //bigDecimal,窄化处理
@@ -91,11 +87,7 @@ public class FloatCH implements ConversionHandler {
 
     //float类型,原样返回
     CNV.put(Float.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return o;
-          }
-        }
+        o -> o
     );
 
     //integer,宽化处理

@@ -78,7 +78,7 @@ public class AbstractParser implements Parser, Serializable {
   protected ASTNode lastNode;
 
   /** 使用一个弱引用来维护从原始表达式到去掉前后空格的表达式的映射，以减少处理空格的时间 */
-  private static final WeakHashMap<String, char[]> EX_PRECACHE = new WeakHashMap<String, char[]>(15);
+  private static final WeakHashMap<String, char[]> EX_PRECACHE = new WeakHashMap<>(15);
 
   /** 各种常量集合,如true,false等 */
   public static HashMap<String, Object> LITERALS;
@@ -130,13 +130,11 @@ public class AbstractParser implements Parser, Serializable {
    */
   public static void setupParser() {
     if (LITERALS == null || LITERALS.isEmpty()) {
-      LITERALS = new HashMap<String, Object>();
-      CLASS_LITERALS = new HashMap<String, Object>();
-      OPERATORS = new HashMap<String, Integer>();
+      LITERALS = new HashMap<>();
+      CLASS_LITERALS = new HashMap<>();
+      OPERATORS = new HashMap<>();
 
-      /**
-       * Add System and all the class wrappers from the JCL.
-       */
+      //Add System and all the class wrappers from the JCL.
       CLASS_LITERALS.put("System", System.class);
       CLASS_LITERALS.put("String", String.class);
       CLASS_LITERALS.put("CharSequence", CharSequence.class);
@@ -217,7 +215,7 @@ public class AbstractParser implements Parser, Serializable {
    */
   protected ASTNode nextToken() {
     try {
-      /**
+      /*
        * 这里先尝试从相应的处理栈中获取，但如果拿出来的节点是一个end节点，并且当前也已经到达处理末尾了
        * 则直接返回null，即lastNode没有什么意义
        * If the cursor is at the end of the expression, we have nothing more to do:
@@ -241,7 +239,7 @@ public class AbstractParser implements Parser, Serializable {
       int tmpStart;
 
       String name;
-      /**
+      /*
        * Because of parser recursion for sub-expression parsing, we sometimes need to remain
        * certain field states.  We do not reset for assignments, boolean mode, list creation or
        * a capture only mode.
@@ -288,14 +286,12 @@ public class AbstractParser implements Parser, Serializable {
         }
       }
 
-      /**
-       * Skip any whitespace currently under the starting point.
-       */
+      //Skip any whitespace currently under the starting point.
       skipWhitespace();
 
       //上面部分忽略，以下才是重点
 
-      /**
+      /*
        * From here to the end of the method is the core MVEL parsing code.  Fiddling around here is asking for
        * trouble unless you really know what you're doing.
        */
@@ -314,11 +310,10 @@ public class AbstractParser implements Parser, Serializable {
           while (cursor != end && isIdentifierPart(expr[cursor])) cursor++;
         }
 
-        /**
+        /*
          * If the current character under the cursor is a valid
          * part of an identifier, we keep capturing.
          */
-
         //因为第一个操作关键字已经找到，则根据不同的类型看怎么进行处理
         if (capture) {
           String t;//当前处理的操作符
@@ -334,7 +329,7 @@ public class AbstractParser implements Parser, Serializable {
                       + expr[cursor], expr, st);
                 }
 
-                /**
+                /*
                  * 找到new后面的连续的操作数，如果后面有带xx[这种，则尝试捕获多维数组块
                  * 即这里会出现两种情况 new Abc 或者是 new Abc[xxx] 以及new Abc[xxx][yyy]这种
                  * Capture the beginning part of the token.
@@ -345,7 +340,7 @@ public class AbstractParser implements Parser, Serializable {
                 }
                 while (cursor < end && expr[cursor] == '[');//这里的while循环处理 多维数组
 
-                /**
+                /*
                  * 这里实际上就是跳到下一个空格前结束，会把整个 new Abc(123).ef xyz中，跳到xyz之前的数据
                  * 同时，这里判定最后一个有效符不能为]，即不能是类似[]这种，对于[]这种，只会有一种情况，就是后面
                  * 接{，这种会在后面继续处理，因此这里需要排除这种处理，即针对普通的new Abc，将整个表达式一直延伸
@@ -462,13 +457,6 @@ public class AbstractParser implements Parser, Serializable {
               case DO:
                 return captureCodeBlock(ASTNode.BLOCK_DO);
 
-              //stack指令集
-              case STACKLANG:
-                return captureCodeBlock(STACKLANG);
-
-              case PROTO:
-                return captureCodeBlock(PROTO);
-
               //ifDef命令
               case ISDEF:
                 st = cursor = trimRight(cursor);
@@ -564,7 +552,7 @@ public class AbstractParser implements Parser, Serializable {
 
           skipWhitespace();
 
-          /**
+          /*
            * 这里处理 abc(xx) 这种情况，在这里abc，表示一个函数调用或属性访问，
            * 但这里并不了解应该如何处理，那么这里跳过整个()，继续处理
            * 因为下面的逻辑只处理一个属性的方式，这里因为可能是一个单独的方法调用。
@@ -577,7 +565,7 @@ public class AbstractParser implements Parser, Serializable {
             cursor = balancedCaptureWithLineAccounting(expr, cursor, end, '(', pCtx) + 1;
           }
 
-          /**
+          /*
            * 进入到这里，即表示已经拿到一个 属性信息或值信息,接下来根据后面的符号以进行进一步处理
            * 以级联处理如 a++,a+=1 这种运算信息，对于像 a + 1这种，则不由此循环处理
            * 这下面的主要处理即处理 属性运算符或者是 ?= 的情况，即形成propertyNode或者是assignNode
@@ -716,7 +704,7 @@ public class AbstractParser implements Parser, Serializable {
                 //正常操作符
                 break CaptureLoop;
 
-              /**
+              /*
                * 这些符号表示单向操作，不会与其它符号结合，因此直接中止符号处理
                * Exit immediately for any of these cases.
                */
@@ -964,9 +952,7 @@ public class AbstractParser implements Parser, Serializable {
             }
           }
 
-          /**
-           * Produce the token.
-           */
+          //Produce the token.
           trimWhitespace();
 
           //因为已经捕获取操作属性,因此这里认为是属性操作符节点,则创建出相应的属性信息
@@ -1159,7 +1145,7 @@ public class AbstractParser implements Parser, Serializable {
                     break;
 
                   default:
-                    /**
+                    /*
                      * 这里即检测这是不是一个类型转换操作，如(Abc) x这种处理，存在类型转换的惟一可能就是括号内
                      * 只是由字母表示的定义信息，因此只要不满足这一条件，那就不是类型转换
                      * Check to see if we should disqualify this current token as a potential
@@ -1408,10 +1394,7 @@ public class AbstractParser implements Parser, Serializable {
     catch (NumberFormatException e) {
       throw new CompileException("badly formatted number: " + e.getMessage(), expr, st, e);
     }
-    catch (StringIndexOutOfBoundsException e) {
-      throw new CompileException("unexpected end of statement", expr, cursor, e);
-    }
-    catch (ArrayIndexOutOfBoundsException e) {
+    catch (StringIndexOutOfBoundsException | ArrayIndexOutOfBoundsException e) {
       throw new CompileException("unexpected end of statement", expr, cursor, e);
     }
     catch (CompileException e) {
@@ -1782,9 +1765,7 @@ public class AbstractParser implements Parser, Serializable {
 
     String name;
 
-    /**
-     * Functions are a special case we handle differently from the rest of block parsing
-     */
+    //Functions are a special case we handle differently from the rest of block parsing
     switch (type) {
       //解析自定义函数信息
       case FUNCTION: {
@@ -1796,7 +1777,7 @@ public class AbstractParser implements Parser, Serializable {
           throw new CompileException("unexpected end of statement", expr, st);
         }
 
-        /**
+        /*
          * 判定此函数不是是已知关键字或操作符
          * Check to see if the name is legal.
          */
@@ -1819,10 +1800,7 @@ public class AbstractParser implements Parser, Serializable {
             throw new CompileException("expected '(' but encountered: " + expr[cursor], expr, cursor);
           }
 
-          /**
-           * This block is an: IF, FOREACH or WHILE node.
-           */
-
+          //This block is an: IF, FOREACH or WHILE node.
           //捕获到条件组了，即使用( 来捕获到)中间的内容
           endCond = cursor = balancedCaptureWithLineAccounting(expr, startCond = cursor, end, '(', pCtx);
 
@@ -2456,13 +2434,6 @@ public class AbstractParser implements Parser, Serializable {
     pCtx.addError(new ErrorDetail(expr, start, true, message));
   }
 
-  public static final int LEVEL_5_CONTROL_FLOW = 5;
-  public static final int LEVEL_4_ASSIGNMENT = 4;
-  public static final int LEVEL_3_ITERATION = 3;
-  public static final int LEVEL_2_MULTI_STATEMENT = 2;
-  public static final int LEVEL_1_BASIC_LANG = 1;
-  public static final int LEVEL_0_PROPERTY_ONLY = 0;
-
   public static void setLanguageLevel(int level) {
     OPERATORS.clear();
     OPERATORS.putAll(loadLanguageFeaturesByLevel(level));
@@ -2470,89 +2441,77 @@ public class AbstractParser implements Parser, Serializable {
 
   /** 加载操作符常量表 */
   public static HashMap<String, Integer> loadLanguageFeaturesByLevel(int languageLevel) {
-    HashMap<String, Integer> operatorsTable = new HashMap<String, Integer>();
-    switch (languageLevel) {
-      case 6:  // prototype definition
-        operatorsTable.put("proto", PROTO);
-
-      case 5:  // control flow operations
-        operatorsTable.put("if", IF);
-        operatorsTable.put("else", ELSE);
-        operatorsTable.put("?", TERNARY);
-        operatorsTable.put("switch", SWITCH);
-        operatorsTable.put("function", FUNCTION);
-        operatorsTable.put("def", FUNCTION);
-        operatorsTable.put("stacklang", STACKLANG);
+    HashMap<String, Integer> operatorsTable = new HashMap<>();
+    operatorsTable.put("if", IF);
+    operatorsTable.put("else", ELSE);
+    operatorsTable.put("?", TERNARY);
+    operatorsTable.put("switch", SWITCH);
+    operatorsTable.put("function", FUNCTION);
+    operatorsTable.put("def", FUNCTION);
 
 
-      case 4: // assignment
-        operatorsTable.put("=", ASSIGN);
-        operatorsTable.put("var", UNTYPED_VAR);
-        operatorsTable.put("+=", ASSIGN_ADD);
-        operatorsTable.put("-=", ASSIGN_SUB);
-        operatorsTable.put("/=", ASSIGN_DIV);
-        operatorsTable.put("%=", ASSIGN_MOD);
+    operatorsTable.put("=", ASSIGN);
+    operatorsTable.put("var", UNTYPED_VAR);
+    operatorsTable.put("+=", ASSIGN_ADD);
+    operatorsTable.put("-=", ASSIGN_SUB);
+    operatorsTable.put("/=", ASSIGN_DIV);
+    operatorsTable.put("%=", ASSIGN_MOD);
 
-      case 3: // iteration
-        operatorsTable.put("foreach", FOREACH);
-        operatorsTable.put("while", WHILE);
-        operatorsTable.put("until", UNTIL);
-        operatorsTable.put("for", FOR);
-        operatorsTable.put("do", DO);
+    operatorsTable.put("foreach", FOREACH);
+    operatorsTable.put("while", WHILE);
+    operatorsTable.put("until", UNTIL);
+    operatorsTable.put("for", FOR);
+    operatorsTable.put("do", DO);
 
-      case 2: // multi-statement
-        operatorsTable.put("return", RETURN);
-        operatorsTable.put(";", END_OF_STMT);
+    operatorsTable.put("return", RETURN);
+    operatorsTable.put(";", END_OF_STMT);
 
-      case 1: // boolean, math ops, projection, assertion, objection creation, block setters, imports
-        operatorsTable.put("+", ADD);
-        operatorsTable.put("-", SUB);
-        operatorsTable.put("*", MULT);
-        operatorsTable.put("**", POWER);
-        operatorsTable.put("/", DIV);
-        operatorsTable.put("%", MOD);
-        operatorsTable.put("==", EQUAL);
-        operatorsTable.put("!=", NEQUAL);
-        operatorsTable.put(">", GTHAN);
-        operatorsTable.put(">=", GETHAN);
-        operatorsTable.put("<", LTHAN);
-        operatorsTable.put("<=", LETHAN);
-        operatorsTable.put("&&", AND);
-        operatorsTable.put("and", AND);
-        operatorsTable.put("||", OR);
-        operatorsTable.put("or", CHOR);
-        operatorsTable.put("~=", REGEX);
-        operatorsTable.put("instanceof", INSTANCEOF);
-        operatorsTable.put("is", INSTANCEOF);
-        operatorsTable.put("contains", CONTAINS);
-        operatorsTable.put("convertable_to", CONVERTABLE_TO);
-        operatorsTable.put("isdef", ISDEF);
+    operatorsTable.put("+", ADD);
+    operatorsTable.put("-", SUB);
+    operatorsTable.put("*", MULT);
+    operatorsTable.put("**", POWER);
+    operatorsTable.put("/", DIV);
+    operatorsTable.put("%", MOD);
+    operatorsTable.put("==", EQUAL);
+    operatorsTable.put("!=", NEQUAL);
+    operatorsTable.put(">", GTHAN);
+    operatorsTable.put(">=", GETHAN);
+    operatorsTable.put("<", LTHAN);
+    operatorsTable.put("<=", LETHAN);
+    operatorsTable.put("&&", AND);
+    operatorsTable.put("and", AND);
+    operatorsTable.put("||", OR);
+    operatorsTable.put("or", CHOR);
+    operatorsTable.put("~=", REGEX);
+    operatorsTable.put("instanceof", INSTANCEOF);
+    operatorsTable.put("is", INSTANCEOF);
+    operatorsTable.put("contains", CONTAINS);
+    operatorsTable.put("convertable_to", CONVERTABLE_TO);
+    operatorsTable.put("isdef", ISDEF);
 
-        operatorsTable.put("#", STR_APPEND);
+    operatorsTable.put("#", STR_APPEND);
 
-        operatorsTable.put("&", BW_AND);
-        operatorsTable.put("|", BW_OR);
-        operatorsTable.put("^", BW_XOR);
-        operatorsTable.put("<<", BW_SHIFT_LEFT);
-        operatorsTable.put("<<<", BW_USHIFT_LEFT);
-        operatorsTable.put(">>", BW_SHIFT_RIGHT);
-        operatorsTable.put(">>>", BW_USHIFT_RIGHT);
+    operatorsTable.put("&", BW_AND);
+    operatorsTable.put("|", BW_OR);
+    operatorsTable.put("^", BW_XOR);
+    operatorsTable.put("<<", BW_SHIFT_LEFT);
+    operatorsTable.put("<<<", BW_USHIFT_LEFT);
+    operatorsTable.put(">>", BW_SHIFT_RIGHT);
+    operatorsTable.put(">>>", BW_USHIFT_RIGHT);
 
-        operatorsTable.put("new", Operator.NEW);
-        operatorsTable.put("in", PROJECTION);
+    operatorsTable.put("new", Operator.NEW);
+    operatorsTable.put("in", PROJECTION);
 
-        operatorsTable.put("with", WITH);
+    operatorsTable.put("with", WITH);
 
-        operatorsTable.put("assert", ASSERT);
-        operatorsTable.put("import", IMPORT);
-        operatorsTable.put("import_static", IMPORT_STATIC);
+    operatorsTable.put("assert", ASSERT);
+    operatorsTable.put("import", IMPORT);
+    operatorsTable.put("import_static", IMPORT_STATIC);
 
-        operatorsTable.put("++", INC);
-        operatorsTable.put("--", DEC);
+    operatorsTable.put("++", INC);
+    operatorsTable.put("--", DEC);
 
-      case 0: // Property access and inline collections
-        operatorsTable.put(":", TERNARY_ELSE);
-    }
+    operatorsTable.put(":", TERNARY_ELSE);
     return operatorsTable;
   }
 
@@ -2581,7 +2540,7 @@ public class AbstractParser implements Parser, Serializable {
     //因为只有 加减  和 乘除 两类操作
     int operator2;
 
-    /**
+    /*
      * 下一个节点仍是运算符,还可能继续处理
      * If the next token is an operator, we check to see if it has a higher
      * precdence.
@@ -2596,19 +2555,14 @@ public class AbstractParser implements Parser, Serializable {
       if (isArithmeticOperator(operator2 = tk.getOperator()) && PTABLE[operator2] > PTABLE[operator]) {
         //这里将操作符和操作数交换，以将之前表达式后面的操作数提及后面处理
         stk.xswap();
-        /**
-         * The current arith. operator is of higher precedence the last.
-         */
+        //The current arith. operator is of higher precedence the last.
 
         tk = nextToken();
 
-        /**
-         * Check to see if we're compiling or executing interpretively.  If we're compiling, we really
-         * need to stop if this is not a literal.
-         */
+        //Check to see if we're compiling or executing interpretively.  If we're compiling, we really
+        //need to stop if this is not a literal.
         //如果后面的操作数不是常量，则表示当前不可继续执行操作，因此暂存相应的数据，终止处理
         if (compileMode && !tk.isLiteral()) {
-
 
           //这里将操作符放在栈前面，那么在相应的执行表达式expressionCompiler中，就会重新放入前面来
           splitAccumulator.push(tk, new OperatorNode(operator2, expr, st, pCtx));
@@ -2633,9 +2587,7 @@ public class AbstractParser implements Parser, Serializable {
               stk.copyx2(dStack);
             }
 
-            /**
-             * This operator is of higher precedence, or the same level precedence.  push to the RHS.
-             */
+            //This operator is of higher precedence, or the same level precedence.  push to the RHS.
             //将新优先级的放入辅助栈，继续支持同样的流程
             dStack.push(operator = operator2, nextToken().getReducedValueAccelerated(ctx, ctx, variableFactory));
 
@@ -2655,19 +2607,14 @@ public class AbstractParser implements Parser, Serializable {
                 }
               }
 
-              /**
-               * This operator is of the same level precedence.  push to the RHS.
-               */
-
+              //This operator is of the same level precedence.  push to the RHS.
               //因为是同优先级，因此直接放到辅助栈中,可以认为与优先级大于左边相同
               dStack.push(operator = operator2, nextToken().getReducedValueAccelerated(ctx, ctx, variableFactory));
 
               continue;
             }
             else {
-              /**
-               * The operator doesn't have higher precedence. Therfore reduce the LHS.
-               */
+              //The operator doesn't have higher precedence. Therfore reduce the LHS.
               //当前优先级更低，因此将辅助栈入主栈，并进行计算
               while (dStack.size() > 1) {
                 dreduce();
@@ -2684,9 +2631,7 @@ public class AbstractParser implements Parser, Serializable {
             }
           }
           else {
-            /**
-             * There are no more tokens.
-             */
+            //There are no more tokens.
 
             //进入到这里，就表示没有更多的操作符，可能为end，也可能为return
             //因为如果辅助栈有数据，则copy到主栈，并计算值
@@ -2707,7 +2652,7 @@ public class AbstractParser implements Parser, Serializable {
               case AND: {
                 //and，第1个返回false，则不可再往下执行
                 if (!(stk.peekBoolean())) return OP_TERMINATE;
-                //这里表示还需要继续执行第2个and语句
+                  //这里表示还需要继续执行第2个and语句
                 else {
                   splitAccumulator.add(tk);
                   return AND;
@@ -3030,10 +2975,5 @@ public class AbstractParser implements Parser, Serializable {
 
   public char[] getExpression() {
     return expr;
-  }
-
-  @Deprecated
-  private static int asInt(final Object o) {
-    return (Integer) o;
   }
 }

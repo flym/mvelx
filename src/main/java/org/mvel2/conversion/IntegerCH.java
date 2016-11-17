@@ -50,14 +50,12 @@ public class IntegerCH implements ConversionHandler {
   static {
     //对象转,此处有bug
     CNV.put(Object.class,
-        new Converter() {
-          public Object convert(Object o) {
-            //这里尝试强制转换,即会出现classCast异常,因此实际上只有字符串才会成功
-            //而字符串在下面本身即提供
-            if (((String) o).length() == 0) return 0;
+        o -> {
+          //这里尝试强制转换,即会出现classCast异常,因此实际上只有字符串才会成功
+          //而字符串在下面本身即提供
+          if (((String) o).length() == 0) return 0;
 
-            return parseInt(valueOf(o));
-          }
+          return parseInt(valueOf(o));
         }
     );
 
@@ -82,35 +80,25 @@ public class IntegerCH implements ConversionHandler {
 
     //字符串转,使用parseInt方式
     CNV.put(String.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return parseInt(((String) o));
-          }
-        }
+        o -> parseInt(((String) o))
     );
 
     //short转换,宽化处理
     CNV.put(Short.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return ((Short) o).intValue();
-          }
-        }
+        o -> ((Short) o).intValue()
     );
 
     //long转换,窄化处理
     CNV.put(Long.class,
-        new Converter() {
-          public Object convert(Object o) {
-            //这里不支持>integer最大值的处理
-            //noinspection UnnecessaryBoxing
-            if (((Long) o) > Integer.MAX_VALUE) {
-              throw new ConversionException("cannot coerce Long to Integer since the value ("
-                  + valueOf(o) + ") exceeds that maximum precision of Integer.");
-            }
-            else {
-              return ((Long) o).intValue();
-            }
+        o -> {
+          //这里不支持>integer最大值的处理
+          //noinspection UnnecessaryBoxing
+          if (((Long) o) > Integer.MAX_VALUE) {
+            throw new ConversionException("cannot coerce Long to Integer since the value ("
+                + valueOf(o) + ") exceeds that maximum precision of Integer.");
+          }
+          else {
+            return ((Long) o).intValue();
           }
         }
     );
@@ -118,32 +106,28 @@ public class IntegerCH implements ConversionHandler {
 
     //float转,窄化处理
     CNV.put(Float.class,
-        new Converter() {
-          public Object convert(Object o) {
-            //noinspection UnnecessaryBoxing
-            if (((Float) o) > Integer.MAX_VALUE) {
-              throw new ConversionException("cannot coerce Float to Integer since the value ("
-                  + valueOf(o) + ") exceeds that maximum precision of Integer.");
-            }
-            else {
-              return ((Float) o).intValue();
-            }
+        o -> {
+          //noinspection UnnecessaryBoxing
+          if (((Float) o) > Integer.MAX_VALUE) {
+            throw new ConversionException("cannot coerce Float to Integer since the value ("
+                + valueOf(o) + ") exceeds that maximum precision of Integer.");
+          }
+          else {
+            return ((Float) o).intValue();
           }
         }
     );
 
     //double处理,窄化处理
     CNV.put(Double.class,
-        new Converter() {
-          public Object convert(Object o) {
-            //noinspection UnnecessaryBoxing
-            if (((Double) o) > Integer.MAX_VALUE) {
-              throw new ConversionException("cannot coerce Long to Integer since the value ("
-                  + valueOf(o) + ") exceeds that maximum precision of Integer.");
-            }
-            else {
-              return ((Double) o).intValue();
-            }
+        o -> {
+          //noinspection UnnecessaryBoxing
+          if (((Double) o) > Integer.MAX_VALUE) {
+            throw new ConversionException("cannot coerce Long to Integer since the value ("
+                + valueOf(o) + ") exceeds that maximum precision of Integer.");
+          }
+          else {
+            return ((Double) o).intValue();
           }
         }
     );
@@ -151,11 +135,7 @@ public class IntegerCH implements ConversionHandler {
 
     //integer处理,原样返回
     CNV.put(Integer.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return o;
-          }
-        }
+        o -> o
     );
 
     //boolean, true为1,false为0

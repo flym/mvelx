@@ -35,7 +35,7 @@ public interface ConversionHandler {
    * @param in - the input type
    * @return - the converted type
    */
-  public Object convertFrom(Object in);
+  Object convertFrom(Object in);
 
   /**
    * 当前转换器是否能够转换指定类型的数据
@@ -45,5 +45,5 @@ public interface ConversionHandler {
    * @param cls - the source type
    * @return - true if the converter supports converting from the specified type.
    */
-  public boolean canConvertFrom(Class cls);
+  boolean canConvertFrom(Class cls);
 }

@@ -29,7 +29,7 @@ import static java.lang.String.valueOf;
 /** 将各种数据转换为byte类型 */
 public class ByteCH implements ConversionHandler {
   private static final Map<Class, Converter> CNV =
-      new HashMap<Class, Converter>();
+      new HashMap<>();
 
   /** 字符串转byte的实现,即采用parse来实现 */
   private static Converter stringConverter = new Converter() {
@@ -57,62 +57,33 @@ public class ByteCH implements ConversionHandler {
 
     //任意对象,通过其toString形式处理
     CNV.put(Object.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return stringConverter.convert(valueOf(o));
-          }
-        }
+        o -> stringConverter.convert(valueOf(o))
     );
 
     //byte类型,宽化处理
     CNV.put(Byte.class,
-        new Converter() {
-          public Object convert(Object o) {
-            //noinspection UnnecessaryBoxing
-            return new Byte(((Byte) o));
-          }
-        }
+        o -> o
     );
 
     //integer, 窄化处理
     CNV.put(Integer.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return ((Integer) o).byteValue();
-          }
-        }
+        o -> ((Integer) o).byteValue()
     );
 
     //long, 窄化处理
     CNV.put(Long.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return ((Long) o).byteValue();
-          }
-        });
+        o -> ((Long) o).byteValue());
 
     //double, 窄化处理
     CNV.put(Double.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return ((Double) o).byteValue();
-          }
-        });
+        o -> ((Double) o).byteValue());
 
     //float, 窄化处理
     CNV.put(Float.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return ((Float) o).byteValue();
-          }
-        });
+        o -> ((Float) o).byteValue());
 
     //short, 窄化处理
     CNV.put(Short.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return ((Short) o).byteValue();
-          }
-        });
+        o -> ((Short) o).byteValue());
   }
 }

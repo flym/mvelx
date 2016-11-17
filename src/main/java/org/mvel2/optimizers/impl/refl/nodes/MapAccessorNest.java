@@ -38,9 +38,6 @@ public class MapAccessorNest implements AccessorNode {
   /** 期望的值类型(在set时需要作类型转换) */
   private Class conversionType;
 
-  public MapAccessorNest() {
-  }
-
   /** 根据相应的属性计算单元+相应的值类型来构建访问器 */
   public MapAccessorNest(ExecutableStatement property, Class conversionType) {
     this.property = property;
@@ -64,6 +61,7 @@ public class MapAccessorNest implements AccessorNode {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public Object setValue(Object ctx, Object elCtx, VariableResolverFactory vars, Object value) {
     //如果有next节点,则将set操作转交由next来完成
     if (nextNode != null) {

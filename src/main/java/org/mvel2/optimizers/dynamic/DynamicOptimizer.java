@@ -43,9 +43,6 @@ public class DynamicOptimizer extends AbstractOptimizer implements AccessorOptim
   /** 用于支持第一步的优化访问，表示先使用此优化器进行访问,这里即通过反射的方式处理 */
   private AccessorOptimizer firstStage = getAccessorCompiler(SAFE_REFLECTIVE);
 
-  /** 无用字段 */
-  @Deprecated
-  private static final Object oLock = new Object();
   /** 当前所使用的优化器加载类 */
   private volatile static DynamicClassLoader classLoader;
   /** 优化调用次数，表示某个调用在一定区间内调用了超过多少次 */
@@ -59,8 +56,6 @@ public class DynamicOptimizer extends AbstractOptimizer implements AccessorOptim
   public static int maximumTenure = 1500;
   /** 总共还原了多少类(即从优化到反优化) */
   public static int totalRecycled = 0;
-  @Deprecated
-  private static volatile boolean useSafeClassloading = false;
   /**
    * 通过读写锁来进行相应的隔离处理,即在使用访问器时为读锁,而需要要修改相应的访问器时为写锁,
    * 则之前相应的访问都停住,以保证相应的反优化能够正常运行,即避免在使用asm优化器时,另一个线程又来修改相应的优化器,甚至销毁

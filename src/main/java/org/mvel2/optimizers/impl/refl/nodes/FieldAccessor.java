@@ -38,9 +38,6 @@ public class FieldAccessor implements AccessorNode {
   private boolean primitive;
 
 
-  public FieldAccessor() {
-  }
-
   /** 通过字段构建起相应的访问器 */
   public FieldAccessor(Field field) {
     primitive = (this.field = field).getType().isPrimitive();

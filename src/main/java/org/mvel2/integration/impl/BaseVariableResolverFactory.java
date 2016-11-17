@@ -35,7 +35,7 @@ import java.util.Set;
  */
 public abstract class BaseVariableResolverFactory implements VariableResolverFactory {
   /** 当前解析器工厂能够处理的变量解析器 */
-  protected Map<String, VariableResolver> variableResolvers = new HashMap<String, VariableResolver>();
+  protected Map<String, VariableResolver> variableResolvers = new HashMap<>();
   /** 委托的下一个解析器工厂 */
   protected VariableResolverFactory nextFactory;
 
@@ -77,38 +77,13 @@ public abstract class BaseVariableResolverFactory implements VariableResolverFac
     return nextFactory != null && nextFactory.isResolveable(name);
   }
 
-  /** 将相应的解析器工厂追加到委托的最后,即保底处理 */
-  public void appendFactory(VariableResolverFactory resolverFactory) {
-    if (nextFactory == null) {
-      nextFactory = resolverFactory;
-    }
-    else {
-      VariableResolverFactory vrf = nextFactory;
-      while (vrf.getNextFactory() != null) {
-        vrf = vrf.getNextFactory();
-      }
-      vrf.setNextFactory(nextFactory);
-    }
-  }
-
-  /** 将特定的委托类插入到当前委托 之间，即先走参数的委托，再走原来的委托  */
-  public void insertFactory(VariableResolverFactory resolverFactory) {
-    if (nextFactory == null) {
-      nextFactory = resolverFactory;
-    }
-    else {
-      resolverFactory.setNextFactory(nextFactory = resolverFactory);
-    }
-  }
-
-
   public Set<String> getKnownVariables() {
     if (nextFactory == null) {
-      return new HashSet<String>(variableResolvers.keySet());
+      return new HashSet<>(variableResolvers.keySet());
       //   return new HashSet<String>(0);
     }
     else {
-      HashSet<String> vars = new HashSet<String>(variableResolvers.keySet());
+      HashSet<String> vars = new HashSet<>(variableResolvers.keySet());
       vars.addAll(nextFactory.getKnownVariables());
       return vars;
     }
@@ -142,24 +117,6 @@ public abstract class BaseVariableResolverFactory implements VariableResolverFac
     else {
       throw new RuntimeException("cannot access indexed variable: " + name + "(" + index + ").  operation not supported by resolver.: " + this.getClass().getName());
     }
-  }
-
-  /** 返回当前作用域的变量解析器 */
-  public Map<String, VariableResolver> getVariableResolvers() {
-    return variableResolvers;
-  }
-
-  public void setVariableResolvers(Map<String, VariableResolver> variableResolvers) {
-    this.variableResolvers = variableResolvers;
-  }
-
-  /** 所获当前工厂已经的基于下标工作的变量名列表 */
-  public String[] getIndexedVariableNames() {
-    return indexedVariableNames;
-  }
-
-  public void setIndexedVariableNames(String[] indexedVariableNames) {
-    this.indexedVariableNames = indexedVariableNames;
   }
 
   /** 基于下标的变量列表，拿到指定变量名的下标信息 */

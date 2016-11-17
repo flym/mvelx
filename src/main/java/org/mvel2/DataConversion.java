@@ -97,6 +97,7 @@ public class DataConversion {
   }
 
   /** 对象转换 */
+  @SuppressWarnings("unchecked")
   public static <T> T convert(Object in, Class<T> toType) {
     //空处理
     if (in == null) return null;
@@ -128,9 +129,5 @@ public class DataConversion {
    */
   public static void addConversionHandler(Class type, ConversionHandler handler) {
     CONVERTERS.put(type, handler);
-  }
-
-  public static void main(String[] args) {
-    System.out.println(char[][].class);
   }
 }

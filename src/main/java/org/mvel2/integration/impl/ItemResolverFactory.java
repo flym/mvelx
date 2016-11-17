@@ -77,11 +77,6 @@ public class ItemResolverFactory extends BaseVariableResolverFactory {
     /** 相应的值 */
     public Object value;
 
-    public ItemResolver(String name, Class type) {
-      this.name = name;
-      this.type = type;
-    }
-
     public ItemResolver(String name) {
       this.name = name;
     }
@@ -92,10 +87,6 @@ public class ItemResolverFactory extends BaseVariableResolverFactory {
 
     public Class getType() {
       return type;
-    }
-
-    public void setStaticType(Class type) {
-      this.type = type;
     }
 
     /** 无特殊的标记 */

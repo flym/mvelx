@@ -41,9 +41,6 @@ public class SimpleValueResolver implements VariableResolver {
     return Object.class;
   }
 
-  public void setStaticType(Class type) {
-  }
-
   public int getFlags() {
     return 0;
   }

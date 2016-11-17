@@ -43,10 +43,10 @@ public interface VariableResolverFactory extends Serializable {
    * @param value - value of the variable
    * @return instance of the variable resolver associated with the variable
    */
-  public VariableResolver createVariable(String name, Object value);
+  VariableResolver createVariable(String name, Object value);
 
   /** 根据下标，变量名，值创建出一个变量解析器,以便后续通过下标可以拿到相应的解析器 */
-  public VariableResolver createIndexedVariable(int index, String name, Object value);
+  VariableResolver createIndexedVariable(int index, String name, Object value);
 
 
   /**
@@ -61,13 +61,13 @@ public interface VariableResolverFactory extends Serializable {
    * @param type  - the static type
    * @return instance of the variable resolver associated with the variable
    */
-  public VariableResolver createVariable(String name, Object value, Class<?> type);
+  VariableResolver createVariable(String name, Object value, Class<?> type);
 
   /** 根据变量名，下标，值，以及期望的类型创建出相应的变量解析器 */
-  public VariableResolver createIndexedVariable(int index, String name, Object value, Class<?> typee);
+  VariableResolver createIndexedVariable(int index, String name, Object value, Class<?> typee);
 
   /** 根据下标重新设置相应的变量解析器，以达到替换或者设置的目的 */
-  public VariableResolver setIndexedVariableResolver(int index, VariableResolver variableResolver);
+  VariableResolver setIndexedVariableResolver(int index, VariableResolver variableResolver);
 
 
   /**
@@ -78,7 +78,7 @@ public interface VariableResolverFactory extends Serializable {
    *
    * @return instance of the next factory - null if none.
    */
-  public VariableResolverFactory getNextFactory();
+  VariableResolverFactory getNextFactory();
 
   /**
    * 设置相应的委托处理工厂
@@ -91,7 +91,7 @@ public interface VariableResolverFactory extends Serializable {
    * @param resolverFactory - instance of next resolver factory
    * @return - instance of next resolver factory
    */
-  public VariableResolverFactory setNextFactory(VariableResolverFactory resolverFactory);
+  VariableResolverFactory setNextFactory(VariableResolverFactory resolverFactory);
 
   /**
    * 获取指定变量名的变量解析器
@@ -101,11 +101,11 @@ public interface VariableResolverFactory extends Serializable {
    * @param name - variable name
    * @return - instance of the VariableResolver for the specified variable
    */
-  public VariableResolver getVariableResolver(String name);
+  VariableResolver getVariableResolver(String name);
 
 
   /** 根据之前存储的变量下标来获取相应的变量解析器 */
-  public VariableResolver getIndexedVariableResolver(int index);
+  VariableResolver getIndexedVariableResolver(int index);
 
   /**
    * 判断当前解析工厂是否就是指定属性的直接解析器(因为它有多个解析链)
@@ -115,7 +115,7 @@ public interface VariableResolverFactory extends Serializable {
    * @param name - variable name
    * @return - boolean indicating whether or not factory is the physical target
    */
-  public boolean isTarget(String name);
+  boolean isTarget(String name);
 
 
   /**
@@ -125,7 +125,7 @@ public interface VariableResolverFactory extends Serializable {
    * @param name - variable name
    * @return - boolean
    */
-  public boolean isResolveable(String name);
+  boolean isResolveable(String name);
 
 
   /**
@@ -137,17 +137,17 @@ public interface VariableResolverFactory extends Serializable {
    * @return 已知能解析的变量名集合
    */
   //备注 此接口因为实现存在二义性，实际上没有多在用处，不会在核心逻辑中起作用
-  public Set<String> getKnownVariables();
+  Set<String> getKnownVariables();
 
   /** 读取指定属性或参数的索引下标位置(然后可以通过getIndexedVariableResolver来获取解析器进行处理) */
-  public int variableIndexOf(String name);
+  int variableIndexOf(String name);
 
   /** 当前解析工厂是否是基于索引进行处理的 */
-  public boolean isIndexedFactory();
+  boolean isIndexedFactory();
 
   /** 当前工厂是否已处理结束(如果已处理结束，则整个结果将返回) */
-  public boolean tiltFlag();
+  boolean tiltFlag();
 
   /** 设置当前处理结束标记 */
-  public void setTiltFlag(boolean tilt);
+  void setTiltFlag(boolean tilt);
 }

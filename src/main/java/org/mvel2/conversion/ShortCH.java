@@ -46,7 +46,7 @@ public class ShortCH implements ConversionHandler {
   };
 
   private static final Map<Class, Converter> CNV =
-      new HashMap<Class, Converter>();
+      new HashMap<>();
 
 
   public Object convertFrom(Object in) {
@@ -69,11 +69,7 @@ public class ShortCH implements ConversionHandler {
 
     //对象转,先toString,再处理
     CNV.put(Object.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return stringConverter.convert(valueOf(o));
-          }
-        }
+        o -> stringConverter.convert(valueOf(o))
     );
 
     //bigDecimal,窄化处理
@@ -98,11 +94,7 @@ public class ShortCH implements ConversionHandler {
 
     //short,原样输出
     CNV.put(Short.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return o;
-          }
-        }
+        o -> o
     );
 
     //integer,窄化处理

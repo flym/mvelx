@@ -2,16 +2,16 @@
  * MVEL 2.0
  * Copyright (C) 2007 The Codehaus
  * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -29,7 +29,6 @@ import org.mvel2.util.ParseTools;
 
 import static org.mvel2.DataConversion.canConvert;
 import static org.mvel2.DataConversion.convert;
-import static org.mvel2.Operator.PTABLE;
 import static org.mvel2.debug.DebugTools.getOperatorSymbol;
 import static org.mvel2.math.MathProcessor.doOperations;
 import static org.mvel2.util.CompilerTools.getReturnTypeFromOp;
@@ -63,7 +62,7 @@ public class BinaryOperation extends BooleanNode {
     //    if (ctx.isStrongTyping()) {
     switch (operation) {
       case Operator.ADD:
-        /**
+        /*
          * 处理可能为字符串相加的情况,则设置相应的声明类型为字符串
          * In the special case of Strings, the return type may leftward propogate.
          */
@@ -89,15 +88,16 @@ public class BinaryOperation extends BooleanNode {
             //如果是四则运算,则以结果为准,否则则以左边结点为准.比如 a < b这种
             Class targetType = isAritmeticOperation(operation) ? egressType : left.getEgressType();
             this.right = new LiteralNode(convert(right.getReducedValueAccelerated(null, null, null), targetType), pCtx);
-          } else if ( !(areCompatible(left.getEgressType(), right.getEgressType()) ||
-                  (( operation == Operator.EQUAL || operation == Operator.NEQUAL) &&
-                     CompatibilityStrategy.areEqualityCompatible(left.getEgressType(), right.getEgressType()))) ) {
+          }
+          else if (!(areCompatible(left.getEgressType(), right.getEgressType()) ||
+              ((operation == Operator.EQUAL || operation == Operator.NEQUAL) &&
+                  CompatibilityStrategy.areEqualityCompatible(left.getEgressType(), right.getEgressType())))) {
             //即在算术上不兼容,同时也不是== 或 != 这种,则报错
 
             throw new CompileException("incompatible types in statement: " + right.getEgressType()
-                    + " (compared from: " + left.getEgressType() + ")",
-                    left.getExpr() != null ? left.getExpr() : right.getExpr(),
-                    left.getExpr() != null ? left.getStart() : right.getStart());
+                + " (compared from: " + left.getEgressType() + ")",
+                left.getExpr() != null ? left.getExpr() : right.getExpr(),
+                left.getExpr() != null ? left.getStart() : right.getStart());
           }
         }
     }
@@ -109,7 +109,8 @@ public class BinaryOperation extends BooleanNode {
     if (this.left.isLiteral() && this.right.isLiteral()) {
       if (this.left.egressType == this.right.egressType) {
         lType = rType = ParseTools.__resolveType(left.egressType);
-      } else {
+      }
+      else {
         lType = ParseTools.__resolveType(this.left.egressType);
         rType = ParseTools.__resolveType(this.right.egressType);
       }
@@ -124,9 +125,9 @@ public class BinaryOperation extends BooleanNode {
   /** 判定2个类型在计算上是否是兼容的,即都是数字类型 */
   private boolean areCompatible(Class<?> leftClass, Class<?> rightClass) {
     return leftClass.equals(NullType.class) || rightClass.equals(NullType.class) ||
-           ( Number.class.isAssignableFrom(rightClass) && Number.class.isAssignableFrom(leftClass) ) ||
-           ( (rightClass.isPrimitive() || leftClass.isPrimitive()) &&
-             canConvert(boxPrimitive(leftClass), boxPrimitive(rightClass)) );
+        (Number.class.isAssignableFrom(rightClass) && Number.class.isAssignableFrom(leftClass)) ||
+        ((rightClass.isPrimitive() || leftClass.isPrimitive()) &&
+            canConvert(boxPrimitive(leftClass), boxPrimitive(rightClass)));
   }
 
   public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
@@ -137,10 +138,6 @@ public class BinaryOperation extends BooleanNode {
 
   public int getOperation() {
     return operation;
-  }
-
-  public BinaryOperation getRightBinary() {
-    return right != null && right instanceof BinaryOperation ? (BinaryOperation) right : null;
   }
 
   /** 替换掉最右边的节点 如 a + b - c 增加一个 * d时，就把c替换为(c*d) */
@@ -163,15 +160,6 @@ public class BinaryOperation extends BooleanNode {
       n = (BinaryOperation) n.right;
     }
     return n.right;
-  }
-
-  /** 获取相应的优先级 */
-  public int getPrecedence() {
-    return PTABLE[operation];
-  }
-
-  public boolean isGreaterPrecedence(BinaryOperation o) {
-    return o.getPrecedence() > PTABLE[operation];
   }
 
   /** 当前节点不是常量 */

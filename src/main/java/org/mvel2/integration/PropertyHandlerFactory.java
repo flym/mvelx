@@ -25,7 +25,7 @@ import java.util.Map;
 public class PropertyHandlerFactory {
   /** 类型映射 */
   protected static Map<Class, PropertyHandler> propertyHandlerClass =
-      new HashMap<Class, PropertyHandler>();
+      new HashMap<>();
 
   /** 空属性处理器,指当属性返回值为null时处理 */
   protected static PropertyHandler nullPropertyHandler;
@@ -68,22 +68,6 @@ public class PropertyHandlerFactory {
     }
   }
 
-  /** 注册处理器，同时将相应的父类以及接口均注册上相应的处理器 */
-  public static void registerPropertyHandler(Class clazz, PropertyHandler propertyHandler) {
-    do {
-      propertyHandlerClass.put(clazz, propertyHandler);
-
-      for (Class c : clazz.getInterfaces()) {
-        propertyHandlerClass.put(c, propertyHandler);
-      }
-    }
-    while ((clazz = clazz.getSuperclass()) != null && clazz != Object.class);
-  }
-
-  public static void setNullPropertyHandler(PropertyHandler handler) {
-    nullPropertyHandler = handler;
-  }
-
   /** 是否存在null值处理器 */
   public static boolean hasNullPropertyHandler() {
     return nullPropertyHandler != null;
@@ -94,27 +78,11 @@ public class PropertyHandlerFactory {
     return nullPropertyHandler;
   }
 
-  public static void setNullMethodHandler(PropertyHandler handler) {
-    nullMethodHandler = handler;
-  }
-
   public static boolean hasNullMethodHandler() {
     return nullMethodHandler != null;
   }
 
   public static PropertyHandler getNullMethodHandler() {
     return nullMethodHandler;
-  }
-
-  /** 取消之前对某个类型的注册 */
-  public static void unregisterPropertyHandler(Class clazz) {
-    propertyHandlerClass.remove(clazz);
-  }
-
-  /** 取消所有之前的注册 */
-  public static void disposeAll() {
-    nullMethodHandler = null;
-    nullPropertyHandler = null;
-    propertyHandlerClass.clear();
   }
 }

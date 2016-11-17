@@ -33,7 +33,7 @@ public class DynamicClassLoader extends ClassLoader implements MVELClassLoader {
   /** 优化限制上限值 */
   private int tenureLimit;
   /** 当前所有管理的动态访问器,通过引用达到简单管理的目的 */
-  private final LinkedList<DynamicAccessor> allAccessors = new LinkedList<DynamicAccessor>();
+  private final LinkedList<DynamicAccessor> allAccessors = new LinkedList<>();
 
   public DynamicClassLoader(ClassLoader classLoader, int tenureLimit) {
     super(classLoader);

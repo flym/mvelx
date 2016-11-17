@@ -40,7 +40,7 @@ public class FunctionVariableResolverFactory extends BaseVariableResolverFactory
   public FunctionVariableResolverFactory(Function function, VariableResolverFactory nextFactory, String[] indexedVariables, Object[] parameters) {
     this.function = function;
 
-    this.variableResolvers = new HashMap<String, VariableResolver>();
+    this.variableResolvers = new HashMap<>();
     this.nextFactory = nextFactory;
     //下标解析器填充
     this.indexedVariableResolvers = new VariableResolver[(this.indexedVariableNames = indexedVariables).length];

@@ -22,5 +22,5 @@ package org.mvel2.conversion;
 /** 描述一个具体的转换动作，即转换函数 */
 public interface Converter {
   /** 具体的转换动作 */
-  public Object convert(Object o);
+  Object convert(Object o);
 }

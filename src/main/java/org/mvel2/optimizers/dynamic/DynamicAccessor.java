@@ -26,5 +26,5 @@ import org.mvel2.compiler.Accessor;
  */
 public interface DynamicAccessor extends Accessor {
   /** 反优化，表示在后面的处理中将不再使用原来的优化器.同时可以解释相应的优化类资源 */
-  public void deoptimize();
+  void deoptimize();
 }

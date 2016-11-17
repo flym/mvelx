@@ -75,7 +75,7 @@ public class ParseTools {
 
   /** 从一个字符串中解析出参数的定义信息,即通过,号进行分隔解析处理,用于自定义函数时进行参数解析 */
   public static String[] parseParameterDefList(char[] parm, int offset, int length) {
-    List<String> list = new LinkedList<String>();
+    List<String> list = new LinkedList<>();
 
     if (length == -1)
       length = parm.length;
@@ -152,7 +152,7 @@ public class ParseTools {
 
   /** 将整个字符串处理成相应的参数列表,就是按照 逗号将数据进行分组处理 */
   public static List<char[]> parseParameterList(char[] parm, int offset, int length) {
-    List<char[]> list = new ArrayList<char[]>();
+    List<char[]> list = new ArrayList<>();
 
     if (length == -1)
       length = parm.length;

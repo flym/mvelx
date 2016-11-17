@@ -184,49 +184,34 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
         String ex = new String(property, st, cursor - st);
 
         if (ctx instanceof Map) {
-          if (MVEL.COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING && hasPropertyHandler(Map.class)) {
-            propHandlerSet(ex, ctx, Map.class, value);
-          }
-          else {
-            //noinspection unchecked
-            //todo 这里的ex将采用编译运行来处理
+          //noinspection unchecked
+          //todo 这里的ex将采用编译运行来处理
 //            ((Map) ctx).put(eval(ex, ctx, variableFactory), convert(value, returnType = verifier.analyze()));
 
-            addAccessorNode(new MapAccessorNest(ex, returnType));
-          }
+          addAccessorNode(new MapAccessorNest(ex, returnType));
 
           return rootNode;
         }
         else if (ctx instanceof List) {
-          if (MVEL.COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING && hasPropertyHandler(List.class)) {
-            propHandlerSet(ex, ctx, List.class, value);
-          }
-          else {
-            //noinspection unchecked
-            //todo 这里的ex将采用编译运行来处理
+          //noinspection unchecked
+          //todo 这里的ex将采用编译运行来处理
 //            ((List) ctx).set(eval(ex, ctx, variableFactory, Integer.class),
 //                convert(value, returnType = verifier.analyze()));
 
-            addAccessorNode(new ListAccessorNest(ex, returnType));
-          }
+          addAccessorNode(new ListAccessorNest(ex, returnType));
 
           return rootNode;
         }
-        else if (MVEL.COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING && hasPropertyHandler(ctx.getClass())) {
+        else if (hasPropertyHandler(ctx.getClass())) {
           propHandlerSet(ex, ctx, ctx.getClass(), value);
           return rootNode;
         }
         else if (ctx.getClass().isArray()) {
-          if (MVEL.COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING && hasPropertyHandler(Array.class)) {
-            propHandlerSet(ex, ctx, Array.class, value);
-          }
-          else {
-            //noinspection unchecked
-            //todo 这里的ex将采用编译运行来处理
+          //noinspection unchecked
+          //todo 这里的ex将采用编译运行来处理
 //            Array.set(ctx, eval(ex, ctx, variableFactory, Integer.class),
 //                convert(value, getBaseComponentType(ctx.getClass())));
-            addAccessorNode(new ArrayAccessorNest(ex));
-          }
+          addAccessorNode(new ArrayAccessorNest(ex));
           return rootNode;
         }
         else {
@@ -234,7 +219,7 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
               ": not a recognized collection type: " + ctx.getClass(), expr, this.st, pCtx);
         }
       }
-      else if (MVEL.COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING && hasPropertyHandler(ctx.getClass())) {
+      else if (hasPropertyHandler(ctx.getClass())) {
         propHandlerSet(new String(property), ctx, ctx.getClass(), value);
         return rootNode;
       }
@@ -320,75 +305,39 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
     cursor = start;
 
     try {
-      //如果不能重写默认的访问逻辑，则使用默认的处理方式
-      if (!MVEL.COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING) {
-        while (cursor < end) {
-          switch (nextSubToken()) {
-            //属性访问
-            case BEAN:
-              curr = getBeanProperty(curr, capture());
-              break;
-            //方法调用
-            case METH:
-              curr = getMethod(curr, capture());
-              break;
-            //集合信息调用
-            case COL:
-              curr = getCollectionProperty(curr, capture());
-              break;
-            case DONE:
-              break;
-          }
-
-          first = false;
-          //调整相应的返回类型
-          if (curr != null) returnType = curr.getClass();
-          //支持安全式访问
-          if (cursor < end) {
-            if (nullSafe) {
-              int os = expr[cursor] == '.' ? 1 : 0;
-              addAccessorNode(new NullSafe(expr, cursor + os, length - cursor - os, pCtx));
-              if (curr == null) break;
-            }
-            if (curr == null) throw new NullPointerException();
-          }
-          staticAccess = false;
+      while (cursor < end) {
+        switch (nextSubToken()) {
+          //属性访问
+          case BEAN:
+            curr = getBeanProperty(curr, capture());
+            break;
+          //方法调用
+          case METH:
+            curr = getMethod(curr, capture());
+            break;
+          //集合信息调用
+          case COL:
+            curr = getCollectionProperty(curr, capture());
+            break;
+          case DONE:
+            break;
         }
 
-      }
-      //按照支持扩展式访问方式处理
-      else {
-        while (cursor < end) {
-          switch (nextSubToken()) {
-            case BEAN:
-              curr = getBeanPropertyAO(curr, capture());
-              break;
-            case METH:
-              curr = getMethod(curr, capture());
-              break;
-            case COL:
-              curr = getCollectionPropertyAO(curr, capture());
-              break;
-            case DONE:
-              break;
+        first = false;
+        //调整相应的返回类型
+        if (curr != null) returnType = curr.getClass();
+        //支持安全式访问
+        if (cursor < end) {
+          if (nullSafe) {
+            int os = expr[cursor] == '.' ? 1 : 0;
+            addAccessorNode(new NullSafe(expr, cursor + os, length - cursor - os, pCtx));
+            if (curr == null) break;
           }
-
-          first = false;
-          if (curr != null) returnType = curr.getClass();
-          if (cursor < end) {
-            //支持安全式访问,因为要支持安全式访问，因此添加一个nullsafe节点
-            if (nullSafe) {
-              int os = expr[cursor] == '.' ? 1 : 0;
-              addAccessorNode(new NullSafe(expr, cursor + os, length - cursor - os, pCtx));
-              //这里支持安全式访问，如果当前处理值为null,则提前返回
-              if (curr == null) break;
-            }
-            //因为还没有解析完毕，但当前值已为null,则直接报NPE
-            if (curr == null) throw new NullPointerException();
-          }
-          staticAccess = false;
+          if (curr == null) throw new NullPointerException();
         }
+        staticAccess = false;
       }
+
 
       val = curr;
       return rootNode;
@@ -654,23 +603,9 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
         //处理静态方法伪引用，即直接通过方法名引用的方式达到调用方法的目的
         for (Method m : c.getMethods()) {
           if (property.equals(m.getName())) {
-            if (pCtx != null && pCtx.getParserConfiguration() != null ? pCtx.getParserConfiguration().isAllowNakedMethCall() : MVEL.COMPILER_OPT_ALLOW_NAKED_METH_CALL) {
-              o = m.invoke(null, EMPTY_OBJ_ARR);
-              if (hasNullMethodHandler()) {
-                addAccessorNode(new MethodAccessorNH(m, new ExecutableStatement[0], getNullMethodHandler()));
-                if (o == null)
-                  o = getNullMethodHandler().getProperty(m.getName(), ctx, variableFactory);
-              }
-              else {
-                addAccessorNode(new MethodAccessor(m, new ExecutableStatement[0]));
-              }
-              return o;
-            }
-            else {
-              //不支持，则表示直接获取此静态方法引用
-              addAccessorNode(new StaticReferenceAccessor(m));
-              return m;
-            }
+            //不支持，则表示直接获取此静态方法引用
+            addAccessorNode(new StaticReferenceAccessor(m));
+            return m;
           }
         }
 
@@ -683,12 +618,6 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
         catch (ClassNotFoundException cnfe) {
           // fall through.
         }
-      }
-      //这里如果支持伪方法调用，则跳转至方法调用处
-      else if (pCtx != null && pCtx.getParserConfiguration() != null ? pCtx.getParserConfiguration().isAllowNakedMethCall() : MVEL.COMPILER_OPT_ALLOW_NAKED_METH_CALL) {
-        //最后尝试直接执行此方法,虽然这里并不能走到这里,就像普通的方法一样执行(要求参数长度为0)
-        //实际上并不能走到这里，因为上面在获取getter时已经获取了此方法(getter会根据名字拿到此方法)
-        return getMethod(ctx, property);
       }
 
       //这里尝试一次从this引用上拿,虽然thisRef和ctx通常认为是一样的

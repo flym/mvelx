@@ -48,25 +48,4 @@ public class ResolverTools {
 
     return newFactory;
   }
-
-  /**
-   * 插入中间变量工厂
-   * 此方法与basedVarFactory中的insertFactory重复
-   * Based on the root factory, insert the new factory right after the root, and before any other in the chain.
-   *
-   * @param root       The root factory
-   * @param newFactory The new factory
-   * @return An instance of the new factory.
-   */
-  public static <T extends VariableResolverFactory> T insertFactory(VariableResolverFactory root, T newFactory) {
-    if (root.getNextFactory() == null) {
-      root.setNextFactory(newFactory);
-    }
-    else {
-      newFactory.setNextFactory(root.getNextFactory());
-      root.setNextFactory(newFactory);
-    }
-
-    return newFactory;
-  }
 }

@@ -27,7 +27,7 @@ import java.util.Map;
 /** 字符串转换为字符数组 */
 public class CharArrayCH implements ConversionHandler {
   private static final Map<Class, Converter> CNV =
-      new HashMap<Class, Converter>();
+      new HashMap<>();
 
 
   public Object convertFrom(Object in) {
@@ -45,11 +45,7 @@ public class CharArrayCH implements ConversionHandler {
   static {
     //字符串转字符数组
     CNV.put(String.class,
-        new Converter() {
-          public Object convert(Object o) {
-            return ((String) o).toCharArray();
-          }
-        }
+        o -> ((String) o).toCharArray()
     );
 
   }

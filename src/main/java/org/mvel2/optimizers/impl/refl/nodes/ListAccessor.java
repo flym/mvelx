@@ -30,9 +30,6 @@ public class ListAccessor implements AccessorNode {
   private int index;
 
 
-  public ListAccessor() {
-  }
-
   public ListAccessor(int index) {
     this.index = index;
   }

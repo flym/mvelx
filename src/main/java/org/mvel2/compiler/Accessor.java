@@ -28,7 +28,7 @@ public interface Accessor {
    * @param ctx   当前对象上下文(可理解为当前处理对象)
    * @param elCtx 特定的参数上下文(this值)
    */
-  public Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory);
+  Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory);
 
   /**
    * 设置值信息
@@ -36,8 +36,8 @@ public interface Accessor {
    * @param ctx   当前对象上下文(可理解为当前处理对象)
    * @param elCtx 特定的参数上下文对象(this值)
    */
-  public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value);
+  Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value);
 
   /** 获取已知的返回结果类型 */
-  public Class getKnownEgressType();
+  Class getKnownEgressType();
 }

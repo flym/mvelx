@@ -28,9 +28,6 @@ public class IndexedCharSeqAccessor implements AccessorNode {
   /** 下标值 */
   private int index;
 
-  public IndexedCharSeqAccessor() {
-  }
-
   public IndexedCharSeqAccessor(int index) {
     this.index = index;
   }

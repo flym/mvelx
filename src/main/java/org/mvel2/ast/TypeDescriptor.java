@@ -134,10 +134,6 @@ public class TypeDescriptor implements Serializable {
     return arraySize.length;
   }
 
-  public ArraySize[] getArraySize() {
-    return arraySize;
-  }
-
   /** 返回相应的数组的长度的编译单元 */
   public ExecutableStatement[] getCompiledArraySize() {
     return compiledArraySize;
@@ -147,25 +143,9 @@ public class TypeDescriptor implements Serializable {
     return className;
   }
 
-  public void setClassName(String className) {
-    this.className = className;
-  }
-
   /** 当前类型是否为普通类声明 */
   public boolean isClass() {
     return className != null && className.length() != 0;
-  }
-
-  public int getEndRange() {
-    return endRange;
-  }
-
-  public void setEndRange(int endRange) {
-    this.endRange = endRange;
-  }
-
-  public Class<?> getClassReference() throws ClassNotFoundException {
-    return getClassReference(null, this);
   }
 
   /** 获取实际上的相应的类引用 */

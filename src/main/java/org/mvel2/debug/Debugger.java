@@ -21,11 +21,11 @@ package org.mvel2.debug;
 /** 表示一个具体的调试器接口,调试器可以在执行的执行帧时探测到相应的数据信息 */
 public interface Debugger {
   /** 调试状态 继续运行 */
-  public static int CONTINUE = 0;
+  int CONTINUE = 0;
   /** 调试状态 单步运行 */
-  public static int STEP = 1;
+  int STEP = 1;
   /** 调试状态 跳出(目前与单步运行相同) */
-  public static int STEP_OVER = STEP;
+  int STEP_OVER = STEP;
 
 
   /**
@@ -35,5 +35,5 @@ public interface Debugger {
    * @param frame
    * @return continuation command
    */
-  public int onBreak(Frame frame);
+  int onBreak(Frame frame);
 }
