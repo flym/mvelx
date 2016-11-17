@@ -54,7 +54,6 @@ public class ExpressionCompiler extends AbstractParser {
   /** 主要的编译操作，返回编译表达式 */
   public CompiledExpression compile() {
     try {
-      this.debugSymbols = pCtx.isDebugSymbols();
       return _compile();
     }
     finally {
@@ -308,7 +307,7 @@ public class ExpressionCompiler extends AbstractParser {
 
       //如果并不仅仅是验证,还需要进一步优化，因此进行相应的优化操作
       if (!verifyOnly) {
-        return new CompiledExpression(finalizePayload(astBuild, secondPassOptimization, pCtx), pCtx.getSourceFile(), returnType, pCtx.getParserConfiguration(), literalOnly == 1);
+        return new CompiledExpression(finalizePayload(astBuild, secondPassOptimization, pCtx), null, returnType, pCtx.getParserConfiguration(), literalOnly == 1);
       }
       //仅验证，因此这里分析出相应的返回类型，直接返回null
       else {

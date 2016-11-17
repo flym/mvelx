@@ -58,15 +58,11 @@ public class CompiledExpression implements Serializable, ExecutableStatement {
   /** 在当前执行过程中使用的优化器(或者是当前表达式使用的优化器) */
   private Class<? extends AccessorOptimizer> accessorOptimizer;
 
-  /** 表达式所对应的源文件 */
-  private String sourceName;
-
   /** 相应的解析配置信息 */
   private ParserConfiguration parserConfiguration;
 
   public CompiledExpression(ASTLinkedList astMap, String sourceName, Class egressType, ParserConfiguration parserConfiguration, boolean literalOnly) {
     this.firstNode = astMap.firstNode();
-    this.sourceName = sourceName;
     this.knownEgressType = astMap.isSingleNode() ? astMap.firstNonSymbol().getEgressType() : egressType;
     this.literalOnly = literalOnly;
     this.parserConfiguration = parserConfiguration;

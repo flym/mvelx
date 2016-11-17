@@ -29,7 +29,6 @@ import org.mvel2.util.ParseTools;
 
 import static org.mvel2.DataConversion.canConvert;
 import static org.mvel2.DataConversion.convert;
-import static org.mvel2.debug.DebugTools.getOperatorSymbol;
 import static org.mvel2.math.MathProcessor.doOperations;
 import static org.mvel2.util.CompilerTools.getReturnTypeFromOp;
 import static org.mvel2.util.ParseTools.boxPrimitive;
@@ -169,6 +168,6 @@ public class BinaryOperation extends BooleanNode {
   }
 
   public String toString() {
-    return "(" + left + " " + getOperatorSymbol(operation) + " " + right + ")";
+    return "(" + left + " " + (operation) + " " + right + ")";
   }
 }

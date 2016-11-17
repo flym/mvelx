@@ -59,10 +59,6 @@ public class AbstractParser implements Parser, Serializable {
   protected boolean greedy = true;
   /** 最新节点是否是属性,引用变量等变量信息 */
   protected boolean lastWasIdentifier = false;
-  /** 最新节点是否是代码行 */
-  protected boolean lastWasLineLabel = false;
-  /** 最新节点是否是注释 */
-  protected boolean lastWasComment = false;
   /** 当前是否是编译模式，在编译模式下某些操作不能马上进行执行(如变量处理等) */
   protected boolean compileMode = false;
 
@@ -107,9 +103,6 @@ public class AbstractParser implements Parser, Serializable {
   /** 当前所使用的变量工厂 */
   protected VariableResolverFactory variableFactory;
 
-  /** 判定是否是调试模式 */
-  protected boolean debugSymbols = false;
-
   static {
     setupParser();
   }
@@ -128,75 +121,73 @@ public class AbstractParser implements Parser, Serializable {
    * The static initialization populates the operator and literal tables for the parser.  In some situations, like
    * OSGi, it may be necessary to utilize this manually.
    */
-  public static void setupParser() {
-    if (LITERALS == null || LITERALS.isEmpty()) {
-      LITERALS = new HashMap<>();
-      CLASS_LITERALS = new HashMap<>();
-      OPERATORS = new HashMap<>();
+  private static void setupParser() {
+    LITERALS = new HashMap<>();
+    CLASS_LITERALS = new HashMap<>();
+    OPERATORS = new HashMap<>();
 
-      //Add System and all the class wrappers from the JCL.
-      CLASS_LITERALS.put("System", System.class);
-      CLASS_LITERALS.put("String", String.class);
-      CLASS_LITERALS.put("CharSequence", CharSequence.class);
+    //Add System and all the class wrappers from the JCL.
+    CLASS_LITERALS.put("System", System.class);
+    CLASS_LITERALS.put("String", String.class);
+    CLASS_LITERALS.put("CharSequence", CharSequence.class);
 
-      CLASS_LITERALS.put("Integer", Integer.class);
-      CLASS_LITERALS.put("int", int.class);
+    CLASS_LITERALS.put("Integer", Integer.class);
+    CLASS_LITERALS.put("int", int.class);
 
-      CLASS_LITERALS.put("Long", Long.class);
-      CLASS_LITERALS.put("long", long.class);
+    CLASS_LITERALS.put("Long", Long.class);
+    CLASS_LITERALS.put("long", long.class);
 
-      CLASS_LITERALS.put("Boolean", Boolean.class);
-      CLASS_LITERALS.put("boolean", boolean.class);
+    CLASS_LITERALS.put("Boolean", Boolean.class);
+    CLASS_LITERALS.put("boolean", boolean.class);
 
-      CLASS_LITERALS.put("Short", Short.class);
-      CLASS_LITERALS.put("short", short.class);
+    CLASS_LITERALS.put("Short", Short.class);
+    CLASS_LITERALS.put("short", short.class);
 
-      CLASS_LITERALS.put("Character", Character.class);
-      CLASS_LITERALS.put("char", char.class);
+    CLASS_LITERALS.put("Character", Character.class);
+    CLASS_LITERALS.put("char", char.class);
 
-      CLASS_LITERALS.put("Double", Double.class);
-      CLASS_LITERALS.put("double", double.class);
+    CLASS_LITERALS.put("Double", Double.class);
+    CLASS_LITERALS.put("double", double.class);
 
-      CLASS_LITERALS.put("Float", Float.class);
-      CLASS_LITERALS.put("float", float.class);
+    CLASS_LITERALS.put("Float", Float.class);
+    CLASS_LITERALS.put("float", float.class);
 
-      CLASS_LITERALS.put("Byte", Byte.class);
-      CLASS_LITERALS.put("byte", byte.class);
+    CLASS_LITERALS.put("Byte", Byte.class);
+    CLASS_LITERALS.put("byte", byte.class);
 
-      CLASS_LITERALS.put("Math", Math.class);
-      CLASS_LITERALS.put("Void", Void.class);
-      CLASS_LITERALS.put("Object", Object.class);
-      CLASS_LITERALS.put("Number", Number.class);
+    CLASS_LITERALS.put("Math", Math.class);
+    CLASS_LITERALS.put("Void", Void.class);
+    CLASS_LITERALS.put("Object", Object.class);
+    CLASS_LITERALS.put("Number", Number.class);
 
-      //java.lang包下的各项常量
-      CLASS_LITERALS.put("Class", Class.class);
-      CLASS_LITERALS.put("ClassLoader", ClassLoader.class);
-      CLASS_LITERALS.put("Runtime", Runtime.class);
-      CLASS_LITERALS.put("Thread", Thread.class);
-      CLASS_LITERALS.put("Compiler", Compiler.class);
-      CLASS_LITERALS.put("StringBuffer", StringBuffer.class);
-      CLASS_LITERALS.put("ThreadLocal", ThreadLocal.class);
-      CLASS_LITERALS.put("SecurityManager", SecurityManager.class);
-      CLASS_LITERALS.put("StrictMath", StrictMath.class);
+    //java.lang包下的各项常量
+    CLASS_LITERALS.put("Class", Class.class);
+    CLASS_LITERALS.put("ClassLoader", ClassLoader.class);
+    CLASS_LITERALS.put("Runtime", Runtime.class);
+    CLASS_LITERALS.put("Thread", Thread.class);
+    CLASS_LITERALS.put("Compiler", Compiler.class);
+    CLASS_LITERALS.put("StringBuffer", StringBuffer.class);
+    CLASS_LITERALS.put("ThreadLocal", ThreadLocal.class);
+    CLASS_LITERALS.put("SecurityManager", SecurityManager.class);
+    CLASS_LITERALS.put("StrictMath", StrictMath.class);
 
-      CLASS_LITERALS.put("Exception", Exception.class);
+    CLASS_LITERALS.put("Exception", Exception.class);
 
-      CLASS_LITERALS.put("Array", java.lang.reflect.Array.class);
+    CLASS_LITERALS.put("Array", java.lang.reflect.Array.class);
 
-      CLASS_LITERALS.put("StringBuilder", StringBuilder.class);
+    CLASS_LITERALS.put("StringBuilder", StringBuilder.class);
 
-      // Setup LITERALS
-      LITERALS.putAll(CLASS_LITERALS);
-      LITERALS.put("true", TRUE);
-      LITERALS.put("false", FALSE);
+    // Setup LITERALS
+    LITERALS.putAll(CLASS_LITERALS);
+    LITERALS.put("true", TRUE);
+    LITERALS.put("false", FALSE);
 
-      LITERALS.put("null", null);
-      LITERALS.put("nil", null);
+    LITERALS.put("null", null);
+    LITERALS.put("nil", null);
 
-      LITERALS.put("empty", BlankLiteral.INSTANCE);
+    LITERALS.put("empty", BlankLiteral.INSTANCE);
 
-      setLanguageLevel(Boolean.getBoolean("mvel.future.lang.support") ? 6 : 5);
-    }
+    setLanguageLevel(Boolean.getBoolean("mvel.future.lang.support") ? 6 : 5);
   }
 
   /** 实际上就是获取下一个节点，即跳过调试节点 */
@@ -246,45 +237,6 @@ public class AbstractParser implements Parser, Serializable {
        */
 
       boolean capture = false, union = false;
-
-      //当前正在编译阶段，因此从上下文中获取调试标识，以便进行处理
-      if ((fields & ASTNode.COMPILE_IMMEDIATE) != 0) {
-        debugSymbols = pCtx.isDebugSymbols();
-      }
-
-      //如果在调试模式下，则每次调用nextToken，都将一个代码行节点加入到处理当中，以描述当前的处理状态
-      //同时,按照处理逻辑,这里的处理逻辑会将第1个节点返回给调用,即此调试节点会以第1个节点加入到节点处理链中,即astLinkedList中
-      if (debugSymbols) {
-        if (!lastWasLineLabel) {
-          if (pCtx.getSourceFile() == null) {
-            throw new CompileException("unable to produce debugging symbols: source name must be provided.", expr, st);
-          }
-
-          if (!pCtx.isLineMapped(pCtx.getSourceFile())) {
-            pCtx.initLineMapping(pCtx.getSourceFile(), expr);
-          }
-
-          skipWhitespace();
-
-          if (cursor >= end) {
-            return null;
-          }
-
-          int line = pCtx.getLineFor(pCtx.getSourceFile(), cursor);
-
-          //当前行是否已经处理过，即在调试中是否已经认为此行处理了，仅在未处理时，才会返回此调试行
-          if (!pCtx.isVisitedLine(pCtx.getSourceFile(), pCtx.setLineCount(line)) && !pCtx.isBlockSymbols()) {
-            lastWasLineLabel = true;
-            pCtx.visitLine(pCtx.getSourceFile(), line);
-
-            return lastNode = pCtx.setLastLineLabel(new LineLabel(pCtx.getSourceFile(), line, pCtx));
-          }
-        }
-        else {
-          //因为刚才处理过代码行，因此将相应的标识置false,表示要处理正常的节点了
-          lastWasComment = lastWasLineLabel = false;
-        }
-      }
 
       //Skip any whitespace currently under the starting point.
       skipWhitespace();
@@ -2434,7 +2386,7 @@ public class AbstractParser implements Parser, Serializable {
     pCtx.addError(new ErrorDetail(expr, start, true, message));
   }
 
-  public static void setLanguageLevel(int level) {
+  private static void setLanguageLevel(int level) {
     OPERATORS.clear();
     OPERATORS.putAll(loadLanguageFeaturesByLevel(level));
   }
@@ -2448,7 +2400,6 @@ public class AbstractParser implements Parser, Serializable {
     operatorsTable.put("switch", SWITCH);
     operatorsTable.put("function", FUNCTION);
     operatorsTable.put("def", FUNCTION);
-
 
     operatorsTable.put("=", ASSIGN);
     operatorsTable.put("var", UNTYPED_VAR);

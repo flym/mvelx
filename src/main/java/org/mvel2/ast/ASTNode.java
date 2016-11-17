@@ -22,7 +22,6 @@ import org.mvel2.CompileException;
 import org.mvel2.ParserConfiguration;
 import org.mvel2.ParserContext;
 import org.mvel2.compiler.Accessor;
-import org.mvel2.debug.DebugTools;
 import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.optimizers.AccessorOptimizer;
 import org.mvel2.optimizers.OptimizationNotSupported;
@@ -484,7 +483,7 @@ public class ASTNode implements Cloneable, Serializable {
   }
 
   public String toString() {
-    return isOperator() ? "<<" + DebugTools.getOperatorName(getOperator()) + ">>" :
+    return isOperator() ? "<<" + (getOperator()) + ">>" :
         (PCTX_STORED & fields) != 0 ? nameCache : new String(expr, start, offset);
   }
 

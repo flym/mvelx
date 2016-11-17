@@ -20,7 +20,6 @@ package org.mvel2.math;
 import org.mvel2.DataTypes;
 import org.mvel2.Unit;
 import org.mvel2.compiler.BlankLiteral;
-import org.mvel2.debug.DebugTools;
 import org.mvel2.util.InternalNumber;
 
 import java.math.BigDecimal;
@@ -399,7 +398,7 @@ public strictfp class MathProcessor {
     throw new RuntimeException("could not perform numeric operation on non-numeric types: left-type="
         + (val1 != null ? val1.getClass().getName() : "null") + "; right-type="
         + (val2 != null ? val2.getClass().getName() : "null")
-        + " [vals (" + valueOf(val1) + ", " + valueOf(val2) + ") operation=" + DebugTools.getOperatorName(operation) + " (opcode:" + operation + ") ]");
+        + " [vals (" + valueOf(val1) + ", " + valueOf(val2) + ") operation=" + (operation) + " (opcode:" + operation + ") ]");
   }
 
   /** 安全地eq判定,即处理null值,避免null.equals 的操作 */

@@ -1442,7 +1442,6 @@ public class ParseTools {
             case '\r':
               continue;
             case '\n':
-              if (pCtx != null) pCtx.setLineOffset((short) start);
               lines++;
           }
         }
@@ -1466,7 +1465,6 @@ public class ParseTools {
                   }
                 case '\r':
                 case '\n':
-                  if (pCtx != null) pCtx.setLineOffset((short) start);
                   lines++;
                   break;
               }
@@ -1487,7 +1485,6 @@ public class ParseTools {
         }
         //惟一退出的情况
         else if (chars[start] == term && --depth == 0) {
-          if (pCtx != null) pCtx.incrementLineCount(lines);
           return start;
         }
       }

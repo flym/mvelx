@@ -22,14 +22,16 @@ import org.mvel2.ast.Function;
 import org.mvel2.ast.LineLabel;
 import org.mvel2.compiler.AbstractParser;
 import org.mvel2.compiler.CompiledExpression;
-import org.mvel2.compiler.Parser;
 import org.mvel2.integration.Interceptor;
 import org.mvel2.util.LineMapper;
 import org.mvel2.util.MethodStub;
 import org.mvel2.util.ReflectionUtil;
 
 import java.io.Serializable;
-import java.lang.reflect.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.*;
 
 /**
@@ -47,21 +49,10 @@ import java.util.*;
  * </code</pre>
  */
 public class ParserContext implements Serializable {
-  /** 基于指定的文件进行编译时相应的原文件引用 */
-  private String sourceFile;
-
-  /** 基于多行时相应的文件行数 */
-  private int lineCount = 1;
-  /** 设置基于多行,当前位置所距行首的距离 */
-  private int lineOffset;
-
   /** 父上下文,即在解析过程中,也存在递归解析的过程 */
   private ParserContext parent;
   /** 相应的解析配置 */
   private ParserConfiguration parserConfiguration;
-
-  /** 无用属性 */
-  private Object evaluationContext;
 
   /**
    * 存放当前有顺序的输入变量信息,顺序保证变量不会随机分布，之后可以根据此顺序查找具体值
@@ -100,9 +91,6 @@ public class ParserContext implements Serializable {
   /** 最新的代码行(调试使用) */
   private LineLabel lastLineLabel;
 
-  /** 最底层解析器,实际上没有被使用 */
-  @Deprecated
-  private transient Parser rootParser;
   /** 缓存的编译表达式 */
   private transient Map<String, CompiledExpression> compiledExpressionCache;
   /** 针对指定的编译表达式，缓存相应的返回类型 */
@@ -111,7 +99,6 @@ public class ParserContext implements Serializable {
   /** 当前是否是一个函数上下文,即正在一个解析函数的过程当中 */
   private boolean functionContext = false;
   /** 无用字段 */
-  @Deprecated
   private boolean compiled = false;
   /** 是否是严格类型调用的，即相应的泛型也严格处理 */
   private boolean strictTypeEnforcement = false;
@@ -122,16 +109,8 @@ public class ParserContext implements Serializable {
 
   /** 表示在过程中是否有严重的错误发生 */
   private boolean fatalError = false;
-  /** 无用字段 */
-  @Deprecated
-  private boolean retainParserState = false;
-  /** 是否有调试标识 */
-  private boolean debugSymbols = false;
   /** 语法块标识,用于临时进行标识,无特殊作用 */
   private boolean blockSymbols = false;
-  /** 无用字段 */
-  @Deprecated
-  private boolean executableCodeReached = false;
   /**
    * 是否在解析过程中允许按下标进行变量存储和分配,即开启变量工厂的下标处理模式
    * 或者是认为在处理过程中,是否允许添加新的变量信息
@@ -144,27 +123,9 @@ public class ParserContext implements Serializable {
     parserConfiguration = new ParserConfiguration();
   }
 
-  public ParserContext(boolean debugSymbols) {
-    this();
-    this.debugSymbols = debugSymbols;
-  }
-
-  @Deprecated
-  public ParserContext(Parser rootParser) {
-    this();
-    this.rootParser = rootParser;
-  }
-
   /** 通过一个外界的解析配置信息初始化上下文 */
   public ParserContext(ParserConfiguration parserConfiguration) {
     this.parserConfiguration = parserConfiguration;
-  }
-
-  /** 此方法实际无效 */
-  @Deprecated
-  public ParserContext(ParserConfiguration parserConfiguration, Object evaluationContext) {
-    this(parserConfiguration);
-    this.evaluationContext = evaluationContext;
   }
 
   /** 通过一个已有的解析配置+父类上下文+当前是否为函数上下文构建起新的解析配置对象 */
@@ -176,14 +137,12 @@ public class ParserContext implements Serializable {
 
   /** 使用一个针对对象引入+拦截器构建的解析配置,以及相应的脚本源文构建起解析上下文 */
   public ParserContext(Map<String, Object> imports, Map<String, Interceptor> interceptors, String sourceFile) {
-    this.sourceFile = sourceFile;
     this.parserConfiguration = new ParserConfiguration(imports, interceptors);
   }
 
   /** 构建起一个子上下文,以用于特定的上下文处理,即相应原来的信息进行复制处理,主要用于处理for循环 */
   public ParserContext createSubcontext() {
     ParserContext ctx = new ParserContext(parserConfiguration);
-    ctx.sourceFile = sourceFile;
     ctx.parent = this;
 
     ctx.addInputs(inputs);
@@ -198,19 +157,13 @@ public class ParserContext implements Serializable {
     ctx.globalFunctions = globalFunctions;
     ctx.lastTypeParameters = lastTypeParameters;
     ctx.errorList = errorList;
-    ctx.rootParser = rootParser;
-    ctx.lineCount = lineCount;
-    ctx.lineOffset = lineOffset;
 
     ctx.compiled = compiled;
     ctx.strictTypeEnforcement = strictTypeEnforcement;
     ctx.strongTyping = strongTyping;
 
     ctx.fatalError = fatalError;
-    ctx.retainParserState = retainParserState;
-    ctx.debugSymbols = debugSymbols;
     ctx.blockSymbols = blockSymbols;
-    ctx.executableCodeReached = executableCodeReached;
     ctx.indexAllocation = indexAllocation;
 
     return ctx;
@@ -254,8 +207,6 @@ public class ParserContext implements Serializable {
     };
     ctx.initializeTables();
 
-    ctx.sourceFile = sourceFile;
-
     ctx.inputs = inputs;
     ctx.variables = variables;
     ctx.indexedInputs = indexedInputs;
@@ -268,19 +219,13 @@ public class ParserContext implements Serializable {
     ctx.globalFunctions = globalFunctions;
     ctx.lastTypeParameters = lastTypeParameters;
     ctx.errorList = errorList;
-    ctx.rootParser = rootParser;
-    ctx.lineCount = lineCount;
-    ctx.lineOffset = lineOffset;
 
     ctx.compiled = compiled;
     ctx.strictTypeEnforcement = strictTypeEnforcement;
     ctx.strongTyping = strongTyping;
 
     ctx.fatalError = fatalError;
-    ctx.retainParserState = retainParserState;
-    ctx.debugSymbols = debugSymbols;
     ctx.blockSymbols = blockSymbols;
-    ctx.executableCodeReached = executableCodeReached;
     ctx.indexAllocation = indexAllocation;
 
     return ctx;
@@ -325,65 +270,6 @@ public class ParserContext implements Serializable {
       return inputs.get(name);
     }
     return null;
-  }
-
-  /**
-   * Get total number of lines declared in the current context.
-   *
-   * @return int of lines
-   */
-  public int getLineCount() {
-    return lineCount;
-  }
-
-  /**
-   * Set the current number of lines in the current context. (Generally only used by the compiler)
-   *
-   * @param lineCount The number of lines
-   * @return int of lines
-   */
-  public int setLineCount(int lineCount) {
-    return this.lineCount = lineCount;
-  }
-
-  /**
-   * 增加记录行,主要用于记录解析到了新的行数
-   * Increments the current line count by the specified amount
-   *
-   * @param increment The number of lines to increment
-   * @return int of lines
-   */
-  public int incrementLineCount(int increment) {
-    return this.lineCount += increment;
-  }
-
-  /**
-   * Get the current line offset.  This measures the number of cursor positions back to the beginning of the line.
-   *
-   * @return int offset
-   */
-  public int getLineOffset() {
-    return lineOffset;
-  }
-
-  /**
-   * Sets the current line offset. (Generally only used by the compiler)
-   *
-   * @param lineOffset The offset amount
-   */
-  public void setLineOffset(int lineOffset) {
-    this.lineOffset = lineOffset;
-  }
-
-  /**
-   * Sets both the current line count and line offset
-   *
-   * @param lineCount  The line count
-   * @param lineOffset The line offset
-   */
-  public void setLineAndOffset(int lineCount, int lineOffset) {
-    //addKnownLine(this.lineCount = lineCount);
-    this.lineOffset = lineOffset;
   }
 
   /**
@@ -441,16 +327,6 @@ public class ParserContext implements Serializable {
   }
 
   /**
-   * 往解析配置中添加一个类,使用类的简名simpleName作为引用名,后续可以直接进行类引用
-   * Adds an import for the specified <tt>Class</tt>.
-   *
-   * @param cls The instance of the <tt>Class</tt> which represents the imported class.
-   */
-  public void addImport(Class cls) {
-    addImport(cls.getSimpleName(), cls);
-  }
-
-  /**
    * 使用指定的引用名往解析配置中添加一个引用类
    * 这里的引用名不一定非得是类名,也可以是别名.比如通过x 引用 Txyz这种情况
    * Adds an import for a specified <tt>Class</tt> using an alias.  For example:
@@ -504,8 +380,8 @@ public class ParserContext implements Serializable {
    * Initializes internal Maps.  Called by the compiler.
    */
   public void initializeTables() {
-    if (variables == null) variables = new LinkedHashMap<String, Class>();
-    if (inputs == null) inputs = new LinkedHashMap<String, Class>();
+    if (variables == null) variables = new LinkedHashMap<>();
+    if (inputs == null) inputs = new LinkedHashMap<>();
 
     //开启当前作用域，并将相应的变量和输入信息加到当前作用域当中
     if (variableVisibility == null) {
@@ -588,37 +464,11 @@ public class ParserContext implements Serializable {
 
   /** 添加入参定义及类型 */
   public void addInput(String name, Class type) {
-    if (inputs == null) inputs = new LinkedHashMap<String, Class>();
+    if (inputs == null) inputs = new LinkedHashMap<>();
     if (inputs.containsKey(name) || (variables != null && variables.containsKey(name))) return;
     if (type == null) type = Object.class;
 
     inputs.put(name, type);
-  }
-
-  /** 添加入参定义及类型,以及类型的泛型参数类型信息 */
-  public void addInput(String name, Class type, Class[] typeParameters) {
-    if (type == null) type = Object.class;
-    addInput(name, type);
-
-    if (this.typeParameters == null) {
-      this.typeParameters = new LinkedHashMap<String, Map<String, Type>>();
-    }
-    if (this.typeParameters.get(name) == null) {
-      this.typeParameters.put(name, new LinkedHashMap<String, Type>());
-    }
-
-    Map<String, Type> t = this.typeParameters.get(name);
-
-    //要求声明的类型长度与当前类的泛型长度应该是一样的
-    if (typeParameters.length != type.getTypeParameters().length) {
-      throw new RuntimeException("wrong number of type parameters for: " + type.getName());
-    }
-
-    TypeVariable[] tvs = type.getTypeParameters();
-
-    for (int i = 0; i < typeParameters.length; i++) {
-      t.put(tvs[i].getName(), typeParameters[i]);
-    }
   }
 
   /** 批量添加一组入参信息 */
@@ -645,16 +495,12 @@ public class ParserContext implements Serializable {
   }
 
   public List<ErrorDetail> getErrorList() {
-    return errorList == null ? Collections.<ErrorDetail>emptyList() : errorList;
-  }
-
-  public void setErrorList(List<ErrorDetail> errorList) {
-    this.errorList = errorList;
+    return errorList == null ? Collections.emptyList() : errorList;
   }
 
   /** 添加一个错误信息,如果错误信息是严重的,则置相应的标记 */
   public void addError(ErrorDetail errorDetail) {
-    if (errorList == null) errorList = new ArrayList<ErrorDetail>();
+    if (errorList == null) errorList = new ArrayList<>();
     else {
       for (ErrorDetail detail : errorList) {
         if (detail.getMessage().equals(errorDetail.getMessage())
@@ -674,110 +520,28 @@ public class ParserContext implements Serializable {
     return fatalError;
   }
 
-  public void setFatalError(boolean fatalError) {
-    this.fatalError = fatalError;
-  }
-
   public boolean isStrictTypeEnforcement() {
     return strictTypeEnforcement;
-  }
-
-  /**
-   * Enables strict type enforcement -
-   *
-   * @param strictTypeEnforcement -
-   */
-  public void setStrictTypeEnforcement(boolean strictTypeEnforcement) {
-    this.strictTypeEnforcement = strictTypeEnforcement;
   }
 
   public boolean isStrongTyping() {
     return strongTyping;
   }
 
-  /**
-   * Enables strong type enforcement.
-   *
-   * @param strongTyping -
-   */
-  public void setStrongTyping(boolean strongTyping) {
-    if (this.strongTyping = strongTyping) {
-      // implies strict-type enforcement too
-      this.strictTypeEnforcement = true;
-    }
-  }
-
-  @Deprecated
-  public boolean isRetainParserState() {
-    return retainParserState;
-  }
-
-  @Deprecated
-  public void setRetainParserState(boolean retainParserState) {
-    this.retainParserState = retainParserState;
-  }
-
-  @Deprecated
-  public Parser getRootParser() {
-    return rootParser;
-  }
-
-  @Deprecated
-  public void setRootParser(Parser rootParser) {
-    this.rootParser = rootParser;
-  }
-
-  public String getSourceFile() {
-    return sourceFile;
-  }
-
-  public void setSourceFile(String sourceFile) {
-    if (sourceFile != null)
-      this.sourceFile = sourceFile;
-  }
-
   public Map<String, Interceptor> getInterceptors() {
     return this.parserConfiguration.getInterceptors();
   }
 
-  public void setInterceptors(Map<String, Interceptor> interceptors) {
-    this.parserConfiguration.setInterceptors(interceptors);
-  }
-
-  public Map<String, Object> getImports() {
-    return this.parserConfiguration.getImports();
-  }
-
-  public void setImports(Map<String, Object> imports) {
-    if (imports == null) return;
-
-    Object val;
-    for (Map.Entry<String, Object> entry : imports.entrySet()) {
-      if ((val = entry.getValue()) instanceof Class) {
-        addImport(entry.getKey(), (Class) val);
-      }
-      else if (val instanceof Method) {
-        addImport(entry.getKey(), (Method) val);
-      }
-      else if (val instanceof MethodStub) {
-        addImport(entry.getKey(), (MethodStub) val);
-      }
-      else {
-        throw new RuntimeException("invalid element in imports map: " + entry.getKey() + " (" + val + ")");
-      }
-    }
-  }
-
   private void initVariableVisibility() {
     if (variableVisibility == null) {
-      variableVisibility = new ArrayList<Set<String>>();
+      variableVisibility = new ArrayList<>();
     }
   }
 
   /** 用于创建一个新的变量作用域 */
   public void pushVariableScope() {
     initVariableVisibility();
-    variableVisibility.add(new HashSet<String>());
+    variableVisibility.add(new HashSet<>());
   }
 
   /** 用于将刚才的变量作用域出栈，以表示不再使用此作用域 */
@@ -834,69 +598,12 @@ public class ParserContext implements Serializable {
     this.variables = variables;
   }
 
-  @Deprecated
   public boolean isCompiled() {
     return compiled;
   }
 
-  @Deprecated
   public void setCompiled(boolean compiled) {
     this.compiled = compiled;
-  }
-
-  public boolean isDebugSymbols() {
-    return debugSymbols;
-  }
-
-  public void setDebugSymbols(boolean debugSymbols) {
-    this.debugSymbols = debugSymbols;
-  }
-
-  public boolean isLineMapped(String sourceName) {
-    return sourceLineLookups != null && sourceLineLookups.containsKey(sourceName);
-  }
-
-  /** 在整个字符串中将每一行进行初始化并进行标识好，即多少行，起始点，结束点等 */
-  public void initLineMapping(String sourceName, char[] expr) {
-    if (sourceLineLookups == null) {
-      sourceLineLookups = new HashMap<String, LineMapper.LineLookup>();
-    }
-    sourceLineLookups.put(sourceName, new LineMapper(expr).map());
-  }
-
-  /** 针对一个下标值拿到此下标所对应的行数 */
-  public int getLineFor(String sourceName, int cursor) {
-    return (sourceLineLookups != null
-        && sourceLineLookups.containsKey(sourceName)) ?
-        sourceLineLookups.get(sourceName).getLineFromCursor(cursor) : -1;
-  }
-
-  /** 指定行是否已标识过 */
-  public boolean isVisitedLine(String sourceName, int lineNumber) {
-    return visitedLines != null
-        && visitedLines.containsKey(sourceName)
-        && visitedLines.get(sourceName).contains(lineNumber);
-  }
-
-  /** 设置此行已经处理过了 */
-  public void visitLine(String sourceName, int lineNumber) {
-    if (visitedLines == null) {
-      visitedLines = new HashMap<String, Set<Integer>>();
-    }
-
-    if (!visitedLines.containsKey(sourceName)) {
-      visitedLines.put(sourceName, new TreeSet<Integer>());
-    }
-
-    visitedLines.get(sourceName).add(lineNumber);
-  }
-
-  public LineLabel getLastLineLabel() {
-    return lastLineLabel;
-  }
-
-  public LineLabel setLastLineLabel(LineLabel lastLineLabel) {
-    return this.lastLineLabel = lastLineLabel;
   }
 
   public boolean hasImports() {
@@ -905,7 +612,7 @@ public class ParserContext implements Serializable {
 
   /** 声明函数定义 */
   public void declareFunction(Function function) {
-    if (globalFunctions == null) globalFunctions = new LinkedHashMap<String, Function>();
+    if (globalFunctions == null) globalFunctions = new LinkedHashMap<>();
     globalFunctions.put(function.getName(), function);
   }
 
@@ -918,20 +625,11 @@ public class ParserContext implements Serializable {
     return globalFunctions == null ? Collections.emptyMap() : globalFunctions;
   }
 
-  public boolean hasFunction(String name) {
-    return globalFunctions != null && globalFunctions.containsKey(name);
-  }
-
-  /** 是否具有全局函数 */
-  public boolean hasFunction() {
-    return globalFunctions != null && globalFunctions.size() != 0;
-  }
-
   /** 为指定引用名字的类添加相应的泛型类型信息 */
   public void addTypeParameters(String name, Class type) {
-    if (typeParameters == null) typeParameters = new HashMap<String, Map<String, Type>>();
+    if (typeParameters == null) typeParameters = new HashMap<>();
 
-    Map<String, Type> newPkg = new HashMap<String, Type>();
+    Map<String, Type> newPkg = new HashMap<>();
 
     for (Type t : type.getTypeParameters()) {
       newPkg.put(t.toString(), Object.class);
@@ -941,9 +639,10 @@ public class ParserContext implements Serializable {
   }
 
   /** 批量添加泛型类型信息 */
+  @SuppressWarnings("unchecked")
   public void addTypeParameters(Map<String, Map<String, Type>> typeParameters) {
     if (typeParameters == null) return;
-    if (this.typeParameters == null) typeParameters = new HashMap<String, Map<String, Type>>();
+    if (this.typeParameters == null) typeParameters = new HashMap<>();
 
     Map iMap;
     for (Map.Entry<String, Map<String, Type>> e : typeParameters.entrySet()) {
@@ -981,27 +680,9 @@ public class ParserContext implements Serializable {
     return types;
   }
 
-  public boolean isBlockSymbols() {
-    return blockSymbols;
-  }
-
-  public void setBlockSymbols(boolean blockSymbols) {
-    this.blockSymbols = blockSymbols;
-  }
-
   /** 在解析过程中是否存在变量溢出(用于判定无限循环) */
   public boolean isVariablesEscape() {
     return variablesEscape;
-  }
-
-  @Deprecated
-  public boolean isExecutableCodeReached() {
-    return executableCodeReached;
-  }
-
-  @Deprecated
-  public void setExecutableCodeReached(boolean executableCodeReached) {
-    this.executableCodeReached = executableCodeReached;
   }
 
   /** 声明当前正在进行优化 */
@@ -1015,42 +696,14 @@ public class ParserContext implements Serializable {
   }
 
   private void initIndexedVariables() {
-    if (indexedInputs == null) indexedInputs = new ArrayList<String>();
-    if (indexedLocals == null) indexedLocals = new ArrayList<String>();
+    if (indexedInputs == null) indexedInputs = new ArrayList<>();
+    if (indexedLocals == null) indexedLocals = new ArrayList<>();
   }
 
   /** 获取之前的顺序参数列表(如函数参数定义) */
   public ArrayList<String> getIndexedInputs() {
     initIndexedVariables();
     return indexedInputs;
-  }
-
-  /** 添加顺序入参信息 */
-  public void addIndexedInput(String[] variables) {
-    initIndexedVariables();
-    for (String s : variables) {
-      if (!indexedInputs.contains(s))
-        indexedInputs.add(s);
-    }
-  }
-
-  public void addIndexedLocals(String[] variables) {
-    initIndexedVariables();
-    for (String s : indexedLocals) {
-      if (!indexedLocals.contains(s))
-        indexedLocals.add(s);
-    }
-  }
-
-  /** 没有实际作用 */
-  @Deprecated
-  public void addIndexedLocals(Collection<String> variables) {
-    if (variables == null) return;
-    initIndexedVariables();
-    for (String s : variables) {
-      if (!indexedLocals.contains(s))
-        indexedLocals.add(s);
-    }
   }
 
   /** 添加一个顺序入参参数 */
@@ -1063,10 +716,7 @@ public class ParserContext implements Serializable {
   public void addIndexedInputs(Collection<String> variables) {
     if (variables == null) return;
     initIndexedVariables();
-    for (String s : variables) {
-      if (!indexedInputs.contains(s))
-        indexedInputs.add(s);
-    }
+    variables.stream().filter(s -> !indexedInputs.contains(s)).forEach(s -> indexedInputs.add(s));
   }
 
   /** 查找一个变量在当前输入变量以及本地变量中的顺序值 */
@@ -1083,15 +733,6 @@ public class ParserContext implements Serializable {
     }
 
     return -1;
-  }
-
-  @Deprecated
-  public Object getEvaluationContext() {
-    return evaluationContext;
-  }
-
-  public boolean hasIndexedInputs() {
-    return indexedInputs != null && indexedInputs.size() != 0;
   }
 
   public boolean isIndexAllocation() {
@@ -1125,10 +766,6 @@ public class ParserContext implements Serializable {
     this.lastTypeParameters = lastTypeParameters;
   }
 
-  public boolean isAllowBootstrapBypass() {
-    return parserConfiguration.isAllowBootstrapBypass();
-  }
-
   /** 配置解析配置的二次编译标记 */
   public void setAllowBootstrapBypass(boolean allowBootstrapBypass) {
     parserConfiguration.setAllowBootstrapBypass(allowBootstrapBypass);
@@ -1145,14 +782,14 @@ public class ParserContext implements Serializable {
 
   public Map<String, CompiledExpression> getCompiledExpressionCache() {
     if (compiledExpressionCache == null) {
-      compiledExpressionCache = new HashMap<String, CompiledExpression>();
+      compiledExpressionCache = new HashMap<>();
     }
     return compiledExpressionCache;
   }
 
   public Map<String, Class> getReturnTypeCache() {
     if (returnTypeCache == null) {
-      returnTypeCache = new HashMap<String, Class>();
+      returnTypeCache = new HashMap<>();
     }
     return returnTypeCache;
   }
@@ -1161,42 +798,5 @@ public class ParserContext implements Serializable {
 
   public static ParserContext create() {
     return new ParserContext();
-  }
-
-  public ParserContext stronglyTyped() {
-    setStrongTyping(true);
-    return this;
-  }
-
-  public ParserContext withInput(String name, Class type) {
-    addInput(name, type);
-    return this;
-  }
-
-  public ParserContext withInputs(Map<String, Class> inputs) {
-    setInputs(inputs);
-    return this;
-  }
-
-  public ParserContext withTypeParameter(String name, Class type) {
-    addTypeParameters(name, type);
-    return this;
-  }
-
-  public ParserContext withTypeParameters(Map<String, Map<String, Type>> typeParameters) {
-    addTypeParameters(typeParameters);
-    return this;
-  }
-
-  public ParserContext withImport(Class clazz) {
-    addImport(clazz);
-    return this;
-  }
-
-  public ParserContext withIndexedVars(String[] varNames) {
-    indexedInputs = new ArrayList<String>();
-    Collections.addAll(indexedInputs, varNames);
-
-    return this;
   }
 }
