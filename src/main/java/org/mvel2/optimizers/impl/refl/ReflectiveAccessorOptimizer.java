@@ -21,7 +21,6 @@ import org.mvel2.*;
 import org.mvel2.ast.FunctionInstance;
 import org.mvel2.ast.TypeDescriptor;
 import org.mvel2.compiler.*;
-import org.mvel2.integration.GlobalListenerFactory;
 import org.mvel2.integration.PropertyHandler;
 import org.mvel2.integration.VariableResolver;
 import org.mvel2.integration.VariableResolverFactory;
@@ -44,7 +43,8 @@ import static java.lang.reflect.Array.getLength;
 import static org.mvel2.DataConversion.canConvert;
 import static org.mvel2.DataConversion.convert;
 import static org.mvel2.ast.TypeDescriptor.getClassReference;
-import static org.mvel2.integration.GlobalListenerFactory.*;
+import static org.mvel2.integration.GlobalListenerFactory.hasSetListeners;
+import static org.mvel2.integration.GlobalListenerFactory.notifySetListeners;
 import static org.mvel2.integration.PropertyHandlerFactory.*;
 import static org.mvel2.util.CompilerTools.expectType;
 import static org.mvel2.util.ParseTools.*;
@@ -126,6 +126,7 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
   }
 
   /** 进行相应的设置值访问器创建 */
+  @SuppressWarnings("unchecked")
   public Accessor optimizeSetAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx,
                                       Object thisRef, VariableResolverFactory factory, boolean rootThisRef,
                                       Object value, Class ingressType) {
@@ -184,19 +185,16 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
         String ex = new String(property, st, cursor - st);
 
         if (ctx instanceof Map) {
-          //noinspection unchecked
-          //todo 这里的ex将采用编译运行来处理
-//            ((Map) ctx).put(eval(ex, ctx, variableFactory), convert(value, returnType = verifier.analyze()));
+          Object key = ((ExecutableStatement) ParseTools.subCompileExpression(ex.toCharArray(), pCtx)).getValue(ctx, variableFactory);
+          ((Map) ctx).put(key, convert(value, returnType = verifier.analyze()));
 
           addAccessorNode(new MapAccessorNest(ex, returnType));
 
           return rootNode;
         }
         else if (ctx instanceof List) {
-          //noinspection unchecked
-          //todo 这里的ex将采用编译运行来处理
-//            ((List) ctx).set(eval(ex, ctx, variableFactory, Integer.class),
-//                convert(value, returnType = verifier.analyze()));
+          Integer itemIdx = (Integer) ((ExecutableStatement) ParseTools.subCompileExpression(ex.toCharArray(), pCtx)).getValue(ctx, variableFactory);
+          ((List) ctx).set(itemIdx, convert(value, returnType = verifier.analyze()));
 
           addAccessorNode(new ListAccessorNest(ex, returnType));
 
@@ -207,10 +205,8 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
           return rootNode;
         }
         else if (ctx.getClass().isArray()) {
-          //noinspection unchecked
-          //todo 这里的ex将采用编译运行来处理
-//            Array.set(ctx, eval(ex, ctx, variableFactory, Integer.class),
-//                convert(value, getBaseComponentType(ctx.getClass())));
+          Integer idx = (Integer) ((ExecutableStatement) ParseTools.subCompileExpression(ex.toCharArray(), pCtx)).getValue(ctx, variableFactory);
+          Array.set(ctx, idx, convert(value, getBaseComponentType(ctx.getClass())));
           addAccessorNode(new ArrayAccessorNest(ex));
           return rootNode;
         }
@@ -285,10 +281,7 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
             , this.expr, this.start, pCtx);
       }
     }
-    catch (InvocationTargetException e) {
-      throw new PropertyAccessException("could not access property: " + new String(property), this.expr, st, e, pCtx);
-    }
-    catch (IllegalAccessException e) {
+    catch (InvocationTargetException | IllegalAccessException e) {
       throw new PropertyAccessException("could not access property: " + new String(property), this.expr, st, e, pCtx);
     }
     catch (IllegalArgumentException e) {
@@ -382,21 +375,6 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
     else {
       currNode = currNode.setNextNode(an);
     }
-  }
-
-  /** 支持按照扩展式的访问方式进行处理 */
-  private Object getBeanPropertyAO(Object ctx, String property)
-      throws Exception {
-
-    //通知相应的监控器
-    if (GlobalListenerFactory.hasGetListeners()) {
-      notifyGetListeners(ctx, property, variableFactory);
-      addAccessorNode(new Notify(property));
-    }
-
-    if (ctx != null && hasPropertyHandler(ctx.getClass())) return propHandler(property, ctx, ctx.getClass());
-
-    return getBeanProperty(ctx, property);
   }
 
   /** 读取属性值信息 */
@@ -764,135 +742,6 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
     }
   }
 
-
-  /** 使用支持扩展的方式来读取相应的集合属性 */
-  private Object getCollectionPropertyAO(Object ctx, String prop) throws Exception {
-    //先读取集合本身的值，如a['abc']，先读取a的值
-    if (prop.length() > 0) {
-      ctx = getBeanPropertyAO(ctx, prop);
-    }
-
-    currType = null;
-    if (ctx == null) return null;
-
-    int _start = ++cursor;
-
-    skipWhitespace();
-
-    if (cursor == end)
-      throw new CompileException("unterminated '['", this.expr, this.start);
-
-    String item;
-
-    if (scanTo(']'))
-      throw new CompileException("unterminated '['", this.expr, this.start);
-
-    item = new String(expr, _start, cursor - _start);
-
-    //下标是否是表达式(如果为false则表示下标是数字常量)
-    boolean itemSubExpr = true;
-
-    Object idx = null;
-
-    try {
-      idx = parseInt(item);
-      itemSubExpr = false;
-    }
-    catch (Exception e) {
-      // not a number;
-    }
-
-    //这里提前解析出相应的下标信息
-    ExecutableStatement itemStmt = null;
-    if (itemSubExpr) {
-      idx = (itemStmt = (ExecutableStatement) subCompileExpression(item.toCharArray(), pCtx))
-          .getValue(ctx, thisRef, variableFactory);
-    }
-
-    ++cursor;
-
-    //支持map访问
-    if (ctx instanceof Map) {
-      //支持对内置map逻辑进行调整处理
-      if (hasPropertyHandler(Map.class)) {
-        return propHandler(item, ctx, Map.class);
-      }
-      else {
-        if (itemSubExpr) {
-          addAccessorNode(new MapAccessorNest(itemStmt, null));
-        }
-        else {
-          addAccessorNode(new MapAccessor(parseInt(item)));
-        }
-
-        return ((Map) ctx).get(idx);
-      }
-    }
-    //支持list访问
-    else if (ctx instanceof List) {
-      //支持对内置的list的处理逻辑进行调整,即ao访问
-      if (hasPropertyHandler(List.class)) {
-        return propHandler(item, ctx, List.class);
-      }
-      else {
-        if (itemSubExpr) {
-          addAccessorNode(new ListAccessorNest(itemStmt, null));
-        }
-        else {
-          addAccessorNode(new ListAccessor(parseInt(item)));
-        }
-
-        return ((List) ctx).get((Integer) idx);
-      }
-    }
-    //支持数组访问
-    else if (ctx.getClass().isArray()) {
-      //支持对内置数组的处理方式进行调整
-      if (hasPropertyHandler(Array.class)) {
-        return propHandler(item, ctx, Array.class);
-      }
-      else {
-        if (itemSubExpr) {
-          addAccessorNode(new ArrayAccessorNest(itemStmt));
-        }
-        else {
-          addAccessorNode(new ArrayAccessor(parseInt(item)));
-        }
-
-        return Array.get(ctx, (Integer) idx);
-      }
-    }
-    //支持字符串访问
-    else if (ctx instanceof CharSequence) {
-      //支持对内置的字符串的处理方式进行调整
-      if (hasPropertyHandler(CharSequence.class)) {
-        return propHandler(item, ctx, CharSequence.class);
-      }
-      else {
-        if (itemSubExpr) {
-          addAccessorNode(new IndexedCharSeqAccessorNest(itemStmt));
-        }
-        else {
-          addAccessorNode(new IndexedCharSeqAccessor(parseInt(item)));
-        }
-
-        return ((CharSequence) ctx).charAt((Integer) idx);
-      }
-    }
-    //这里认为这里是一个数组类型声明，如A[，因此尝试创建相应的类型信息
-    else {
-      TypeDescriptor tDescr = new TypeDescriptor(expr, this.start, end - this.start, 0);
-      if (tDescr.isArray()) {
-        Class cls = getClassReference((Class) ctx, tDescr, variableFactory, pCtx);
-        rootNode = new StaticReferenceAccessor(cls);
-        return cls;
-      }
-
-      throw new CompileException("illegal use of []: unknown type: "
-          + ctx.getClass().getName(), this.expr, this.st);
-    }
-  }
-
   /**
    * 这里进行方法式访问和调用
    * Find an appropriate method, execute it, and return it's response.
@@ -1021,11 +870,11 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
     Method m;
     Class[] parameterTypes = null;
 
-    /**
+    /*
      * If we have not cached the method then we need to go ahead and try to resolve it.
      */
 
-    /**
+    /*
      * 重新尝试获取最匹配的方法，并且重置相应的参数类型
      * Try to find an instance method from the class target.
      */
@@ -1035,7 +884,7 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
 
     //静态方法，并且还没找到方法，尝试查找Class类上的方法,如getClass等
     if (m == null && classTarget) {
-      /**
+      /*
        * If we didn't find anything, maybe we're looking for the actual java.lang.Class methods.
        */
       if ((m = getBestCandidate(argTypes, name, cls, Class.class.getMethods(), false)) != null) {
@@ -1096,7 +945,7 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
       }
     }
     else {
-      /**
+      /*
        * 如果执行单元，则直接进行类型转换
        * Coerce any types if required.
        */
@@ -1116,7 +965,7 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
       addAccessorNode(new MethodAccessor(method, (ExecutableStatement[]) es));
     }
 
-    /**
+    /*
      * return the response.
      */
     currType = toNonPrimitiveType(method.getReturnType());

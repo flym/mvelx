@@ -307,8 +307,8 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
         if (ctx instanceof Map) {
           //noinspection unchecked
-          //todo 这里的ex将采用编译运行来处理
-//            ((Map) ctx).put(eval(ex, ctx, variableFactory), convert(value, returnType = verifier.analyze()));
+          Object key = ((ExecutableStatement) ParseTools.subCompileExpression(ex.toCharArray(), pCtx)).getValue(ctx, variableFactory);
+          ((Map) ctx).put(key, convert(value, returnType = verifier.analyze()));
 
           writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx));
 
@@ -332,9 +332,8 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
         }
         else if (ctx instanceof List) {
           //noinspection unchecked
-          //todo 这里的ex将采用编译运行来处理
-//            ((List) ctx).set(eval(ex, ctx, variableFactory, Integer.class),
-//                convert(value, returnType = verifier.analyze()));
+          Integer idx = (Integer) ((ExecutableStatement) ParseTools.subCompileExpression(ex.toCharArray(), pCtx)).getValue(ctx, variableFactory);
+          ((List) ctx).set(idx, convert(value, returnType = verifier.analyze()));
 
           writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx));
           unwrapPrimitive(int.class);
@@ -359,9 +358,7 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
         else if (ctx.getClass().isArray()) {
           Class type = getBaseComponentType(ctx.getClass());
 
-          //todo 这里的ex将采用编译运行来处理
-//            Object idx = eval(ex, ctx, variableFactory);
-          Object idx = null;
+          Object idx = ((ExecutableStatement) ParseTools.subCompileExpression(ex.toCharArray(), pCtx)).getValue(ctx, variableFactory);
 
           writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx), int.class);
           if (!(idx instanceof Integer)) {
