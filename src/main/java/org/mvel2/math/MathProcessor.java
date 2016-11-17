@@ -32,8 +32,7 @@ import java.util.Objects;
 
 import static java.lang.String.valueOf;
 import static org.mvel2.DataConversion.convert;
-import static org.mvel2.DataTypes.BIG_DECIMAL;
-import static org.mvel2.DataTypes.EMPTY;
+import static org.mvel2.DataTypes.*;
 import static org.mvel2.Operator.*;
 import static org.mvel2.util.ParseTools.*;
 
@@ -286,6 +285,12 @@ public strictfp class MathProcessor {
 
   /** 判断两个对象是否是直接的数字运算 */
   private static boolean isNumericOperation(int type1, Object val1, int operation, int type2, Object val2) {
+    //支持null与数字相加
+    if (operation == ADD && type1 != DataTypes.STRING && type2 != STRING && !(val1 instanceof CharSequence) && !(val2 instanceof CharSequence)) {
+      if ((val1 == null && val2 == null) || (val1 == null && isNumber(val2)) || (isNumber(val1) && val2 == null))
+        return true;
+    }
+
     //要么两个的类型都是数字
     //或者是作任意一个为数字,并且另外的可以转换为数字并且相应的操作不能为+,因为可能是字符串+数字,这时候为字符串拼接
     return (type1 > 99 && type2 > 99)

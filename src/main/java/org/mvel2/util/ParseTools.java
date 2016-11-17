@@ -1642,7 +1642,8 @@ public class ParseTools {
 
   /** 判定一个对象是否是数字或者可以转换为数字,这里的转换为实际转换,而不是自定义转换 */
   public static boolean isNumber(Object val) {
-    if (val == null) return false;
+    //如果为null，认为也是数字，只不过转换为0
+    if (val == null) return true;
     if (val instanceof String) return isNumber((String) val);
     if (val instanceof char[]) return isNumber(new String((char[]) val));
     return val instanceof Integer || val instanceof BigDecimal || val instanceof BigInteger
