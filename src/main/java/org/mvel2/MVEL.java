@@ -42,9 +42,6 @@ import static org.mvel2.util.ParseTools.optimizeTree;
  * MVEL.  The vast majority of MVEL's core functionality can be directly accessed through methods in this class.
  */
 public class MVEL {
-  static boolean DEBUG_FILE = getBoolean("mvel2.debug.fileoutput");
-  static String ADVANCED_DEBUGGING_FILE = System.getProperty("mvel2.debugging.file") == null ? "mvel_debug.txt" : System.getProperty("mvel2.debugging.file");
-  static boolean ADVANCED_DEBUG = getBoolean("mvel2.advanced_debugging");
   /** 在抛出有cause异常的执行异常时是否throw相应的的cause异常,而不是直接将当前异常进行包装显示 */
   public static boolean INVOKED_METHOD_EXCEPTIONS_BUBBLE = getBoolean("mvel2.invoked_meth_exceptions_bubble");
   /** 是否支持java样式的class常量调用，即通过A.class这种方式来获取相应的class属性 */
@@ -56,18 +53,6 @@ public class MVEL {
   public static boolean COMPILER_OPT_ALLOCATE_TYPE_LITERALS_TO_SHARED_SYMBOL_TABLE = getBoolean("mvel2.compiler.allocate_type_literals_to_shared_symbol_table");
 
   private MVEL() {
-  }
-
-  public static boolean isAdvancedDebugging() {
-    return ADVANCED_DEBUG;
-  }
-
-  public static String getDebuggingOutputFileName() {
-    return ADVANCED_DEBUGGING_FILE;
-  }
-
-  public static boolean isFileDebugging() {
-    return DEBUG_FILE;
   }
 
   /**
@@ -137,7 +122,7 @@ public class MVEL {
    * @return The cacheable compiled payload.
    */
   public static Serializable compileExpression(String expression) {
-    return compileExpression(expression, null, null, null);
+    return compileExpression(expression, null, null);
   }
 
   /**
@@ -166,55 +151,7 @@ public class MVEL {
    * @return The cacheable compiled payload.
    */
   public static Serializable compileExpression(String expression, Map<String, Object> imports) {
-    return compileExpression(expression, imports, null, null);
-  }
-
-  /**
-   * 将表达式+引入+拦截器进行编译，无源文件
-   * Compiles an expression and returns a Serializable object containing the compiled expression. This method
-   * accepts a Map of imports and Interceptors.  See {@link #compileExpression(String, Map)} for information on
-   * imports.  The imports parameter in this method is <em>optional</em> and it is safe to pass a <tt>null</tt>
-   * value.<br/>{@link org.mvel2.integration.Interceptor Interceptors} are markers within an expression that allow external hooks
-   * to be tied into the expression.
-   * <p/>
-   * <pre><code>
-   * // Create a Map to hold the interceptors.
-   * Map interceptors = new HashMap();
-   * <p/>
-   * // Create a simple interceptor.
-   * Interceptor logInterceptor = new Interceptor() {
-   * public int doBefore(ASTNode node, VariableResolverFactory factory) {
-   * System.out.println("Interceptor called before!");
-   * }
-   * <p/>
-   * public int doAfter(Object exitValue, ASTNode node, VariableResolverFactory factory) {
-   * System.out.println("Interceptor called after!");
-   * }
-   * };
-   * <p/>
-   * // Add the interceptor to the Map.
-   * interceptors.put("log", logInterceptor);
-   * <p/>
-   * // Create an expression
-   * String expr = "list = [1,2,3,4,5]; @log for (item : list) { System.out.println(item); };
-   * <p/>
-   * Serializable compiled = MVEL.compileExpression(expr, null, interceptors);
-   * <p/>
-   * // Execute expression with a blank Map to allow vars to be declared.
-   * MVEL.executeExpression(compiled, new HashMap());
-   * </code></pre>
-   * <p/>
-   * The above example demonstrates inserting an interceptor into a piece of code.  The <tt>@log</tt> interceptor
-   * wraps the subsequent statement.  In this case, the interceptor is fired before the <tt>for</tt> loop and
-   * after the <tt>for</tt> loop finishes.
-   *
-   * @param expression   A String containing the expression to be evaluated.
-   * @param imports      A String-Class/String-Method pair Map containing imports for the compiler.
-   * @param interceptors A Map of registered interceptors.
-   * @return A cacheable compiled payload.
-   */
-  public static Serializable compileExpression(String expression, Map<String, Object> imports, Map<String, Interceptor> interceptors) {
-    return compileExpression(expression, imports, interceptors, null);
+    return compileExpression(expression, imports, null);
   }
 
   /**
@@ -237,8 +174,8 @@ public class MVEL {
   }
 
   /** 对指定的字符串+导入+拦截器+源进行编译 */
-  public static Serializable compileExpression(String expression, Map<String, Object> imports, Map<String, Interceptor> interceptors, String sourceName) {
-    return compileExpression(expression, new ParserContext(imports, interceptors, sourceName));
+  public static Serializable compileExpression(String expression, Map<String, Object> imports, Map<String, Interceptor> interceptors) {
+    return compileExpression(expression, new ParserContext(imports, interceptors));
   }
 
   /** 使用字符数组+上下文进行编译 */
@@ -254,26 +191,20 @@ public class MVEL {
    * @param expression   The expression to be compiled
    * @param imports      Imported classes
    * @param interceptors Map of named interceptors
-   * @param sourceName   The name of the source file being evaluated (optional)
    * @return The cacheable compiled payload
    */
-  public static Serializable compileExpression(char[] expression, Map<String, Object> imports, Map<String, Interceptor> interceptors, String sourceName) {
-    return compileExpression(expression, new ParserContext(imports, interceptors, sourceName));
+  public static Serializable compileExpression(char[] expression, Map<String, Object> imports, Map<String, Interceptor> interceptors) {
+    return compileExpression(expression, new ParserContext(imports, interceptors));
   }
 
   /** 使用字符数组进行编译,无导入，无拦截器 */
   public static Serializable compileExpression(char[] expression) {
-    return compileExpression(expression, null, null, null);
+    return compileExpression(expression, null, null);
   }
 
   /** 使用字符数组+导入进行编译，无拦截器 */
   public static Serializable compileExpression(char[] expression, Map<String, Object> imports) {
-    return compileExpression(expression, imports, null, null);
-  }
-
-  /** 使用字符数组+导入+拦截器进行编译 */
-  public static Serializable compileExpression(char[] expression, Map<String, Object> imports, Map<String, Interceptor> interceptors) {
-    return compileExpression(expression, imports, interceptors, null);
+    return compileExpression(expression, imports, null);
   }
 
   /** 将字符串编译为一个单个获取值的编译表达式 */

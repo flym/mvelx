@@ -33,7 +33,6 @@ import static java.lang.reflect.Modifier.FINAL;
 import static java.lang.reflect.Modifier.STATIC;
 import static org.mvel2.DataConversion.canConvert;
 import static org.mvel2.DataConversion.convert;
-import static org.mvel2.MVEL.isAdvancedDebugging;
 import static org.mvel2.asm.Opcodes.*;
 import static org.mvel2.asm.Type.*;
 import static org.mvel2.ast.TypeDescriptor.getClassReference;
@@ -145,10 +144,6 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
    * Does all the boilerplate for initiating the JIT.
    */
   private void _initJIT() {
-    if (isAdvancedDebugging()) {
-      buildLog = new StringAppender();
-    }
-
     cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
 
     synchronized (Runtime.getRuntime()) {
@@ -176,10 +171,6 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
 
   private void _initJIT2() {
-    if (isAdvancedDebugging()) {
-      buildLog = new StringAppender();
-    }
-
     cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
 
     synchronized (Runtime.getRuntime()) {
@@ -3028,17 +3019,6 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
         + ">>\n-------------------------------\n");
     System.out.println(buildLog.toString());
     System.out.println("\n<END OF DUMP>\n");
-    if (MVEL.isFileDebugging()) {
-      try {
-        FileWriter writer = ParseTools.getDebugFileWriter();
-        writer.write(buildLog.toString());
-        writer.flush();
-        writer.close();
-      }
-      catch (IOException e) {
-        //empty
-      }
-    }
   }
 
   private Object propHandlerByteCode(String property, Object ctx, Class handler) {

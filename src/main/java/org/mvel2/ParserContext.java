@@ -19,11 +19,9 @@
 package org.mvel2;
 
 import org.mvel2.ast.Function;
-import org.mvel2.ast.LineLabel;
 import org.mvel2.compiler.AbstractParser;
 import org.mvel2.compiler.CompiledExpression;
 import org.mvel2.integration.Interceptor;
-import org.mvel2.util.LineMapper;
 import org.mvel2.util.MethodStub;
 import org.mvel2.util.ReflectionUtil;
 
@@ -83,14 +81,6 @@ public class ParserContext implements Serializable {
   /** 描述在编译过程中的错误信息 */
   private transient List<ErrorDetail> errorList;
 
-  /** 表达式对应表达式行的一些映射(调试使用) */
-  private transient Map<String, LineMapper.LineLookup> sourceLineLookups;
-  /** 描述已经在编译过程中处理过的行(调试使用) */
-  private transient Map<String, Set<Integer>> visitedLines;
-
-  /** 最新的代码行(调试使用) */
-  private LineLabel lastLineLabel;
-
   /** 缓存的编译表达式 */
   private transient Map<String, CompiledExpression> compiledExpressionCache;
   /** 针对指定的编译表达式，缓存相应的返回类型 */
@@ -136,7 +126,7 @@ public class ParserContext implements Serializable {
   }
 
   /** 使用一个针对对象引入+拦截器构建的解析配置,以及相应的脚本源文构建起解析上下文 */
-  public ParserContext(Map<String, Object> imports, Map<String, Interceptor> interceptors, String sourceFile) {
+  public ParserContext(Map<String, Object> imports, Map<String, Interceptor> interceptors) {
     this.parserConfiguration = new ParserConfiguration(imports, interceptors);
   }
 
@@ -150,8 +140,6 @@ public class ParserContext implements Serializable {
     ctx.addIndexedInputs(indexedInputs);
     ctx.addTypeParameters(typeParameters);
 
-    ctx.sourceLineLookups = sourceLineLookups;
-    ctx.lastLineLabel = lastLineLabel;
     ctx.variableVisibility = variableVisibility;
 
     ctx.globalFunctions = globalFunctions;
@@ -212,8 +200,6 @@ public class ParserContext implements Serializable {
     ctx.indexedInputs = indexedInputs;
     ctx.typeParameters = typeParameters;
 
-    ctx.sourceLineLookups = sourceLineLookups;
-    ctx.lastLineLabel = lastLineLabel;
     ctx.variableVisibility = variableVisibility;
 
     ctx.globalFunctions = globalFunctions;

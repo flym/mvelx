@@ -45,7 +45,6 @@ import static java.lang.Thread.currentThread;
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.mvel2.DataConversion.canConvert;
 import static org.mvel2.DataTypes.*;
-import static org.mvel2.MVEL.getDebuggingOutputFileName;
 import static org.mvel2.compiler.AbstractParser.LITERALS;
 import static org.mvel2.integration.ResolverTools.appendFactory;
 
@@ -1987,10 +1986,6 @@ public class ParseTools {
     else if (isDigit(name.charAt(0))) {
       throw new RuntimeException("not an identifier: " + name);
     }
-  }
-
-  public static FileWriter getDebugFileWriter() throws IOException {
-    return new FileWriter(new File(getDebuggingOutputFileName()), true);
   }
 
   public static boolean isPrimitiveWrapper(Class clazz) {
