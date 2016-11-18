@@ -41,6 +41,9 @@
         <!-- 发布版本 -->
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
 
+        <!-- 测试 -->
+        <testng.version>6.9.10</testng.version>
+
     </properties>
 
     <dependencies>
@@ -49,6 +52,14 @@
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>${testng.version}</version>
+            <scope>${dependency.scope.value.test}</scope>
         </dependency>
     </dependencies>
 
