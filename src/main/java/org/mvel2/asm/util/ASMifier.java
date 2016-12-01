@@ -177,7 +177,6 @@ public class ASMifier extends Printer {
         }
         text.add("import java.util.*;\n");
         text.add("import org.mvel2.asm.*;\n");
-        text.add("import org.mvel2.asm.attrs.*;\n");
         text.add("public class " + simpleName + "Dump implements Opcodes {\n\n");
         text.add("public static byte[] dump () throws Exception {\n\n");
         text.add("ClassWriter cw = new ClassWriter(0);\n");

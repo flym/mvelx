@@ -41,7 +41,7 @@ import org.xml.sax.helpers.AttributesImpl;
 /**
  * A {@link org.mvel2.asm.ClassVisitor ClassVisitor} that generates SAX 2.0
  * events from the visited class. It can feed any kind of
- * {@link org.xml.sax.ContentHandler ContentHandler}, e.g. XML serializer, XSLT
+ * {@link ContentHandler ContentHandler}, e.g. XML serializer, XSLT
  * or XQuery engines.
  * 
  * @see org.mvel2.asm.xml.Processor

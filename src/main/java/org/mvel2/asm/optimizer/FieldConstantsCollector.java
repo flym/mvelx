@@ -1,5 +1,4 @@
-<html>
-<!--
+/***
  * ASM: a very small and fast Java bytecode manipulation framework
  * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
@@ -27,23 +26,64 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
--->
-<body>
-Provides an implementation for optional class, field and method attributes.
+ */
+package org.mvel2.asm.optimizer;
 
-<p>
+import org.mvel2.asm.AnnotationVisitor;
+import org.mvel2.asm.Attribute;
+import org.mvel2.asm.FieldVisitor;
+import org.mvel2.asm.Opcodes;
+import org.mvel2.asm.TypePath;
 
-  By default ASM strips optional attributes, in order to keep them in
-  the bytecode that is being readed you should pass an array of required attribute
-  instances to {@link org.mvel2.asm.ClassReader#accept(org.mvel2.asm.ClassVisitor,
-  org.mvel2.asm.Attribute[], boolean) ClassReader.accept()} method.
-  In order to add custom attributes to the manually constructed bytecode concrete
-  subclasses of the {@link org.mvel2.asm.Attribute Attribute} can be passed to
-  the visitAttribute methods of the
-  {@link org.mvel2.asm.ClassVisitor ClassVisitor},
-  {@link org.mvel2.asm.FieldVisitor FieldVisitor} and
-  {@link org.mvel2.asm.MethodVisitor MethodVisitor} interfaces.
+/**
+ * A {@link FieldVisitor} that collects the {@link Constant}s of the fields it
+ * visits.
+ * 
+ * @author Eric Bruneton
+ */
+public class FieldConstantsCollector extends FieldVisitor {
 
-  @since ASM 1.4.1
-</body>
-</html>
+    private final ConstantPool cp;
+
+    public FieldConstantsCollector(final FieldVisitor fv, final ConstantPool cp) {
+        super(Opcodes.ASM5, fv);
+        this.cp = cp;
+    }
+
+    @Override
+    public AnnotationVisitor visitAnnotation(final String desc,
+            final boolean visible) {
+        cp.newUTF8(desc);
+        if (visible) {
+            cp.newUTF8("RuntimeVisibleAnnotations");
+        } else {
+            cp.newUTF8("RuntimeInvisibleAnnotations");
+        }
+        return new AnnotationConstantsCollector(fv.visitAnnotation(desc,
+                visible), cp);
+    }
+
+    @Override
+    public AnnotationVisitor visitTypeAnnotation(int typeRef,
+            TypePath typePath, String desc, boolean visible) {
+        cp.newUTF8(desc);
+        if (visible) {
+            cp.newUTF8("RuntimeVisibleTypeAnnotations");
+        } else {
+            cp.newUTF8("RuntimeInvisibleTypeAnnotations");
+        }
+        return new AnnotationConstantsCollector(fv.visitAnnotation(desc,
+                visible), cp);
+    }
+
+    @Override
+    public void visitAttribute(final Attribute attr) {
+        // can do nothing
+        fv.visitAttribute(attr);
+    }
+
+    @Override
+    public void visitEnd() {
+        fv.visitEnd();
+    }
+}
