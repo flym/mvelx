@@ -47,7 +47,7 @@ public class Union extends ASTNode {
         //构建出访问器,使用主节点的相应的值作为新访问器的上下文
         AccessorOptimizer o = OptimizerFactory.getThreadAccessorOptimizer();
         accessor = o.optimizeAccessor(pCtx, expr, start, offset,
-            main.getReducedValueAccelerated(ctx, thisValue, factory), thisValue, factory, false, main.getEgressType());
+            main.getReducedValueAccelerated(ctx, thisValue, factory), thisValue, factory, main.getEgressType());
         return o.getResultOptPass();
       }
       finally {

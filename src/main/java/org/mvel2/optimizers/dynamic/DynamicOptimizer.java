@@ -85,7 +85,8 @@ public class DynamicOptimizer extends AbstractOptimizer implements AccessorOptim
         totalRecycled = +classLoader.getTotalClasses();
         _init();
       }
-    } finally {
+    }
+    finally {
       writeLock.unlock();
     }
   }
@@ -94,12 +95,13 @@ public class DynamicOptimizer extends AbstractOptimizer implements AccessorOptim
 
   /** 进行正常的方法调用或访问 */
   public Accessor optimizeAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx, Object thisRef,
-                                   VariableResolverFactory factory, boolean rootThisRef, Class ingressType) {
+                                   VariableResolverFactory factory, Class ingressType) {
     readLock.lock();
     try {
+      Class ctxClass = ctx == null ? null : ctx.getClass();
       pCtx.optimizationNotify();
-      return classLoader.registerDynamicAccessor(new DynamicGetAccessor(pCtx, property, start, offset, 0,
-          firstStage.optimizeAccessor(pCtx, property, start, offset, ctx, thisRef, factory, rootThisRef, ingressType)));
+      return classLoader.registerDynamicAccessor(new DynamicGetAccessor(pCtx, property, start, offset, 0, ctxClass,
+          firstStage.optimizeAccessor(pCtx, property, start, offset, ctx, thisRef, factory, ingressType)));
     }
     finally {
       readLock.unlock();
@@ -144,7 +146,8 @@ public class DynamicOptimizer extends AbstractOptimizer implements AccessorOptim
                                          Object ctx, Object thisRef, VariableResolverFactory factory) {
     readLock.lock();
     try {
-      return classLoader.registerDynamicAccessor(new DynamicGetAccessor(pCtx, property, start, offset, 3,
+      Class ctxClass = ctx == null ? null : ctx.getClass();
+      return classLoader.registerDynamicAccessor(new DynamicGetAccessor(pCtx, property, start, offset, 3, ctxClass,
           firstStage.optimizeObjectCreation(pCtx, property, start, offset, ctx, thisRef, factory)));
     }
     finally {

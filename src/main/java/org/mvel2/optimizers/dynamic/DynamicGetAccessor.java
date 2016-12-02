@@ -2,16 +2,16 @@
  * MVEL 2.0
  * Copyright (C) 2007 The Codehaus
  * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -24,6 +24,8 @@ import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.optimizers.AccessorOptimizer;
 import org.mvel2.optimizers.OptimizationNotSupported;
 import org.mvel2.optimizers.OptimizerFactory;
+
+import java.util.Map;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -55,8 +57,13 @@ public class DynamicGetAccessor implements DynamicAccessor {
   /** 当前的优化访问器 */
   private Accessor _accessor;
 
+
+  private transient Class lastCtxClass;
+  private transient Accessor lastAccessor;
+  private Map<Class, Accessor> accessorMap;
+
   /** 使用解析上下文, 当前区间的表达式,以及指定的访问器创建结构 */
-  public DynamicGetAccessor(ParserContext pCtx, char[] expr, int start, int offset, int type, Accessor _accessor) {
+  public DynamicGetAccessor(ParserContext pCtx, char[] expr, int start, int offset, int type, Class lastCtxClass, Accessor _accessor) {
     this._safeAccessor = this._accessor = _accessor;
     this.type = type;
 
@@ -66,6 +73,9 @@ public class DynamicGetAccessor implements DynamicAccessor {
 
     this.pCtx = pCtx;
     stamp = currentTimeMillis();
+
+    this.lastCtxClass = lastCtxClass;
+    this.lastAccessor = _accessor;
   }
 
   public Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory) {
@@ -74,11 +84,11 @@ public class DynamicGetAccessor implements DynamicAccessor {
       if (++runcount > DynamicOptimizer.tenuringThreshold) {
         if ((currentTimeMillis() - stamp) < DynamicOptimizer.timeSpan) {
           opt = true;
-          try{
+          try {
             return optimize(ctx, elCtx, variableFactory);
           }
-          catch(OptimizationNotSupported ex){
-        	  // If optimization fails then, rather than fail evaluation, fallback to use safe reflective accessor
+          catch (OptimizationNotSupported ex) {
+            // If optimization fails then, rather than fail evaluation, fallback to use safe reflective accessor
           }
         }
         else {
@@ -88,7 +98,14 @@ public class DynamicGetAccessor implements DynamicAccessor {
       }
     }
 
-    return _accessor.getValue(ctx, elCtx, variableFactory);
+    Class clazz = ctx.getClass();
+    if (clazz == lastCtxClass)
+      return lastAccessor.getValue(ctx, elCtx, variableFactory);
+
+    Accessor newAccessor = accessorMap.computeIfAbsent(clazz, t -> OptimizerFactory.getAccessorCompiler(OptimizerFactory.SAFE_REFLECTIVE)
+        .optimizeAccessor(pCtx, expr, start, offset, ctx, elCtx, variableFactory, clazz));
+
+    return newAccessor.getValue(ctx, elCtx, variableFactory);
   }
 
   public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
@@ -109,7 +126,7 @@ public class DynamicGetAccessor implements DynamicAccessor {
     switch (type) {
       //正常对象访问
       case DynamicOptimizer.REGULAR_ACCESSOR:
-        _accessor = ao.optimizeAccessor(pCtx, expr, start, offset, ctx, elCtx, variableResolverFactory, false, null);
+        _accessor = ao.optimizeAccessor(pCtx, expr, start, offset, ctx, elCtx, variableResolverFactory, null);
         return ao.getResultOptPass();
       //对象创建过程
       case DynamicOptimizer.OBJ_CREATION:

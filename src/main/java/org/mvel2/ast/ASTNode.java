@@ -18,6 +18,7 @@
 
 package org.mvel2.ast;
 
+import lombok.extern.slf4j.Slf4j;
 import org.mvel2.CompileException;
 import org.mvel2.ParserConfiguration;
 import org.mvel2.ParserContext;
@@ -38,6 +39,7 @@ import static org.mvel2.util.ParseTools.*;
  * 通用节点描述，当前节点也可以通过一些判定，判定为其它节点，以提供节点之间的转换操作
  */
 @SuppressWarnings({"ManualArrayCopy", "CaughtExceptionImmediatelyRethrown"})
+@Slf4j
 public class ASTNode implements Cloneable, Serializable {
   /** 该节点为文本节点 */
   public static final int LITERAL = 1;
@@ -162,6 +164,7 @@ public class ASTNode implements Cloneable, Serializable {
         return accessor.getValue(ctx, thisValue, factory);
       }
       catch (ClassCastException ce) {
+        log.debug("优先访问失败，将重新处理.:{}", ce.getMessage());
         return deop(ctx, thisValue, factory, ce);
       }
     }
@@ -216,18 +219,16 @@ public class ASTNode implements Cloneable, Serializable {
       pCtx.optimizationNotify();
       //因为是执行访问操作，因此采用优化器产生一个get类的访问器以进行相应的处理。在默认的处理中，均认为获取值都是获取类操作
       //在针对a = b的这种处理时，会采用不同的node，而在其内部切换为相应的优化器的set版本
-      setAccessor(optimizer.optimizeAccessor(pCtx, expr, start, offset, ctx, thisValue, factory, true, egressType));
+      setAccessor(optimizer.optimizeAccessor(pCtx, expr, start, offset, ctx, thisValue, factory, egressType));
     }
     catch (OptimizationNotSupported ne) {
       //这里优化失败了,那么就使用默认的reflect进行反射访问
       setAccessor((optimizer = getAccessorCompiler(SAFE_REFLECTIVE))
-          .optimizeAccessor(pCtx, expr, start, offset, ctx, thisValue, factory, true, null));
+          .optimizeAccessor(pCtx, expr, start, offset, ctx, thisValue, factory, null));
     }
 
     //相应的优化器，会在产生访问器时默认就已经计算了相应的值，因此这里直接给出相应的结果
-    if (retVal == null) {
-      retVal = optimizer.getResultOptPass();
-    }
+    retVal = optimizer.getResultOptPass();
 
     //如果之前没有声明的输出类型，这里根据当前的处理结果设置结果类型
     if (egressType == null) {

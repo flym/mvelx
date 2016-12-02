@@ -77,7 +77,7 @@ public class CompiledAccExpression implements ExecutableStatement, Serializable 
       try {
         //直接使用相应的优化器来创建起相应的访问器,相应的this引用直接使用相应的静态上下文
         accessor = getThreadAccessorOptimizer()
-            .optimizeAccessor(context, expression, 0, expression.length, staticContext, staticContext, factory, false, ingressType);
+            .optimizeAccessor(context, expression, 0, expression.length, staticContext, staticContext, factory, ingressType);
         return getValue(staticContext, factory);
       }
       finally {
@@ -126,7 +126,7 @@ public class CompiledAccExpression implements ExecutableStatement, Serializable 
     if (accessor == null) {
       try {
         accessor = getThreadAccessorOptimizer().optimizeAccessor(context, expression, start, offset, ctx, elCtx,
-            variableFactory, false, ingressType);
+            variableFactory, ingressType);
         return getValue(ctx, elCtx, variableFactory);
       }
       finally {
