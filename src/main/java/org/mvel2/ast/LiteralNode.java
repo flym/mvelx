@@ -29,43 +29,42 @@ import org.mvel2.util.NullType;
  * @author Christopher Brock
  */
 public class LiteralNode extends ASTNode {
-  /** 使用指定常量 +相应的声明类型创建起节点信息 */
-  public LiteralNode(Object literal, Class type, ParserContext pCtx) {
-    this(literal, pCtx);
-    this.egressType = type;
-  }
-
-  /** 使用指定常量 创建出节点信息 */
-  public LiteralNode(Object literal, ParserContext pCtx) {
-    super(pCtx);
-    if ((this.literal = literal) != null) {
-      if ((this.egressType = literal.getClass()) == BlankLiteral.class) this.egressType = Object.class;
+    /** 使用指定常量 +相应的声明类型创建起节点信息 */
+    public LiteralNode(Object literal, Class type, ParserContext pCtx) {
+        this(literal, pCtx);
+        this.egressType = type;
     }
-    else {
-      this.egressType = NullType.class;
+
+    /** 使用指定常量 创建出节点信息 */
+    public LiteralNode(Object literal, ParserContext pCtx) {
+        super(pCtx);
+        if((this.literal = literal) != null) {
+            if((this.egressType = literal.getClass()) == BlankLiteral.class) this.egressType = Object.class;
+        } else {
+            this.egressType = NullType.class;
+        }
     }
-  }
 
-  /** 直接返回此值 */
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    return literal;
-  }
+    /** 直接返回此值 */
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        return literal;
+    }
 
-  public Object getLiteralValue() {
-    return literal;
-  }
+    public Object getLiteralValue() {
+        return literal;
+    }
 
-  public void setLiteralValue(Object literal) {
-    this.literal = literal;
-  }
+    public void setLiteralValue(Object literal) {
+        this.literal = literal;
+    }
 
-  /** 此节点是常量节点 */
-  public boolean isLiteral() {
-    return true;
-  }
+    /** 此节点是常量节点 */
+    public boolean isLiteral() {
+        return true;
+    }
 
-  @Override
-  public String toString() {
-    return "Literal<" + literal + ">";
-  }
+    @Override
+    public String toString() {
+        return "Literal<" + literal + ">";
+    }
 }

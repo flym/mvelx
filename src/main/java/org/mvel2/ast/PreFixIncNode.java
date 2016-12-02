@@ -27,26 +27,27 @@ import org.mvel2.math.MathProcessor;
 
 /**
  * 前置的 ++ 操作信息，并且提供相应的变量信息
+ *
  * @author Christopher Brock
  */
 public class PreFixIncNode extends ASTNode {
-  /** 相应的变量值 */
-  private String name;
+    /** 相应的变量值 */
+    private String name;
 
-  public PreFixIncNode(String name, ParserContext pCtx) {
-    super(pCtx);
-    this.name = name;
-    if (pCtx != null) {
-      this.egressType = pCtx.getVarOrInputType(name);
+    public PreFixIncNode(String name, ParserContext pCtx) {
+        super(pCtx);
+        this.name = name;
+        if(pCtx != null) {
+            this.egressType = pCtx.getVarOrInputType(name);
+        }
     }
-  }
 
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //获取之前的变量, 先运算,最终返回运算后的值,同时将相应的值重新设置
-    //整个流程为 var tmp = get(a); a = tmp + 1; set(a);return a;
-    VariableResolver vResolver = factory.getVariableResolver(name);
-    vResolver.setValue(ctx = MathProcessor.doOperations(vResolver.getValue(), Operator.ADD, DataTypes.INTEGER, 1));
-    return ctx;
-  }
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        //获取之前的变量, 先运算,最终返回运算后的值,同时将相应的值重新设置
+        //整个流程为 var tmp = get(a); a = tmp + 1; set(a);return a;
+        VariableResolver vResolver = factory.getVariableResolver(name);
+        vResolver.setValue(ctx = MathProcessor.doOperations(vResolver.getValue(), Operator.ADD, DataTypes.INTEGER, 1));
+        return ctx;
+    }
 
 }

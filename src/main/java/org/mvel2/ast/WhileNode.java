@@ -30,42 +30,43 @@ import static org.mvel2.util.ParseTools.subCompileExpression;
 
 /**
  * 处理while循环的节点
+ *
  * @author Christopher Brock
  */
 public class WhileNode extends BlockNode {
-  /** 此字段无用 */
-  protected String item;
-  /** while条件值 */
-  protected ExecutableStatement condition;
+    /** 此字段无用 */
+    protected String item;
+    /** while条件值 */
+    protected ExecutableStatement condition;
 
-  public WhileNode(char[] expr, int start, int offset, int blockStart, int blockEnd, int fields, ParserContext pCtx) {
-    super(pCtx);
-    //期望条件的执行结果为boolean
-    expectType(pCtx, this.condition = (ExecutableStatement) subCompileExpression(expr, start, offset, pCtx),
-        Boolean.class, ((fields & COMPILE_IMMEDIATE) != 0));
+    public WhileNode(char[] expr, int start, int offset, int blockStart, int blockEnd, int fields, ParserContext pCtx) {
+        super(pCtx);
+        //期望条件的执行结果为boolean
+        expectType(pCtx, this.condition = (ExecutableStatement) subCompileExpression(expr, start, offset, pCtx),
+                Boolean.class, ((fields & COMPILE_IMMEDIATE) != 0));
 
 
-    //为执行块单独开启变量作用域,编译执行块,最后弹出相应的作用域
-    if (pCtx != null) {
-      pCtx.pushVariableScope();
-    }
-    this.compiledBlock = (ExecutableStatement) subCompileExpression(expr, blockStart, blockEnd, pCtx);
+        //为执行块单独开启变量作用域,编译执行块,最后弹出相应的作用域
+        if(pCtx != null) {
+            pCtx.pushVariableScope();
+        }
+        this.compiledBlock = (ExecutableStatement) subCompileExpression(expr, blockStart, blockEnd, pCtx);
 
-    if (pCtx != null) {
-      pCtx.popVariableScope();
+        if(pCtx != null) {
+            pCtx.popVariableScope();
 
-    }
-  }
-
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //为执行作用域单独创建变量解析域,在整个处理完之后,即不会再使用
-    VariableResolverFactory ctxFactory = new MapVariableResolverFactory(new HashMap<String, Object>(), factory);
-    //标准的while执行过程
-    while ((Boolean) condition.getValue(ctx, thisValue, factory)) {
-      compiledBlock.getValue(ctx, thisValue, ctxFactory);
+        }
     }
 
-    //因为是循环语句,因此只影响过程,不影响相应的
-    return null;
-  }
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        //为执行作用域单独创建变量解析域,在整个处理完之后,即不会再使用
+        VariableResolverFactory ctxFactory = new MapVariableResolverFactory(new HashMap<String, Object>(), factory);
+        //标准的while执行过程
+        while((Boolean) condition.getValue(ctx, thisValue, factory)) {
+            compiledBlock.getValue(ctx, thisValue, ctxFactory);
+        }
+
+        //因为是循环语句,因此只影响过程,不影响相应的
+        return null;
+    }
 }

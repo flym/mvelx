@@ -8,25 +8,25 @@ import org.mvel2.ConversionHandler;
  */
 public class CompositeCH implements ConversionHandler {
 
-  /** 内部使用的多个转换器 */
-  private final ConversionHandler[] converters;
+    /** 内部使用的多个转换器 */
+    private final ConversionHandler[] converters;
 
-  public CompositeCH(ConversionHandler... converters) {
-    this.converters = converters;
-  }
-
-  public Object convertFrom(Object in) {
-    //只要任意一个成功了,即返回其结果
-    for (ConversionHandler converter : converters) {
-      if (converter.canConvertFrom(in.getClass())) return converter.convertFrom(in);
+    public CompositeCH(ConversionHandler... converters) {
+        this.converters = converters;
     }
-    return null;
-  }
 
-  public boolean canConvertFrom(Class cls) {
-    for (ConversionHandler converter : converters) {
-      if (converter.canConvertFrom(cls)) return true;
+    public Object convertFrom(Object in) {
+        //只要任意一个成功了,即返回其结果
+        for(ConversionHandler converter : converters) {
+            if(converter.canConvertFrom(in.getClass())) return converter.convertFrom(in);
+        }
+        return null;
     }
-    return false;
-  }
+
+    public boolean canConvertFrom(Class cls) {
+        for(ConversionHandler converter : converters) {
+            if(converter.canConvertFrom(cls)) return true;
+        }
+        return false;
+    }
 }

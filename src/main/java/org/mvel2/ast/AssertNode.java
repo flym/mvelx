@@ -32,36 +32,35 @@ import static org.mvel2.util.ParseTools.subCompileExpression;
  * @author Christopher Brock
  */
 public class AssertNode extends ASTNode {
-  /** 断言的表达式 */
-  public ExecutableStatement assertion;
+    /** 断言的表达式 */
+    public ExecutableStatement assertion;
 
-  public AssertNode(char[] expr, int start, int offset, int fields, ParserContext pCtx) {
-    super(pCtx);
-    this.expr = expr;
-    this.start = start;
-    this.offset = offset;
+    public AssertNode(char[] expr, int start, int offset, int fields, ParserContext pCtx) {
+        super(pCtx);
+        this.expr = expr;
+        this.start = start;
+        this.offset = offset;
 
-    //编译模式下编译相应的表达式
-    if ((fields & COMPILE_IMMEDIATE) != 0) {
-      assertion = (ExecutableStatement) subCompileExpression(expr, start, offset, pCtx);
+        //编译模式下编译相应的表达式
+        if((fields & COMPILE_IMMEDIATE) != 0) {
+            assertion = (ExecutableStatement) subCompileExpression(expr, start, offset, pCtx);
+        }
     }
-  }
 
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    try {
-      //这里进行强转,并且在catch中进行判定,即要求assert后面的结果就是一个boolean值
-      if (!((Boolean) assertion.getValue(ctx, thisValue, factory))) {
-        throw new AssertionError("assertion failed in expression: " + new String(this.expr, start, offset));
-      }
-      else {
-        return true;
-      }
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        try{
+            //这里进行强转,并且在catch中进行判定,即要求assert后面的结果就是一个boolean值
+            if(!((Boolean) assertion.getValue(ctx, thisValue, factory))) {
+                throw new AssertionError("assertion failed in expression: " + new String(this.expr, start, offset));
+            } else {
+                return true;
+            }
+        }
+        //这里出现了cast异常,表示上面的类型转换出现了问题,因此这里进行判定
+        //当前也可以在上面提前进行类型判定,这里采用的是运行期强制判断
+        catch(ClassCastException e) {
+            throw new CompileException("assertion does not contain a boolean statement", expr, start);
+        }
     }
-    //这里出现了cast异常,表示上面的类型转换出现了问题,因此这里进行判定
-    //当前也可以在上面提前进行类型判定,这里采用的是运行期强制判断
-    catch (ClassCastException e) {
-      throw new CompileException("assertion does not contain a boolean statement", expr, start);
-    }
-  }
 
 }

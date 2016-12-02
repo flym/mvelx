@@ -23,7 +23,7 @@ package org.mvel2.optimizers;
  */
 public class OptimizationNotSupported extends RuntimeException {
 
-  public OptimizationNotSupported() {
-    super();
-  }
+    public OptimizationNotSupported() {
+        super();
+    }
 }

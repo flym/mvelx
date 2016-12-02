@@ -22,22 +22,22 @@ import org.mvel2.integration.VariableResolverFactory;
 
 /** 描述一个属性访问器，在指定的 上下文中获取相应的值信息 */
 public interface Accessor {
-  /**
-   * 获取相应的值信息
-   *
-   * @param ctx   当前对象上下文(可理解为当前处理对象)
-   * @param elCtx 特定的参数上下文(this值)
-   */
-  Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory);
+    /**
+     * 获取相应的值信息
+     *
+     * @param ctx   当前对象上下文(可理解为当前处理对象)
+     * @param elCtx 特定的参数上下文(this值)
+     */
+    Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory);
 
-  /**
-   * 设置值信息
-   *
-   * @param ctx   当前对象上下文(可理解为当前处理对象)
-   * @param elCtx 特定的参数上下文对象(this值)
-   */
-  Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value);
+    /**
+     * 设置值信息
+     *
+     * @param ctx   当前对象上下文(可理解为当前处理对象)
+     * @param elCtx 特定的参数上下文对象(this值)
+     */
+    Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value);
 
-  /** 获取已知的返回结果类型 */
-  Class getKnownEgressType();
+    /** 获取已知的返回结果类型 */
+    Class getKnownEgressType();
 }

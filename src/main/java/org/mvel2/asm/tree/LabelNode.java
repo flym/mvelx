@@ -56,7 +56,7 @@ public class LabelNode extends AbstractInsnNode {
     }
 
     public Label getLabel() {
-        if (label == null) {
+        if(label == null) {
             label = new Label();
         }
         return label;

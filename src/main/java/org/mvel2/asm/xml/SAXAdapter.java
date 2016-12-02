@@ -35,7 +35,7 @@ import org.xml.sax.SAXException;
 
 /**
  * SAXAdapter
- * 
+ *
  * @author Eugene Kuleshov
  */
 public class SAXAdapter {
@@ -51,33 +51,33 @@ public class SAXAdapter {
     }
 
     protected void addDocumentStart() {
-        try {
+        try{
             h.startDocument();
-        } catch (SAXException ex) {
+        } catch(SAXException ex) {
             throw new RuntimeException(ex.getMessage(), ex.getException());
         }
     }
 
     protected void addDocumentEnd() {
-        try {
+        try{
             h.endDocument();
-        } catch (SAXException ex) {
+        } catch(SAXException ex) {
             throw new RuntimeException(ex.getMessage(), ex.getException());
         }
     }
 
     protected final void addStart(final String name, final Attributes attrs) {
-        try {
+        try{
             h.startElement("", name, name, attrs);
-        } catch (SAXException ex) {
+        } catch(SAXException ex) {
             throw new RuntimeException(ex.getMessage(), ex.getException());
         }
     }
 
     protected final void addEnd(final String name) {
-        try {
+        try{
             h.endElement("", name, name);
-        } catch (SAXException ex) {
+        } catch(SAXException ex) {
             throw new RuntimeException(ex.getMessage(), ex.getException());
         }
     }

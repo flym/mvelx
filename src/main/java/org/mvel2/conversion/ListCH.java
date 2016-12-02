@@ -28,28 +28,26 @@ import java.util.List;
 
 /** 将数组，集合或可迭代的对象转换为List */
 public class ListCH implements ConversionHandler {
-  /** 进行转换，为避免修改原数据，这里采用的为复制式转换 */
-  public Object convertFrom(Object in) {
-    Class type = in.getClass();
-    List newList = new ArrayList();
-    //数组，直接asList即可
-    if (type.isArray()) {
-      newList.addAll(Arrays.asList(((Object[]) in)));
-    }
-    else if (Collection.class.isAssignableFrom(type)) {
-      newList.addAll((Collection) in);
-    }
-    else if (Iterable.class.isAssignableFrom(type)) {
-      for (Object o : (Iterable) in) {
-        newList.add(o);
-      }
+    /** 进行转换，为避免修改原数据，这里采用的为复制式转换 */
+    public Object convertFrom(Object in) {
+        Class type = in.getClass();
+        List newList = new ArrayList();
+        //数组，直接asList即可
+        if(type.isArray()) {
+            newList.addAll(Arrays.asList(((Object[]) in)));
+        } else if(Collection.class.isAssignableFrom(type)) {
+            newList.addAll((Collection) in);
+        } else if(Iterable.class.isAssignableFrom(type)) {
+            for(Object o : (Iterable) in) {
+                newList.add(o);
+            }
+        }
+
+        return newList;
     }
 
-    return newList;
-  }
-
-  /** 支持数组,集合以及可迭代对象转集合 */
-  public boolean canConvertFrom(Class cls) {
-    return cls.isArray() || Collection.class.isAssignableFrom(cls) || Iterable.class.isAssignableFrom(cls);
-  }
+    /** 支持数组,集合以及可迭代对象转集合 */
+    public boolean canConvertFrom(Class cls) {
+        return cls.isArray() || Collection.class.isAssignableFrom(cls) || Iterable.class.isAssignableFrom(cls);
+    }
 }

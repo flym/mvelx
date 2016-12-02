@@ -27,26 +27,24 @@ import java.util.Set;
 
 /** 数组，集合，迭代式对象转set */
 public class SetCH implements ConversionHandler {
-  public Object convertFrom(Object in) {
-    Class type = in.getClass();
-    Set newSet = new LinkedHashSet();
-    if (type.isArray()) {
-      newSet.addAll(Arrays.asList(((Object[]) in)));
-    }
-    else if (Collection.class.isAssignableFrom(type)) {
-      newSet.addAll((Collection) in);
-    }
-    else if (Iterable.class.isAssignableFrom(type)) {
-      for (Object o : (Iterable) in) {
-        newSet.add(o);
-      }
+    public Object convertFrom(Object in) {
+        Class type = in.getClass();
+        Set newSet = new LinkedHashSet();
+        if(type.isArray()) {
+            newSet.addAll(Arrays.asList(((Object[]) in)));
+        } else if(Collection.class.isAssignableFrom(type)) {
+            newSet.addAll((Collection) in);
+        } else if(Iterable.class.isAssignableFrom(type)) {
+            for(Object o : (Iterable) in) {
+                newSet.add(o);
+            }
+        }
+
+        return newSet;
     }
 
-    return newSet;
-  }
-
-  /** 支持从数组,集合,和迭代对象转set */
-  public boolean canConvertFrom(Class cls) {
-    return cls.isArray() || Collection.class.isAssignableFrom(cls) || Iterable.class.isAssignableFrom(cls);
-  }
+    /** 支持从数组,集合,和迭代对象转set */
+    public boolean canConvertFrom(Class cls) {
+        return cls.isArray() || Collection.class.isAssignableFrom(cls) || Iterable.class.isAssignableFrom(cls);
+    }
 }

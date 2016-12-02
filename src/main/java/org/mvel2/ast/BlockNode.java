@@ -23,23 +23,24 @@ import org.mvel2.compiler.ExecutableStatement;
 
 /**
  * 用于描述抽象的语法块节点,即内部会有一个单独的代码块内容,如if for等
+ *
  * @author Christopher Brock
  */
 public class BlockNode extends ASTNode {
-  /** 当前语法块起始点 */
-  protected int blockStart;
-  /** 当前语法块结束点 */
-  protected int blockOffset;
+    /** 当前语法块起始点 */
+    protected int blockStart;
+    /** 当前语法块结束点 */
+    protected int blockOffset;
 
-  /** 表示当前的执行块 */
-  protected ExecutableStatement compiledBlock;
+    /** 表示当前的执行块 */
+    protected ExecutableStatement compiledBlock;
 
-  public BlockNode(ParserContext pCtx) {
-    super(pCtx);
-  }
+    public BlockNode(ParserContext pCtx) {
+        super(pCtx);
+    }
 
-  public int getBlockStart() {
-    return blockStart;
-  }
+    public int getBlockStart() {
+        return blockStart;
+    }
 }
 

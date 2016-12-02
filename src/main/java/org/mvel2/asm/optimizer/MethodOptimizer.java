@@ -45,7 +45,7 @@ import org.mvel2.asm.commons.RemappingMethodAdapter;
 /**
  * A {@link MethodVisitor} that renames fields and methods, and removes debug
  * info.
- * 
+ *
  * @author Eugene Kuleshov
  */
 public class MethodOptimizer extends RemappingMethodAdapter implements Opcodes {
@@ -53,7 +53,7 @@ public class MethodOptimizer extends RemappingMethodAdapter implements Opcodes {
     private final ClassOptimizer classOptimizer;
 
     public MethodOptimizer(ClassOptimizer classOptimizer, int access,
-            String desc, MethodVisitor mv, Remapper remapper) {
+                           String desc, MethodVisitor mv, Remapper remapper) {
         super(Opcodes.ASM5, access, desc, mv, remapper);
         this.classOptimizer = classOptimizer;
     }
@@ -81,21 +81,21 @@ public class MethodOptimizer extends RemappingMethodAdapter implements Opcodes {
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef,
-            TypePath typePath, String desc, boolean visible) {
+                                                 TypePath typePath, String desc, boolean visible) {
         return null;
     }
 
     @Override
     public AnnotationVisitor visitParameterAnnotation(final int parameter,
-            final String desc, final boolean visible) {
+                                                      final String desc, final boolean visible) {
         // remove annotations
         return null;
     }
 
     @Override
     public void visitLocalVariable(final String name, final String desc,
-            final String signature, final Label start, final Label end,
-            final int index) {
+                                   final String signature, final Label start, final Label end,
+                                   final int index) {
         // remove debug info
     }
 
@@ -106,7 +106,7 @@ public class MethodOptimizer extends RemappingMethodAdapter implements Opcodes {
 
     @Override
     public void visitFrame(int type, int local, Object[] local2, int stack,
-            Object[] stack2) {
+                           Object[] stack2) {
         // remove frame info
     }
 
@@ -117,7 +117,7 @@ public class MethodOptimizer extends RemappingMethodAdapter implements Opcodes {
 
     @Override
     public void visitLdcInsn(Object cst) {
-        if (!(cst instanceof Type)) {
+        if(!(cst instanceof Type)) {
             super.visitLdcInsn(cst);
             return;
         }
@@ -125,7 +125,7 @@ public class MethodOptimizer extends RemappingMethodAdapter implements Opcodes {
         // transform Foo.class for 1.2 compatibility
         String ldcName = ((Type) cst).getInternalName();
         String fieldName = "class$" + ldcName.replace('/', '$');
-        if (!classOptimizer.syntheticClassFields.contains(ldcName)) {
+        if(!classOptimizer.syntheticClassFields.contains(ldcName)) {
             classOptimizer.syntheticClassFields.add(ldcName);
             FieldVisitor fv = classOptimizer.syntheticFieldVisitor(ACC_STATIC
                     | ACC_SYNTHETIC, fieldName, "Ljava/lang/Class;");
@@ -135,39 +135,40 @@ public class MethodOptimizer extends RemappingMethodAdapter implements Opcodes {
         String clsName = classOptimizer.clsName;
         mv.visitFieldInsn(GETSTATIC, clsName, fieldName, "Ljava/lang/Class;");
     }
-    
+
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
         // rewrite boxing method call to use constructor to keep 1.3/1.4 compatibility
         String[] constructorParams;
-        if (opcode == INVOKESTATIC && name.equals("valueOf") &&
-            (constructorParams = BOXING_MAP.get(owner + desc)) != null) {
+        if(opcode == INVOKESTATIC && name.equals("valueOf") &&
+                (constructorParams = BOXING_MAP.get(owner + desc)) != null) {
             String type = constructorParams[0];
             String initDesc = constructorParams[1];
             super.visitTypeInsn(NEW, type);
             super.visitInsn(DUP);
-            super.visitInsn((initDesc == "(J)V" || initDesc == "(D)V")? DUP2_X2: DUP2_X1);
+            super.visitInsn((initDesc == "(J)V" || initDesc == "(D)V") ? DUP2_X2 : DUP2_X1);
             super.visitInsn(POP2);
             super.visitMethodInsn(INVOKESPECIAL, type, "<init>", initDesc, false);
             return;
         }
         super.visitMethodInsn(opcode, owner, name, desc, itf);
     }
-    
+
     private static final HashMap<String, String[]> BOXING_MAP;
+
     static {
         String[][] boxingNames = {
-            // Boolean.valueOf is 1.4 and is used by the xml package, so no rewrite
-            { "java/lang/Byte",      "(B)V" },
-            { "java/lang/Short",     "(S)V" },
-            { "java/lang/Character", "(C)V" },
-            { "java/lang/Integer",   "(I)V" },
-            { "java/lang/Long",      "(J)V" },
-            { "java/lang/Float",     "(F)V" },
-            { "java/lang/Double",    "(D)V" },
+                // Boolean.valueOf is 1.4 and is used by the xml package, so no rewrite
+                {"java/lang/Byte", "(B)V"},
+                {"java/lang/Short", "(S)V"},
+                {"java/lang/Character", "(C)V"},
+                {"java/lang/Integer", "(I)V"},
+                {"java/lang/Long", "(J)V"},
+                {"java/lang/Float", "(F)V"},
+                {"java/lang/Double", "(D)V"},
         };
         HashMap<String, String[]> map = new HashMap<String, String[]>();
-        for(String[] boxingName: boxingNames) {
+        for(String[] boxingName : boxingNames) {
             String wrapper = boxingName[0];
             String desc = boxingName[1];
             String boxingMethod = wrapper + '(' + desc.charAt(1) + ")L" + wrapper + ';';

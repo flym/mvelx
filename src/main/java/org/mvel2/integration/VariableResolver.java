@@ -26,52 +26,52 @@ import java.io.Serializable;
  * are obtained via a {@link org.mvel2.integration.VariableResolverFactory}.
  */
 public interface VariableResolver extends Serializable {
-  /**
-   * 获取变量名
-   * Returns the name of external variable.
-   *
-   * @return A string representing the variable name.
-   */
-  String getName();
+    /**
+     * 获取变量名
+     * Returns the name of external variable.
+     *
+     * @return A string representing the variable name.
+     */
+    String getName();
 
-  /**
-   * 获取相应变量的类型
-   * 注：此实现大部分情况下返回object，因为对于对象的处理，mvel采用自己的一些处理，不会依赖于变量所声明的类型
-   *
-   * This should return the type of the variable.  However, this is not completely necessary, and is particularly
-   * only of benefit to systems that require use of MVEL's strict typing facilities.  In most cases, this implementation
-   * can simply return: Object.class
-   *
-   * @return A Class instance representing the type of the target variable.
-   */
-  Class getType();
+    /**
+     * 获取相应变量的类型
+     * 注：此实现大部分情况下返回object，因为对于对象的处理，mvel采用自己的一些处理，不会依赖于变量所声明的类型
+     * <p>
+     * This should return the type of the variable.  However, this is not completely necessary, and is particularly
+     * only of benefit to systems that require use of MVEL's strict typing facilities.  In most cases, this implementation
+     * can simply return: Object.class
+     *
+     * @return A Class instance representing the type of the target variable.
+     */
+    Class getType();
 
-  /**
-   * 为变量设置特别的标记，以用于后续对此变量的一些定制处理
-   * 此标记位并没有特别的语义层，仅是由每个特别的变量解析器自己使用。即每个valueResolver会设置不同的flag，
-   * 然后在一些处理中，相应的valueResolver会按照自己的处理方式来解析此flag，可以认为是定制的一个属性
-   * 一般情况下，返回0，即表示不需要特殊的处理
-   * Returns the bitset of special variable flags.  Internal use only.  This should just return 0 in custom
-   * implementations.
-   *
-   * @return Bitset of special flags.
-   */
-  int getFlags();
+    /**
+     * 为变量设置特别的标记，以用于后续对此变量的一些定制处理
+     * 此标记位并没有特别的语义层，仅是由每个特别的变量解析器自己使用。即每个valueResolver会设置不同的flag，
+     * 然后在一些处理中，相应的valueResolver会按照自己的处理方式来解析此flag，可以认为是定制的一个属性
+     * 一般情况下，返回0，即表示不需要特殊的处理
+     * Returns the bitset of special variable flags.  Internal use only.  This should just return 0 in custom
+     * implementations.
+     *
+     * @return Bitset of special flags.
+     */
+    int getFlags();
 
-  /**
-   * 获取变量的值
-   * Returns the physical target value of the variable.
-   *
-   * @return The actual variable value.
-   */
-  Object getValue();
+    /**
+     * 获取变量的值
+     * Returns the physical target value of the variable.
+     *
+     * @return The actual variable value.
+     */
+    Object getValue();
 
-  /**
-   * 设置相应的值
-   * Sets the value of the physical target value.
-   *
-   * @param value The new value.
-   * @return value after any conversion
-   */
-  void setValue(Object value);
+    /**
+     * 设置相应的值
+     * Sets the value of the physical target value.
+     *
+     * @param value The new value.
+     * @return value after any conversion
+     */
+    void setValue(Object value);
 }

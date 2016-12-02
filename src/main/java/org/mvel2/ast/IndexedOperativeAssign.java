@@ -28,32 +28,32 @@ import static org.mvel2.util.ParseTools.subCompileExpression;
 
 /** 描述一个已经在解析上下文中声明过的变量的运算并进行x=赋值操作 */
 public class IndexedOperativeAssign extends ASTNode {
-  /** 相应变量在之前注册过的下标值(即在变量工厂中的变量位置值) */
-  private final int register;
-  /** 用于描述右边相应的表达式 即 a += xx 中的右边部分 */
-  private ExecutableStatement statement;
-  /** 相应的运算符 */
-  private final int operation;
+    /** 相应变量在之前注册过的下标值(即在变量工厂中的变量位置值) */
+    private final int register;
+    /** 用于描述右边相应的表达式 即 a += xx 中的右边部分 */
+    private ExecutableStatement statement;
+    /** 相应的运算符 */
+    private final int operation;
 
-  public IndexedOperativeAssign(char[] expr, int start, int offset, int operation, int register, int fields, ParserContext pCtx) {
-    super(pCtx);
-    this.operation = operation;
-    this.expr = expr;
-    this.start = start;
-    this.offset = offset;
-    this.register = register;
+    public IndexedOperativeAssign(char[] expr, int start, int offset, int operation, int register, int fields, ParserContext pCtx) {
+        super(pCtx);
+        this.operation = operation;
+        this.expr = expr;
+        this.start = start;
+        this.offset = offset;
+        this.register = register;
 
-    //编译模式下即编译相应的表达式
-    if ((fields & COMPILE_IMMEDIATE) != 0) {
-      statement = (ExecutableStatement) subCompileExpression(expr, start, offset, pCtx);
-      egressType = statement.getKnownEgressType();
+        //编译模式下即编译相应的表达式
+        if((fields & COMPILE_IMMEDIATE) != 0) {
+            statement = (ExecutableStatement) subCompileExpression(expr, start, offset, pCtx);
+            egressType = statement.getKnownEgressType();
+        }
     }
-  }
 
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //直接从相应的下标值获取相应的变量处理器然后执行类似 a = a + b的操作
-    VariableResolver resolver = factory.getIndexedVariableResolver(register);
-    resolver.setValue(ctx = MathProcessor.doOperations(resolver.getValue(), operation, statement.getValue(ctx, thisValue, factory)));
-    return ctx;
-  }
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        //直接从相应的下标值获取相应的变量处理器然后执行类似 a = a + b的操作
+        VariableResolver resolver = factory.getIndexedVariableResolver(register);
+        resolver.setValue(ctx = MathProcessor.doOperations(resolver.getValue(), operation, statement.getValue(ctx, thisValue, factory)));
+        return ctx;
+    }
 }

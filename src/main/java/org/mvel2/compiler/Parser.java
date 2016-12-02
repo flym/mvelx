@@ -6,9 +6,9 @@ package org.mvel2.compiler;
  * @author Mike Brock .
  */
 public interface Parser {
-  /** 当前处理的语句的下标位置 */
-  int getCursor();
+    /** 当前处理的语句的下标位置 */
+    int getCursor();
 
-  /** 描述当前处理的表达式 */
-  char[] getExpression();
+    /** 描述当前处理的表达式 */
+    char[] getExpression();
 }

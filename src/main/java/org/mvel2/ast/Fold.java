@@ -2,16 +2,16 @@
  * MVEL 2.0
  * Copyright (C) 2007 The Codehaus
  * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -33,78 +33,77 @@ import static org.mvel2.util.ParseTools.*;
 
 /** 用于描述特殊的fold语法节点  */
 public class Fold extends ASTNode {
-  private ExecutableStatement subEx;
-  private ExecutableStatement dataEx;
-  private ExecutableStatement constraintEx;
+    private ExecutableStatement subEx;
+    private ExecutableStatement dataEx;
+    private ExecutableStatement constraintEx;
 
-  public Fold(char[] expr, int start, int offset, int fields, ParserContext pCtx) {
-    super(pCtx);
-    this.expr = expr;
-    this.start = start;
-    this.offset = offset;
+    public Fold(char[] expr, int start, int offset, int fields, ParserContext pCtx) {
+        super(pCtx);
+        this.expr = expr;
+        this.start = start;
+        this.offset = offset;
 
-    int cursor = start;
-    int end = start + offset;
-    for (; cursor < end; cursor++) {
-      if (isWhitespace(expr[cursor])) {
-        while (cursor < end && isWhitespace(expr[cursor])) cursor++;
+        int cursor = start;
+        int end = start + offset;
+        for(; cursor < end; cursor++) {
+            if(isWhitespace(expr[cursor])) {
+                while(cursor < end && isWhitespace(expr[cursor])) cursor++;
 
-        if (expr[cursor] == 'i' && expr[cursor + 1] == 'n' && isJunct(expr[cursor + 2])) {
-          break;
+                if(expr[cursor] == 'i' && expr[cursor + 1] == 'n' && isJunct(expr[cursor + 2])) {
+                    break;
+                }
+            }
         }
-      }
-    }
 
-    subEx = (ExecutableStatement) subCompileExpression(expr, start, cursor - start - 1, pCtx);
-    int st = cursor += 2; // skip 'in'
+        subEx = (ExecutableStatement) subCompileExpression(expr, start, cursor - start - 1, pCtx);
+        int st = cursor += 2; // skip 'in'
 
-    for (; cursor < end; cursor++) {
-      if (isWhitespace(expr[cursor])) {
-        while (cursor < end && isWhitespace(expr[cursor])) cursor++;
+        for(; cursor < end; cursor++) {
+            if(isWhitespace(expr[cursor])) {
+                while(cursor < end && isWhitespace(expr[cursor])) cursor++;
 
-        if (expr[cursor] == 'i' && expr[cursor + 1] == 'f' && isJunct(expr[cursor + 2])) {
-          int s = cursor + 2;
-          constraintEx = (ExecutableStatement) subCompileExpression(expr, s, end - s, pCtx);
-          break;
+                if(expr[cursor] == 'i' && expr[cursor + 1] == 'f' && isJunct(expr[cursor + 2])) {
+                    int s = cursor + 2;
+                    constraintEx = (ExecutableStatement) subCompileExpression(expr, s, end - s, pCtx);
+                    break;
+                }
+            }
         }
-      }
+
+        while(isWhitespace(expr[cursor])) cursor--;
+
+        expectType(pCtx, dataEx = (ExecutableStatement) subCompileExpression(expr, st, cursor - st, pCtx),
+                Collection.class, ((fields & COMPILE_IMMEDIATE) != 0));
     }
 
-    while (isWhitespace(expr[cursor])) cursor--;
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        ItemResolverFactory.ItemResolver itemR = new ItemResolverFactory.ItemResolver("$");
+        ItemResolverFactory itemFactory = new ItemResolverFactory(itemR, new DefaultLocalVariableResolverFactory(factory));
 
-    expectType(pCtx, dataEx = (ExecutableStatement) subCompileExpression(expr, st, cursor - st, pCtx),
-        Collection.class, ((fields & COMPILE_IMMEDIATE) != 0));
-  }
+        List list;
 
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    ItemResolverFactory.ItemResolver itemR = new ItemResolverFactory.ItemResolver("$");
-    ItemResolverFactory itemFactory = new ItemResolverFactory(itemR, new DefaultLocalVariableResolverFactory(factory));
+        if(constraintEx != null) {
+            Collection col = ((Collection) dataEx.getValue(ctx, thisValue, factory));
+            list = new ArrayList(col.size());
 
-    List list;
+            for(Object o : col) {
+                itemR.value = o;
+                if((Boolean) constraintEx.getValue(ctx, thisValue, itemFactory)) {
+                    list.add(subEx.getValue(o, thisValue, itemFactory));
+                }
+            }
 
-    if (constraintEx != null) {
-      Collection col = ((Collection) dataEx.getValue(ctx, thisValue, factory));
-      list = new ArrayList(col.size());
-
-      for (Object o : col) {
-        itemR.value = o;
-        if ((Boolean) constraintEx.getValue(ctx, thisValue, itemFactory)) {
-          list.add(subEx.getValue(o, thisValue, itemFactory));
+        } else {
+            Collection col = ((Collection) dataEx.getValue(ctx, thisValue, factory));
+            list = new ArrayList(col.size());
+            for(Object o : col) {
+                list.add(subEx.getValue(itemR.value = o, thisValue, itemFactory));
+            }
         }
-      }
-
+        return list;
     }
-    else {
-      Collection col = ((Collection) dataEx.getValue(ctx, thisValue, factory));
-      list = new ArrayList(col.size());
-      for (Object o : col) {
-        list.add(subEx.getValue(itemR.value = o, thisValue, itemFactory));
-      }
-    }
-    return list;
-  }
 
-  public Class getEgressType() {
-    return Collection.class;
-  }
+    public Class getEgressType() {
+        return Collection.class;
+    }
 }

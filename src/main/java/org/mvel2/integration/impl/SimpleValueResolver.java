@@ -25,31 +25,31 @@ import org.mvel2.integration.VariableResolver;
  * 此实现不会存储变量的引用名，因此相应的name由外部进行存储使用
  */
 public class SimpleValueResolver implements VariableResolver {
-  /** 当前变量的值 */
-  private Object value;
+    /** 当前变量的值 */
+    private Object value;
 
-  public SimpleValueResolver(Object value) {
-    this.value = value;
-  }
+    public SimpleValueResolver(Object value) {
+        this.value = value;
+    }
 
-  /** 无变量名，返回null */
-  public String getName() {
-    return null;
-  }
+    /** 无变量名，返回null */
+    public String getName() {
+        return null;
+    }
 
-  public Class getType() {
-    return Object.class;
-  }
+    public Class getType() {
+        return Object.class;
+    }
 
-  public int getFlags() {
-    return 0;
-  }
+    public int getFlags() {
+        return 0;
+    }
 
-  public Object getValue() {
-    return value;
-  }
+    public Object getValue() {
+        return value;
+    }
 
-  public void setValue(Object value) {
-    this.value = value;
-  }
+    public void setValue(Object value) {
+        this.value = value;
+    }
 }

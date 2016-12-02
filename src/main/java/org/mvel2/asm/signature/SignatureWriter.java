@@ -33,7 +33,7 @@ import org.mvel2.asm.Opcodes;
 
 /**
  * A signature visitor that generates signatures in string format.
- * 
+ *
  * @author Thomas Hallgren
  * @author Eric Bruneton
  */
@@ -75,7 +75,7 @@ public class SignatureWriter extends SignatureVisitor {
 
     @Override
     public void visitFormalTypeParameter(final String name) {
-        if (!hasFormals) {
+        if(!hasFormals) {
             hasFormals = true;
             buf.append('<');
         }
@@ -108,7 +108,7 @@ public class SignatureWriter extends SignatureVisitor {
     @Override
     public SignatureVisitor visitParameterType() {
         endFormals();
-        if (!hasParameters) {
+        if(!hasParameters) {
             hasParameters = true;
             buf.append('(');
         }
@@ -118,7 +118,7 @@ public class SignatureWriter extends SignatureVisitor {
     @Override
     public SignatureVisitor visitReturnType() {
         endFormals();
-        if (!hasParameters) {
+        if(!hasParameters) {
             buf.append('(');
         }
         buf.append(')');
@@ -166,7 +166,7 @@ public class SignatureWriter extends SignatureVisitor {
 
     @Override
     public void visitTypeArgument() {
-        if (argumentStack % 2 == 0) {
+        if(argumentStack % 2 == 0) {
             ++argumentStack;
             buf.append('<');
         }
@@ -175,11 +175,11 @@ public class SignatureWriter extends SignatureVisitor {
 
     @Override
     public SignatureVisitor visitTypeArgument(final char wildcard) {
-        if (argumentStack % 2 == 0) {
+        if(argumentStack % 2 == 0) {
             ++argumentStack;
             buf.append('<');
         }
-        if (wildcard != '=') {
+        if(wildcard != '=') {
             buf.append(wildcard);
         }
         return this;
@@ -193,7 +193,7 @@ public class SignatureWriter extends SignatureVisitor {
 
     /**
      * Returns the signature that was built by this signature writer.
-     * 
+     *
      * @return the signature that was built by this signature writer.
      */
     @Override
@@ -209,7 +209,7 @@ public class SignatureWriter extends SignatureVisitor {
      * Ends the formal type parameters section of the signature.
      */
     private void endFormals() {
-        if (hasFormals) {
+        if(hasFormals) {
             hasFormals = false;
             buf.append('>');
         }
@@ -219,7 +219,7 @@ public class SignatureWriter extends SignatureVisitor {
      * Ends the type arguments of a class or inner class type.
      */
     private void endArguments() {
-        if (argumentStack % 2 != 0) {
+        if(argumentStack % 2 != 0) {
             buf.append('>');
         }
         argumentStack /= 2;

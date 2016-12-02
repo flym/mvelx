@@ -8,15 +8,15 @@ package org.mvel2;
  */
 public class UnresolveablePropertyException extends RuntimeException {
 
-  /** 不能解析的变量名 */
-  private String name;
+    /** 不能解析的变量名 */
+    private String name;
 
-  public UnresolveablePropertyException(String name) {
-    super("unable to resolve token: " + name);
-    this.name = name;
-  }
+    public UnresolveablePropertyException(String name) {
+        super("unable to resolve token: " + name);
+        this.name = name;
+    }
 
-  public String getName() {
-    return name;
-  }
+    public String getName() {
+        return name;
+    }
 }

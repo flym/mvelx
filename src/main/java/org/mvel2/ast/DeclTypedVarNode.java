@@ -28,59 +28,60 @@ import static org.mvel2.util.ParseTools.checkNameSafety;
 /**
  * 用于描述一个之前未声明的变量信息的节点
  * 即var x;这种语句
+ *
  * @author Christopher Brock
  */
 public class DeclTypedVarNode extends ASTNode implements Assignment {
-  /** 当前变量的名称 */
-  private String name;
+    /** 当前变量的名称 */
+    private String name;
 
-  public DeclTypedVarNode(String name, char[] expr, int start, int offset, Class type, int fields, ParserContext pCtx) {
-    super(pCtx);
-    this.egressType = type;
-    checkNameSafety(this.name = name);
-    this.expr = expr;
-    this.start = start;
-    this.offset = offset;
+    public DeclTypedVarNode(String name, char[] expr, int start, int offset, Class type, int fields, ParserContext pCtx) {
+        super(pCtx);
+        this.egressType = type;
+        checkNameSafety(this.name = name);
+        this.expr = expr;
+        this.start = start;
+        this.offset = offset;
 
-    //因为是已经声明了,因此加入解析变量域中
-    if ((fields & COMPILE_IMMEDIATE) != 0) {
-      pCtx.addVariable(name, egressType, true);
+        //因为是已经声明了,因此加入解析变量域中
+        if((fields & COMPILE_IMMEDIATE) != 0) {
+            pCtx.addVariable(name, egressType, true);
+        }
     }
-  }
 
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //直接定义此变量
-    if (!factory.isResolveable(name)) factory.createVariable(name, null, egressType);
-    else throw new CompileException("variable defined within scope: " + name, expr, start);
-    return null;
-  }
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        //直接定义此变量
+        if(!factory.isResolveable(name)) factory.createVariable(name, null, egressType);
+        else throw new CompileException("variable defined within scope: " + name, expr, start);
+        return null;
+    }
 
-  public String getName() {
-    return name;
-  }
+    public String getName() {
+        return name;
+    }
 
-  public String getAssignmentVar() {
-    return name;
-  }
+    public String getAssignmentVar() {
+        return name;
+    }
 
-  public char[] getExpression() {
-    return new char[0];
-  }
+    public char[] getExpression() {
+        return new char[0];
+    }
 
-  public boolean isAssignment() {
-    return true;
-  }
+    public boolean isAssignment() {
+        return true;
+    }
 
-  /** 是新声明变量节点 */
-  public boolean isNewDeclaration() {
-    return true;
-  }
+    /** 是新声明变量节点 */
+    public boolean isNewDeclaration() {
+        return true;
+    }
 
-  public void setValueStatement(ExecutableStatement stmt) {
-    throw new RuntimeException("illegal operation");
-  }
+    public void setValueStatement(ExecutableStatement stmt) {
+        throw new RuntimeException("illegal operation");
+    }
 
-  public String toString() {
-    return "var:" + name;
-  }
+    public String toString() {
+        return "var:" + name;
+    }
 }

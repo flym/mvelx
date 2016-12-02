@@ -16,40 +16,40 @@ import java.io.Serializable;
  * much like bytecode instructions.
  */
 public interface ASTIterator extends Serializable {
-  /** 重置,即回到第一个节点 */
-  void reset();
+    /** 重置,即回到第一个节点 */
+    void reset();
 
-  /** 返回并将下标指向下一个节点 */
-  ASTNode nextNode();
+    /** 返回并将下标指向下一个节点 */
+    ASTNode nextNode();
 
-  /** 获取下一个节点(执行状态不作处理) */
-  ASTNode peekNext();
+    /** 获取下一个节点(执行状态不作处理) */
+    ASTNode peekNext();
 
-  /** 获取当前节点(执行状态不作处理) */
-  ASTNode peekNode();
+    /** 获取当前节点(执行状态不作处理) */
+    ASTNode peekNode();
 
-  /** 下标重新调整为last节点,即回到上一次执行的位置 */
-  void back();
+    /** 下标重新调整为last节点,即回到上一次执行的位置 */
+    void back();
 
-  /** 是否还有更多的节点要处理 */
-  boolean hasMoreNodes();
+    /** 是否还有更多的节点要处理 */
+    boolean hasMoreNodes();
 
-  /** 返回第1个节点,当前状态不变化 */
-  ASTNode firstNode();
+    /** 返回第1个节点,当前状态不变化 */
+    ASTNode firstNode();
 
-  /** 当前节点链的长度 */
-  int size();
+    /** 当前节点链的长度 */
+    int size();
 
-  /**
-   * 完成节点链处理,并重新调整相应的状态,回到初始状态
-   * 与reset类似,但此方法会作一些节点整理操作,以优化节点处理
-   */
-  void finish();
+    /**
+     * 完成节点链处理,并重新调整相应的状态,回到初始状态
+     * 与reset类似,但此方法会作一些节点整理操作,以优化节点处理
+     */
+    void finish();
 
-  /** 在当前处理下标处添加新的节点 */
-  void addTokenNode(ASTNode node);
+    /** 在当前处理下标处添加新的节点 */
+    void addTokenNode(ASTNode node);
 
-  /** 在当前处理下标处理处添加2个新的节点 */
-  void addTokenNode(ASTNode node1, ASTNode node2);
+    /** 在当前处理下标处理处添加2个新的节点 */
+    void addTokenNode(ASTNode node1, ASTNode node2);
 
 }

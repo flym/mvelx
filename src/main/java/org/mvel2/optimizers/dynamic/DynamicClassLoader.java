@@ -28,54 +28,54 @@ import java.util.LinkedList;
  * 避免将所有类都绑定在基础类加载器上
  */
 public class DynamicClassLoader extends ClassLoader implements MVELClassLoader {
-  /** 当前经过优化的类上限 */
-  private int totalClasses;
-  /** 优化限制上限值 */
-  private int tenureLimit;
-  /** 当前所有管理的动态访问器,通过引用达到简单管理的目的 */
-  private final LinkedList<DynamicAccessor> allAccessors = new LinkedList<>();
+    /** 当前经过优化的类上限 */
+    private int totalClasses;
+    /** 优化限制上限值 */
+    private int tenureLimit;
+    /** 当前所有管理的动态访问器,通过引用达到简单管理的目的 */
+    private final LinkedList<DynamicAccessor> allAccessors = new LinkedList<>();
 
-  public DynamicClassLoader(ClassLoader classLoader, int tenureLimit) {
-    super(classLoader);
-    this.tenureLimit = tenureLimit;
-  }
+    public DynamicClassLoader(ClassLoader classLoader, int tenureLimit) {
+        super(classLoader);
+        this.tenureLimit = tenureLimit;
+    }
 
-  public Class defineClassX(String className, byte[] b, int start, int end) {
-    totalClasses++;
-    return super.defineClass(className, b, start, end);
-  }
+    public Class defineClassX(String className, byte[] b, int start, int end) {
+        totalClasses++;
+        return super.defineClass(className, b, start, end);
+    }
 
-  public int getTotalClasses() {
-    return totalClasses;
-  }
+    public int getTotalClasses() {
+        return totalClasses;
+    }
 
-  /** 注册一个，如果已达上限，则尝试反优化一个访问器 */
-  public DynamicAccessor registerDynamicAccessor(DynamicAccessor accessor) {
-    synchronized (allAccessors) {
-      allAccessors.add(accessor);
-      while (allAccessors.size() > tenureLimit) {
-        DynamicAccessor da = allAccessors.removeFirst();
-        if (da != null) {
-          da.deoptimize();
+    /** 注册一个，如果已达上限，则尝试反优化一个访问器 */
+    public DynamicAccessor registerDynamicAccessor(DynamicAccessor accessor) {
+        synchronized(allAccessors) {
+            allAccessors.add(accessor);
+            while(allAccessors.size() > tenureLimit) {
+                DynamicAccessor da = allAccessors.removeFirst();
+                if(da != null) {
+                    da.deoptimize();
+                }
+            }
+            assert accessor != null;
+            return accessor;
         }
-      }
-      assert accessor != null;
-      return accessor;
     }
-  }
 
-  /** 反优化所有动态访问器 */
-  public void deoptimizeAll() {
-    synchronized (allAccessors) {
-      for (DynamicAccessor a : allAccessors) {
-        if (a != null) a.deoptimize();
-      }
-      allAccessors.clear();
+    /** 反优化所有动态访问器 */
+    public void deoptimizeAll() {
+        synchronized(allAccessors) {
+            for(DynamicAccessor a : allAccessors) {
+                if(a != null) a.deoptimize();
+            }
+            allAccessors.clear();
+        }
     }
-  }
 
-  /** 当前加载器是否过载,即优化生成类太多 */
-  public boolean isOverloaded() {
-    return tenureLimit < totalClasses;
-  }
+    /** 当前加载器是否过载,即优化生成类太多 */
+    public boolean isOverloaded() {
+        return tenureLimit < totalClasses;
+    }
 }

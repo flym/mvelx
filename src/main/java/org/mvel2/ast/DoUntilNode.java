@@ -2,16 +2,16 @@
  * MVEL 2.0
  * Copyright (C) 2007 The Codehaus
  * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -33,41 +33,41 @@ import static org.mvel2.util.ParseTools.subCompileExpression;
  * @author Christopher Brock
  */
 public class DoUntilNode extends BlockNode {
-  /** 无用的字段 */
-  protected String item;
-  /** 直到的条件表达式 */
-  protected ExecutableStatement condition;
+    /** 无用的字段 */
+    protected String item;
+    /** 直到的条件表达式 */
+    protected ExecutableStatement condition;
 
-  public DoUntilNode(char[] expr, int start, int offset, int blockStart, int blockOffset, ParserContext pCtx) {
-    super(pCtx);
-    this.expr = expr;
-    this.start = start;
-    this.offset = offset;
+    public DoUntilNode(char[] expr, int start, int offset, int blockStart, int blockOffset, ParserContext pCtx) {
+        super(pCtx);
+        this.expr = expr;
+        this.start = start;
+        this.offset = offset;
 
-    //相应的条件期望为boolean
-    expectType(pCtx, this.condition = (ExecutableStatement) subCompileExpression(expr, start, offset, pCtx),
-        Boolean.class, ((fields & COMPILE_IMMEDIATE) != 0));
+        //相应的条件期望为boolean
+        expectType(pCtx, this.condition = (ExecutableStatement) subCompileExpression(expr, start, offset, pCtx),
+                Boolean.class, ((fields & COMPILE_IMMEDIATE) != 0));
 
-    if (pCtx != null) {
-      pCtx.pushVariableScope();
+        if(pCtx != null) {
+            pCtx.pushVariableScope();
+        }
+
+        this.compiledBlock = (ExecutableStatement) subCompileExpression(expr, blockStart, blockOffset, pCtx);
+
+        if(pCtx != null) {
+            pCtx.popVariableScope();
+        }
     }
 
-    this.compiledBlock = (ExecutableStatement) subCompileExpression(expr, blockStart, blockOffset, pCtx);
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        //整个逻辑与do while相同,除了在while的判定不同
+        VariableResolverFactory lc = new MapVariableResolverFactory(new HashMap(0), factory);
 
-    if (pCtx != null) {
-      pCtx.popVariableScope();
+        do{
+            compiledBlock.getValue(ctx, thisValue, lc);
+        }
+        while(!(Boolean) condition.getValue(ctx, thisValue, lc));
+
+        return null;
     }
-  }
-
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //整个逻辑与do while相同,除了在while的判定不同
-    VariableResolverFactory lc = new MapVariableResolverFactory(new HashMap(0), factory);
-
-    do {
-      compiledBlock.getValue(ctx, thisValue, lc);
-    }
-    while (!(Boolean) condition.getValue(ctx, thisValue, lc));
-
-    return null;
-  }
 }

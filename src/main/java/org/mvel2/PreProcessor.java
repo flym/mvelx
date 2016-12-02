@@ -5,9 +5,9 @@ package org.mvel2;
  * A preprocessor used for pre-processing any expressions before being parsed/compiled.
  */
 public interface PreProcessor {
-  /** 处理字符数组，进行翻译 */
-  char[] parse(char[] input);
+    /** 处理字符数组，进行翻译 */
+    char[] parse(char[] input);
 
-  /** 翻译字符串 */
-  String parse(String input);
+    /** 翻译字符串 */
+    String parse(String input);
 }

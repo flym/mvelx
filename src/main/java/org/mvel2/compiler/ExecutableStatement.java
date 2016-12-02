@@ -24,36 +24,36 @@ import java.io.Serializable;
 
 /** 可执行节点，表示当前是一个可执行的计算单元(可以由node封装) */
 public interface ExecutableStatement extends Accessor, Serializable, Cloneable {
-  /** 取值操作，不带elContext的版本 */
-  Object getValue(Object staticContext, VariableResolverFactory factory);
+    /** 取值操作，不带elContext的版本 */
+    Object getValue(Object staticContext, VariableResolverFactory factory);
 
-  /** 设置相应的入参类型(这里的入参也不一定是真实的入参，也可能是当前的结果的处理结果类型 */
-  void setKnownIngressType(Class type);
+    /** 设置相应的入参类型(这里的入参也不一定是真实的入参，也可能是当前的结果的处理结果类型 */
+    void setKnownIngressType(Class type);
 
-  /** 设置相应的出参类型，表示当前单元应该返回的类型信息 */
-  void setKnownEgressType(Class type);
+    /** 设置相应的出参类型，表示当前单元应该返回的类型信息 */
+    void setKnownEgressType(Class type);
 
-  /** 获取相应的已知入参类型 */
-  Class getKnownIngressType();
+    /** 获取相应的已知入参类型 */
+    Class getKnownIngressType();
 
-  /** 执行节点, 能够拿到确定的声明返回类型 */
-  Class getKnownEgressType();
+    /** 执行节点, 能够拿到确定的声明返回类型 */
+    Class getKnownEgressType();
 
-  /** 当前单元是否是classCast计算单元) */
-  boolean isExplicitCast();
+    /** 当前单元是否是classCast计算单元) */
+    boolean isExplicitCast();
 
-  /** 入参和出参是否兼容 */
-  boolean isConvertableIngressEgress();
+    /** 入参和出参是否兼容 */
+    boolean isConvertableIngressEgress();
 
-  /** 判断相应的入参和出参是否一致 */
-  void computeTypeConversionRule();
+    /** 判断相应的入参和出参是否一致 */
+    void computeTypeConversionRule();
 
-  /** 是否具备整数优化(即当前表达式是已经被编译优化的 */
-  boolean intOptimized();
+    /** 是否具备整数优化(即当前表达式是已经被编译优化的 */
+    boolean intOptimized();
 
-  /** 当前执行节点是否是纯字面量 */
-  boolean isLiteralOnly();
+    /** 当前执行节点是否是纯字面量 */
+    boolean isLiteralOnly();
 
-  /** 当前执行节点是否是空节点 */
-  boolean isEmptyStatement();
+    /** 当前执行节点是否是空节点 */
+    boolean isEmptyStatement();
 }

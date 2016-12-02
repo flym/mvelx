@@ -35,7 +35,7 @@ import org.mvel2.asm.Type;
  * A {@link Value} that is represented by its type in a seven types type system.
  * This type system distinguishes the UNINITIALZED, INT, FLOAT, LONG, DOUBLE,
  * REFERENCE and RETURNADDRESS types.
- * 
+ *
  * @author Eric Bruneton
  */
 public class BasicValue implements Value {
@@ -78,10 +78,10 @@ public class BasicValue implements Value {
 
     @Override
     public boolean equals(final Object value) {
-        if (value == this) {
+        if(value == this) {
             return true;
-        } else if (value instanceof BasicValue) {
-            if (type == null) {
+        } else if(value instanceof BasicValue) {
+            if(type == null) {
                 return ((BasicValue) value).type == null;
             } else {
                 return type.equals(((BasicValue) value).type);
@@ -98,11 +98,11 @@ public class BasicValue implements Value {
 
     @Override
     public String toString() {
-        if (this == UNINITIALIZED_VALUE) {
+        if(this == UNINITIALIZED_VALUE) {
             return ".";
-        } else if (this == RETURNADDRESS_VALUE) {
+        } else if(this == RETURNADDRESS_VALUE) {
             return "A";
-        } else if (this == REFERENCE_VALUE) {
+        } else if(this == REFERENCE_VALUE) {
             return "R";
         } else {
             return type.getDescriptor();

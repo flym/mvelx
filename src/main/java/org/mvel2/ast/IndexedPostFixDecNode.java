@@ -28,26 +28,27 @@ import org.mvel2.util.ParseTools;
 
 /**
  * 描述一个之前在上下文中进行注册过的入参的--操作节点
+ *
  * @author Christopher Brock
  */
 public class IndexedPostFixDecNode extends ASTNode {
-  /** 相应的注册下标值 */
-  private int register;
+    /** 相应的注册下标值 */
+    private int register;
 
-  public IndexedPostFixDecNode(int register, ParserContext pCtx) {
-    super(pCtx);
-    this.register = register;
-    //因为这里是下标,因此从之前的下标变量中获取到相应的类型即可
-    this.egressType = pCtx.getVarOrInputType(pCtx.getIndexedVarNames()[register]);
-  }
+    public IndexedPostFixDecNode(int register, ParserContext pCtx) {
+        super(pCtx);
+        this.register = register;
+        //因为这里是下标,因此从之前的下标变量中获取到相应的类型即可
+        this.egressType = pCtx.getVarOrInputType(pCtx.getIndexedVarNames()[register]);
+    }
 
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //因为下标即当前变量工厂的下标一致,获取相应的处理器直接进行a = a - 1即可
-    VariableResolver vResolver = factory.getIndexedVariableResolver(register);
-    //  ctx = vResolver.getValue();
-    //后置计算,先赋值给result,再计算,最后返回相应的result即可
-    vResolver.setValue(MathProcessor.doOperations(ParseTools.resolveType(ctx = vResolver.getValue()),
-        ctx, Operator.SUB, DataTypes.INTEGER, 1));
-    return ctx;
-  }
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        //因为下标即当前变量工厂的下标一致,获取相应的处理器直接进行a = a - 1即可
+        VariableResolver vResolver = factory.getIndexedVariableResolver(register);
+        //  ctx = vResolver.getValue();
+        //后置计算,先赋值给result,再计算,最后返回相应的result即可
+        vResolver.setValue(MathProcessor.doOperations(ParseTools.resolveType(ctx = vResolver.getValue()),
+                ctx, Operator.SUB, DataTypes.INTEGER, 1));
+        return ctx;
+    }
 }

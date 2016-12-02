@@ -28,33 +28,33 @@ import org.mvel2.integration.VariableResolverFactory;
  * 为一个标记节点
  */
 public class OperatorNode extends ASTNode {
-  /** 操作节点名，对应 Operator中的位置 */
-  private Integer operator;
+    /** 操作节点名，对应 Operator中的位置 */
+    private Integer operator;
 
-  public OperatorNode(Integer operator, char[] expr, int start, ParserContext pCtx) {
-    super(pCtx);
-    assert operator != null;
-    this.expr = expr;
-    //相应的常量即为操作符本身
-    this.literal = this.operator = operator;
-    this.start = start;
-  }
+    public OperatorNode(Integer operator, char[] expr, int start, ParserContext pCtx) {
+        super(pCtx);
+        assert operator != null;
+        this.expr = expr;
+        //相应的常量即为操作符本身
+        this.literal = this.operator = operator;
+        this.start = start;
+    }
 
-  /** 此节点为一个操作符节点 */
-  public boolean isOperator() {
-    return true;
-  }
+    /** 此节点为一个操作符节点 */
+    public boolean isOperator() {
+        return true;
+    }
 
-  public boolean isOperator(Integer operator) {
-    return operator.equals(this.operator);
-  }
+    public boolean isOperator(Integer operator) {
+        return operator.equals(this.operator);
+    }
 
-  public Integer getOperator() {
-    return operator;
-  }
+    public Integer getOperator() {
+        return operator;
+    }
 
-  /** 标记节点不可执行 */
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    throw new CompileException("illegal use of operator: " + operator, expr, start);
-  }
+    /** 标记节点不可执行 */
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        throw new CompileException("illegal use of operator: " + operator, expr, start);
+    }
 }

@@ -10,22 +10,22 @@ package org.mvel2;
  * @see org.mvel2.DataConversion
  */
 public interface ConversionHandler {
-  /**
-   * 转换相应的对象至目标对象
-   * Converts the passed argument to the type represented by the handler.
-   *
-   * @param in - the input type
-   * @return - the converted type
-   */
-  Object convertFrom(Object in);
+    /**
+     * 转换相应的对象至目标对象
+     * Converts the passed argument to the type represented by the handler.
+     *
+     * @param in - the input type
+     * @return - the converted type
+     */
+    Object convertFrom(Object in);
 
-  /**
-   * 当前转换器是否能够转换指定类型的数据
-   * This method is used to indicate to the runtime whehter or not the handler knows how to convert
-   * from the specified type.
-   *
-   * @param cls - the source type
-   * @return - true if the converter supports converting from the specified type.
-   */
-  boolean canConvertFrom(Class cls);
+    /**
+     * 当前转换器是否能够转换指定类型的数据
+     * This method is used to indicate to the runtime whehter or not the handler knows how to convert
+     * from the specified type.
+     *
+     * @param cls - the source type
+     * @return - true if the converter supports converting from the specified type.
+     */
+    boolean canConvertFrom(Class cls);
 }

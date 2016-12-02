@@ -25,24 +25,24 @@ import static org.mvel2.util.ParseTools.containsCheck;
 
 /** 用于描述一个contains节点,是一个优化性的节点,由contains操作节点优化而来 */
 public class Contains extends ASTNode {
-  /** 左节点,即a contains b中的 a */
-  private ASTNode stmt;
-  /** 右节点 即 a contains b 中的 b */
-  private ASTNode stmt2;
+    /** 左节点,即a contains b中的 a */
+    private ASTNode stmt;
+    /** 右节点 即 a contains b 中的 b */
+    private ASTNode stmt2;
 
-  public Contains(ASTNode stmt, ASTNode stmt2, ParserContext pCtx) {
-    super(pCtx);
-    this.stmt = stmt;
-    this.stmt2 = stmt2;
-  }
+    public Contains(ASTNode stmt, ASTNode stmt2, ParserContext pCtx) {
+        super(pCtx);
+        this.stmt = stmt;
+        this.stmt2 = stmt2;
+    }
 
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //分别计算两边的值,再进行contains检查
-    return containsCheck(stmt.getReducedValueAccelerated(ctx, thisValue, factory), stmt2.getReducedValueAccelerated(ctx, thisValue, factory));
-  }
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        //分别计算两边的值,再进行contains检查
+        return containsCheck(stmt.getReducedValueAccelerated(ctx, thisValue, factory), stmt2.getReducedValueAccelerated(ctx, thisValue, factory));
+    }
 
-  /** 返回值即为boolean */
-  public Class getEgressType() {
-    return Boolean.class;
-  }
+    /** 返回值即为boolean */
+    public Class getEgressType() {
+        return Boolean.class;
+    }
 }

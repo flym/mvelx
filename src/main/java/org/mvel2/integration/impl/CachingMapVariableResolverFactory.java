@@ -33,108 +33,102 @@ import java.util.Set;
  */
 @SuppressWarnings({"unchecked"})
 public class CachingMapVariableResolverFactory extends BaseVariableResolverFactory {
-  /**
-   * 初始填充的变量存储信息
-   * Holds the instance of the variables.
-   */
-  protected Map<String, Object> variables;
+    /**
+     * 初始填充的变量存储信息
+     * Holds the instance of the variables.
+     */
+    protected Map<String, Object> variables;
 
-  /** 通过外部map来构建相应的处理器 */
-  public CachingMapVariableResolverFactory(Map variables) {
-    this.variables = variables;
-  }
-
-  public VariableResolver createVariable(String name, Object value) {
-    VariableResolver vr;
-
-    try {
-      (vr = getVariableResolver(name)).setValue(value);
-      return vr;
-    }
-    catch (UnresolveablePropertyException e) {
-      addResolver(name, vr = new SimpleSTValueResolver(value, null, true));
-      return vr;
-    }
-  }
-
-  public VariableResolver createVariable(String name, Object value, Class<?> type) {
-    VariableResolver vr;
-    try {
-      vr = getVariableResolver(name);
-    }
-    catch (UnresolveablePropertyException e) {
-      vr = null;
+    /** 通过外部map来构建相应的处理器 */
+    public CachingMapVariableResolverFactory(Map variables) {
+        this.variables = variables;
     }
 
-    if (vr != null && vr.getType() != null) {
-      throw new RuntimeException("variable already defined within scope: " + vr.getType() + " " + name);
-    }
-    else {
-      addResolver(name, vr = new SimpleSTValueResolver(value, type, true));
-      return vr;
-    }
-  }
+    public VariableResolver createVariable(String name, Object value) {
+        VariableResolver vr;
 
-  /** 获取变量解析器，如果当前没有，则尝试从传入的map中创建新的值信息,最终返回相应的解析器 */
-  public VariableResolver getVariableResolver(String name) {
-    VariableResolver vr = variableResolvers.get(name);
-    if (vr != null) {
-      return vr;
-    }
-    else if (variables.containsKey(name)) {
-      //这里通过一个可更新标记的解析器来进行记录,后续即可根据标识判断是否有修改
-      variableResolvers.put(name, vr = new SimpleSTValueResolver(variables.get(name), null));
-      return vr;
-    }
-    else if (nextFactory != null) {
-      return nextFactory.getVariableResolver(name);
+        try{
+            (vr = getVariableResolver(name)).setValue(value);
+            return vr;
+        } catch(UnresolveablePropertyException e) {
+            addResolver(name, vr = new SimpleSTValueResolver(value, null, true));
+            return vr;
+        }
     }
 
-    throw new UnresolveablePropertyException("unable to resolve variable '" + name + "'");
-  }
+    public VariableResolver createVariable(String name, Object value, Class<?> type) {
+        VariableResolver vr;
+        try{
+            vr = getVariableResolver(name);
+        } catch(UnresolveablePropertyException e) {
+            vr = null;
+        }
 
-
-  /** 从当前解析器存储+外部map+委托中共同判定是否可解析 */
-  public boolean isResolveable(String name) {
-    return (variableResolvers.containsKey(name))
-        || (variables != null && variables.containsKey(name))
-        || (nextFactory != null && nextFactory.isResolveable(name));
-  }
-
-  protected VariableResolver addResolver(String name, VariableResolver vr) {
-    variableResolvers.put(name, vr);
-    return vr;
-  }
-
-  /**
-   * 外部化，即将当前自身的添加的解析器的值到外部的存储中
-   * 由于在处理过程中可以会引用外部map中的值，导致覆盖处理，因此只处理有变化的
-   * 变化的包括直接添加到自身解析器中或者是由外部map转换并且在过程中有修改值的
-   */
-  public void externalize() {
-    for (Map.Entry<String, VariableResolver> entry : variableResolvers.entrySet()) {
-      if (entry.getValue().getFlags() == -1) variables.put(entry.getKey(), entry.getValue().getValue());
+        if(vr != null && vr.getType() != null) {
+            throw new RuntimeException("variable already defined within scope: " + vr.getType() + " " + name);
+        } else {
+            addResolver(name, vr = new SimpleSTValueResolver(value, type, true));
+            return vr;
+        }
     }
-  }
 
-  public boolean isTarget(String name) {
-    return variableResolvers.containsKey(name);
-  }
+    /** 获取变量解析器，如果当前没有，则尝试从传入的map中创建新的值信息,最终返回相应的解析器 */
+    public VariableResolver getVariableResolver(String name) {
+        VariableResolver vr = variableResolvers.get(name);
+        if(vr != null) {
+            return vr;
+        } else if(variables.containsKey(name)) {
+            //这里通过一个可更新标记的解析器来进行记录,后续即可根据标识判断是否有修改
+            variableResolvers.put(name, vr = new SimpleSTValueResolver(variables.get(name), null));
+            return vr;
+        } else if(nextFactory != null) {
+            return nextFactory.getVariableResolver(name);
+        }
 
-  public Set<String> getKnownVariables() {
-    if (nextFactory == null) {
-      if (variables != null) return new HashSet<>(variables.keySet());
-      return new HashSet<>(0);
+        throw new UnresolveablePropertyException("unable to resolve variable '" + name + "'");
     }
-    else {
-      if (variables != null) return new HashSet<>(variables.keySet());
-      return new HashSet<>(0);
-    }
-  }
 
-  /** 清除当前及外部的解析器 */
-  public void clear() {
-    variableResolvers.clear();
-    variables.clear();
-  }
+
+    /** 从当前解析器存储+外部map+委托中共同判定是否可解析 */
+    public boolean isResolveable(String name) {
+        return (variableResolvers.containsKey(name))
+                || (variables != null && variables.containsKey(name))
+                || (nextFactory != null && nextFactory.isResolveable(name));
+    }
+
+    protected VariableResolver addResolver(String name, VariableResolver vr) {
+        variableResolvers.put(name, vr);
+        return vr;
+    }
+
+    /**
+     * 外部化，即将当前自身的添加的解析器的值到外部的存储中
+     * 由于在处理过程中可以会引用外部map中的值，导致覆盖处理，因此只处理有变化的
+     * 变化的包括直接添加到自身解析器中或者是由外部map转换并且在过程中有修改值的
+     */
+    public void externalize() {
+        for(Map.Entry<String, VariableResolver> entry : variableResolvers.entrySet()) {
+            if(entry.getValue().getFlags() == -1) variables.put(entry.getKey(), entry.getValue().getValue());
+        }
+    }
+
+    public boolean isTarget(String name) {
+        return variableResolvers.containsKey(name);
+    }
+
+    public Set<String> getKnownVariables() {
+        if(nextFactory == null) {
+            if(variables != null) return new HashSet<>(variables.keySet());
+            return new HashSet<>(0);
+        } else {
+            if(variables != null) return new HashSet<>(variables.keySet());
+            return new HashSet<>(0);
+        }
+    }
+
+    /** 清除当前及外部的解析器 */
+    public void clear() {
+        variableResolvers.clear();
+        variables.clear();
+    }
 }

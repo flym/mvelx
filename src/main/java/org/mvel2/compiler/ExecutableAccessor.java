@@ -29,84 +29,84 @@ import org.mvel2.integration.VariableResolverFactory;
  * 可以理解为node->解析转换为执行单元->再编译转换为访问器,然后进行这样的一个处理.这种工作方式可以避免提前进行编译,即将优化编译延迟来处理
  */
 public class ExecutableAccessor implements ExecutableStatement {
-  /** 所引用的节点 */
-  private ASTNode node;
+    /** 所引用的节点 */
+    private ASTNode node;
 
-  /** 入参类型 */
-  private Class ingress;
-  /** 出参类型 */
-  private Class egress;
-  /** 当前运行是否需要转换(即入参，出参转型) */
-  private boolean convertable;
+    /** 入参类型 */
+    private Class ingress;
+    /** 出参类型 */
+    private Class egress;
+    /** 当前运行是否需要转换(即入参，出参转型) */
+    private boolean convertable;
 
-  public ExecutableAccessor(ASTNode node, Class egress) {
-    this.node = node;
-    this.egress = egress;
-  }
-
-  public Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory) {
-    return node.getReducedValueAccelerated(ctx, elCtx, variableFactory);
-  }
-
-  public Object getValue(Object staticContext, VariableResolverFactory factory) {
-    return node.getReducedValueAccelerated(staticContext, staticContext, factory);
-  }
-
-  public void setKnownIngressType(Class type) {
-    this.ingress = type;
-  }
-
-  public void setKnownEgressType(Class type) {
-    this.egress = type;
-  }
-
-  public Class getKnownIngressType() {
-    return ingress;
-  }
-
-  public Class getKnownEgressType() {
-    return egress;
-  }
-
-  public boolean isConvertableIngressEgress() {
-    return convertable;
-  }
-
-  public void computeTypeConversionRule() {
-    if (ingress != null && egress != null) {
-      convertable = ingress.isAssignableFrom(egress);
+    public ExecutableAccessor(ASTNode node, Class egress) {
+        this.node = node;
+        this.egress = egress;
     }
-  }
 
-  /** 当前还没有进行编译 */
-  public boolean intOptimized() {
-    return false;
-  }
+    public Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory) {
+        return node.getReducedValueAccelerated(ctx, elCtx, variableFactory);
+    }
 
-  public ASTNode getNode() {
-    return node;
-  }
+    public Object getValue(Object staticContext, VariableResolverFactory factory) {
+        return node.getReducedValueAccelerated(staticContext, staticContext, factory);
+    }
 
-  public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
-    return null;
-  }
+    public void setKnownIngressType(Class type) {
+        this.ingress = type;
+    }
 
-  public boolean isLiteralOnly() {
-    return false;
-  }
+    public void setKnownEgressType(Class type) {
+        this.egress = type;
+    }
 
-  public boolean isExplicitCast() {
-    return node instanceof TypeCast;
-  }
+    public Class getKnownIngressType() {
+        return ingress;
+    }
 
-  public boolean isEmptyStatement() {
-    return node == null;
-  }
+    public Class getKnownEgressType() {
+        return egress;
+    }
 
-  @Override
-  public String toString() {
-    return node.toString();
-  }
+    public boolean isConvertableIngressEgress() {
+        return convertable;
+    }
+
+    public void computeTypeConversionRule() {
+        if(ingress != null && egress != null) {
+            convertable = ingress.isAssignableFrom(egress);
+        }
+    }
+
+    /** 当前还没有进行编译 */
+    public boolean intOptimized() {
+        return false;
+    }
+
+    public ASTNode getNode() {
+        return node;
+    }
+
+    public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
+        return null;
+    }
+
+    public boolean isLiteralOnly() {
+        return false;
+    }
+
+    public boolean isExplicitCast() {
+        return node instanceof TypeCast;
+    }
+
+    public boolean isEmptyStatement() {
+        return node == null;
+    }
+
+    @Override
+    public String toString() {
+        return node.toString();
+    }
 }
 
 

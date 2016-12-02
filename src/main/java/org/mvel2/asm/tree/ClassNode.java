@@ -43,7 +43,7 @@ import org.mvel2.asm.TypePath;
 
 /**
  * A node that represents a class.
- * 
+ *
  * @author Eric Bruneton
  */
 public class ClassNode extends ClassVisitor {
@@ -118,7 +118,7 @@ public class ClassNode extends ClassVisitor {
     /**
      * The runtime visible annotations of this class. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
-     * 
+     *
      * @associates org.mvel2.asm.tree.AnnotationNode
      * @label visible
      */
@@ -127,7 +127,7 @@ public class ClassNode extends ClassVisitor {
     /**
      * The runtime invisible annotations of this class. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
-     * 
+     *
      * @associates org.mvel2.asm.tree.AnnotationNode
      * @label invisible
      */
@@ -136,7 +136,7 @@ public class ClassNode extends ClassVisitor {
     /**
      * The runtime visible type annotations of this class. This list is a list
      * of {@link TypeAnnotationNode} objects. May be <tt>null</tt>.
-     * 
+     *
      * @associates org.mvel2.asm.tree.TypeAnnotationNode
      * @label visible
      */
@@ -145,7 +145,7 @@ public class ClassNode extends ClassVisitor {
     /**
      * The runtime invisible type annotations of this class. This list is a list
      * of {@link TypeAnnotationNode} objects. May be <tt>null</tt>.
-     * 
+     *
      * @associates org.mvel2.asm.tree.TypeAnnotationNode
      * @label invisible
      */
@@ -154,7 +154,7 @@ public class ClassNode extends ClassVisitor {
     /**
      * The non standard attributes of this class. This list is a list of
      * {@link Attribute} objects. May be <tt>null</tt>.
-     * 
+     *
      * @associates org.mvel2.asm.Attribute
      */
     public List<Attribute> attrs;
@@ -162,7 +162,7 @@ public class ClassNode extends ClassVisitor {
     /**
      * Informations about the inner classes of this class. This list is a list
      * of {@link InnerClassNode} objects.
-     * 
+     *
      * @associates org.mvel2.asm.tree.InnerClassNode
      */
     public List<InnerClassNode> innerClasses;
@@ -170,7 +170,7 @@ public class ClassNode extends ClassVisitor {
     /**
      * The fields of this class. This list is a list of {@link FieldNode}
      * objects.
-     * 
+     *
      * @associates org.mvel2.asm.tree.FieldNode
      */
     public List<FieldNode> fields;
@@ -178,7 +178,7 @@ public class ClassNode extends ClassVisitor {
     /**
      * The methods of this class. This list is a list of {@link MethodNode}
      * objects.
-     * 
+     *
      * @associates org.mvel2.asm.tree.MethodNode
      */
     public List<MethodNode> methods;
@@ -187,22 +187,20 @@ public class ClassNode extends ClassVisitor {
      * Constructs a new {@link ClassNode}. <i>Subclasses must not use this
      * constructor</i>. Instead, they must use the {@link #ClassNode(int)}
      * version.
-     * 
-     * @throws IllegalStateException
-     *             If a subclass calls this constructor.
+     *
+     * @throws IllegalStateException If a subclass calls this constructor.
      */
     public ClassNode() {
         this(Opcodes.ASM5);
-        if (getClass() != ClassNode.class) {
+        if(getClass() != ClassNode.class) {
             throw new IllegalStateException();
         }
     }
 
     /**
      * Constructs a new {@link ClassNode}.
-     * 
-     * @param api
-     *            the ASM API version implemented by this visitor. Must be one
+     *
+     * @param api the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      */
     public ClassNode(final int api) {
@@ -219,14 +217,14 @@ public class ClassNode extends ClassVisitor {
 
     @Override
     public void visit(final int version, final int access, final String name,
-            final String signature, final String superName,
-            final String[] interfaces) {
+                      final String signature, final String superName,
+                      final String[] interfaces) {
         this.version = version;
         this.access = access;
         this.name = name;
         this.signature = signature;
         this.superName = superName;
-        if (interfaces != null) {
+        if(interfaces != null) {
             this.interfaces.addAll(Arrays.asList(interfaces));
         }
     }
@@ -239,7 +237,7 @@ public class ClassNode extends ClassVisitor {
 
     @Override
     public void visitOuterClass(final String owner, final String name,
-            final String desc) {
+                                final String desc) {
         outerClass = owner;
         outerMethod = name;
         outerMethodDesc = desc;
@@ -247,15 +245,15 @@ public class ClassNode extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(final String desc,
-            final boolean visible) {
+                                             final boolean visible) {
         AnnotationNode an = new AnnotationNode(desc);
-        if (visible) {
-            if (visibleAnnotations == null) {
+        if(visible) {
+            if(visibleAnnotations == null) {
                 visibleAnnotations = new ArrayList<AnnotationNode>(1);
             }
             visibleAnnotations.add(an);
         } else {
-            if (invisibleAnnotations == null) {
+            if(invisibleAnnotations == null) {
                 invisibleAnnotations = new ArrayList<AnnotationNode>(1);
             }
             invisibleAnnotations.add(an);
@@ -265,15 +263,15 @@ public class ClassNode extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef,
-            TypePath typePath, String desc, boolean visible) {
+                                                 TypePath typePath, String desc, boolean visible) {
         TypeAnnotationNode an = new TypeAnnotationNode(typeRef, typePath, desc);
-        if (visible) {
-            if (visibleTypeAnnotations == null) {
+        if(visible) {
+            if(visibleTypeAnnotations == null) {
                 visibleTypeAnnotations = new ArrayList<TypeAnnotationNode>(1);
             }
             visibleTypeAnnotations.add(an);
         } else {
-            if (invisibleTypeAnnotations == null) {
+            if(invisibleTypeAnnotations == null) {
                 invisibleTypeAnnotations = new ArrayList<TypeAnnotationNode>(1);
             }
             invisibleTypeAnnotations.add(an);
@@ -283,7 +281,7 @@ public class ClassNode extends ClassVisitor {
 
     @Override
     public void visitAttribute(final Attribute attr) {
-        if (attrs == null) {
+        if(attrs == null) {
             attrs = new ArrayList<Attribute>(1);
         }
         attrs.add(attr);
@@ -291,7 +289,7 @@ public class ClassNode extends ClassVisitor {
 
     @Override
     public void visitInnerClass(final String name, final String outerName,
-            final String innerName, final int access) {
+                                final String innerName, final int access) {
         InnerClassNode icn = new InnerClassNode(name, outerName, innerName,
                 access);
         innerClasses.add(icn);
@@ -299,7 +297,7 @@ public class ClassNode extends ClassVisitor {
 
     @Override
     public FieldVisitor visitField(final int access, final String name,
-            final String desc, final String signature, final Object value) {
+                                   final String desc, final String signature, final Object value) {
         FieldNode fn = new FieldNode(access, name, desc, signature, value);
         fields.add(fn);
         return fn;
@@ -307,7 +305,7 @@ public class ClassNode extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(final int access, final String name,
-            final String desc, final String signature, final String[] exceptions) {
+                                     final String desc, final String signature, final String[] exceptions) {
         MethodNode mn = new MethodNode(access, name, desc, signature,
                 exceptions);
         methods.add(mn);
@@ -327,25 +325,24 @@ public class ClassNode extends ClassVisitor {
      * This methods checks that this node, and all its nodes recursively, do not
      * contain elements that were introduced in more recent versions of the ASM
      * API than the given version.
-     * 
-     * @param api
-     *            an ASM API version. Must be one of {@link Opcodes#ASM4} or
+     *
+     * @param api an ASM API version. Must be one of {@link Opcodes#ASM4} or
      *            {@link Opcodes#ASM5}.
      */
     public void check(final int api) {
-        if (api == Opcodes.ASM4) {
-            if (visibleTypeAnnotations != null
+        if(api == Opcodes.ASM4) {
+            if(visibleTypeAnnotations != null
                     && visibleTypeAnnotations.size() > 0) {
                 throw new RuntimeException();
             }
-            if (invisibleTypeAnnotations != null
+            if(invisibleTypeAnnotations != null
                     && invisibleTypeAnnotations.size() > 0) {
                 throw new RuntimeException();
             }
-            for (FieldNode f : fields) {
+            for(FieldNode f : fields) {
                 f.check(api);
             }
-            for (MethodNode m : methods) {
+            for(MethodNode m : methods) {
                 m.check(api);
             }
         }
@@ -353,9 +350,8 @@ public class ClassNode extends ClassVisitor {
 
     /**
      * Makes the given class visitor visit this class.
-     * 
-     * @param cv
-     *            a class visitor.
+     *
+     * @param cv a class visitor.
      */
     public void accept(final ClassVisitor cv) {
         // visits header
@@ -363,52 +359,52 @@ public class ClassNode extends ClassVisitor {
         this.interfaces.toArray(interfaces);
         cv.visit(version, access, name, signature, superName, interfaces);
         // visits source
-        if (sourceFile != null || sourceDebug != null) {
+        if(sourceFile != null || sourceDebug != null) {
             cv.visitSource(sourceFile, sourceDebug);
         }
         // visits outer class
-        if (outerClass != null) {
+        if(outerClass != null) {
             cv.visitOuterClass(outerClass, outerMethod, outerMethodDesc);
         }
         // visits attributes
         int i, n;
         n = visibleAnnotations == null ? 0 : visibleAnnotations.size();
-        for (i = 0; i < n; ++i) {
+        for(i = 0; i < n; ++i) {
             AnnotationNode an = visibleAnnotations.get(i);
             an.accept(cv.visitAnnotation(an.desc, true));
         }
         n = invisibleAnnotations == null ? 0 : invisibleAnnotations.size();
-        for (i = 0; i < n; ++i) {
+        for(i = 0; i < n; ++i) {
             AnnotationNode an = invisibleAnnotations.get(i);
             an.accept(cv.visitAnnotation(an.desc, false));
         }
         n = visibleTypeAnnotations == null ? 0 : visibleTypeAnnotations.size();
-        for (i = 0; i < n; ++i) {
+        for(i = 0; i < n; ++i) {
             TypeAnnotationNode an = visibleTypeAnnotations.get(i);
             an.accept(cv.visitTypeAnnotation(an.typeRef, an.typePath, an.desc,
                     true));
         }
         n = invisibleTypeAnnotations == null ? 0 : invisibleTypeAnnotations
                 .size();
-        for (i = 0; i < n; ++i) {
+        for(i = 0; i < n; ++i) {
             TypeAnnotationNode an = invisibleTypeAnnotations.get(i);
             an.accept(cv.visitTypeAnnotation(an.typeRef, an.typePath, an.desc,
                     false));
         }
         n = attrs == null ? 0 : attrs.size();
-        for (i = 0; i < n; ++i) {
+        for(i = 0; i < n; ++i) {
             cv.visitAttribute(attrs.get(i));
         }
         // visits inner classes
-        for (i = 0; i < innerClasses.size(); ++i) {
+        for(i = 0; i < innerClasses.size(); ++i) {
             innerClasses.get(i).accept(cv);
         }
         // visits fields
-        for (i = 0; i < fields.size(); ++i) {
+        for(i = 0; i < fields.size(); ++i) {
             fields.get(i).accept(cv);
         }
         // visits methods
-        for (i = 0; i < methods.size(); ++i) {
+        for(i = 0; i < methods.size(); ++i) {
             methods.get(i).accept(cv);
         }
         // visits end

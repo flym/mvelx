@@ -35,7 +35,7 @@ import org.mvel2.asm.signature.SignatureVisitor;
 /**
  * A {@link SignatureVisitor} that prints a disassembled view of the signature
  * it visits.
- * 
+ *
  * @author Eugene Kuleshov
  * @author Eric Bruneton
  */
@@ -127,7 +127,7 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
     @Override
     public SignatureVisitor visitParameterType() {
         endFormals();
-        if (seenParameter) {
+        if(seenParameter) {
             declaration.append(", ");
         } else {
             seenParameter = true;
@@ -140,7 +140,7 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
     @Override
     public SignatureVisitor visitReturnType() {
         endFormals();
-        if (seenParameter) {
+        if(seenParameter) {
             seenParameter = false;
         } else {
             declaration.append('(');
@@ -152,7 +152,7 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
 
     @Override
     public SignatureVisitor visitExceptionType() {
-        if (exceptions == null) {
+        if(exceptions == null) {
             exceptions = new StringBuffer();
         } else {
             exceptions.append(", ");
@@ -163,35 +163,35 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
 
     @Override
     public void visitBaseType(final char descriptor) {
-        switch (descriptor) {
-        case 'V':
-            declaration.append("void");
-            break;
-        case 'B':
-            declaration.append("byte");
-            break;
-        case 'J':
-            declaration.append("long");
-            break;
-        case 'Z':
-            declaration.append("boolean");
-            break;
-        case 'I':
-            declaration.append("int");
-            break;
-        case 'S':
-            declaration.append("short");
-            break;
-        case 'C':
-            declaration.append("char");
-            break;
-        case 'F':
-            declaration.append("float");
-            break;
-        // case 'D':
-        default:
-            declaration.append("double");
-            break;
+        switch(descriptor) {
+            case 'V':
+                declaration.append("void");
+                break;
+            case 'B':
+                declaration.append("byte");
+                break;
+            case 'J':
+                declaration.append("long");
+                break;
+            case 'Z':
+                declaration.append("boolean");
+                break;
+            case 'I':
+                declaration.append("int");
+                break;
+            case 'S':
+                declaration.append("short");
+                break;
+            case 'C':
+                declaration.append("char");
+                break;
+            case 'F':
+                declaration.append("float");
+                break;
+            // case 'D':
+            default:
+                declaration.append("double");
+                break;
         }
         endType();
     }
@@ -211,14 +211,14 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
 
     @Override
     public void visitClassType(final String name) {
-        if ("java/lang/Object".equals(name)) {
+        if("java/lang/Object".equals(name)) {
             // Map<java.lang.Object,java.util.List>
             // or
             // abstract public V get(Object key); (seen in Dictionary.class)
             // should have Object
             // but java.lang.String extends java.lang.Object is unnecessary
             boolean needObjectClass = argumentStack % 2 != 0 || seenParameter;
-            if (needObjectClass) {
+            if(needObjectClass) {
                 declaration.append(separator).append(name.replace('/', '.'));
             }
         } else {
@@ -230,7 +230,7 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
 
     @Override
     public void visitInnerClassType(final String name) {
-        if (argumentStack % 2 != 0) {
+        if(argumentStack % 2 != 0) {
             declaration.append('>');
         }
         argumentStack /= 2;
@@ -242,7 +242,7 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
 
     @Override
     public void visitTypeArgument() {
-        if (argumentStack % 2 == 0) {
+        if(argumentStack % 2 == 0) {
             ++argumentStack;
             declaration.append('<');
         } else {
@@ -253,16 +253,16 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
 
     @Override
     public SignatureVisitor visitTypeArgument(final char tag) {
-        if (argumentStack % 2 == 0) {
+        if(argumentStack % 2 == 0) {
             ++argumentStack;
             declaration.append('<');
         } else {
             declaration.append(", ");
         }
 
-        if (tag == EXTENDS) {
+        if(tag == EXTENDS) {
             declaration.append("? extends ");
-        } else if (tag == SUPER) {
+        } else if(tag == SUPER) {
             declaration.append("? super ");
         }
 
@@ -272,7 +272,7 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
 
     @Override
     public void visitEnd() {
-        if (argumentStack % 2 != 0) {
+        if(argumentStack % 2 != 0) {
             declaration.append('>');
         }
         argumentStack /= 2;
@@ -294,7 +294,7 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
     // -----------------------------------------------
 
     private void endFormals() {
-        if (seenFormalParameter) {
+        if(seenFormalParameter) {
             declaration.append('>');
             seenFormalParameter = false;
         }
@@ -305,10 +305,10 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
     }
 
     private void endType() {
-        if (arrayStack % 2 == 0) {
+        if(arrayStack % 2 == 0) {
             arrayStack /= 2;
         } else {
-            while (arrayStack % 2 != 0) {
+            while(arrayStack % 2 != 0) {
                 arrayStack /= 2;
                 declaration.append("[]");
             }

@@ -30,94 +30,91 @@ import java.util.Map;
  * 此类实现LocalVariable，意思即处理的变量为一个在指定区间内工作的,是有作用域限制的
  */
 public class DefaultLocalVariableResolverFactory extends MapVariableResolverFactory implements LocalVariableResolverFactory {
-  public DefaultLocalVariableResolverFactory(VariableResolverFactory nextFactory) {
-    super(new HashMap<>(), nextFactory);
-  }
-
-  public DefaultLocalVariableResolverFactory(VariableResolverFactory nextFactory, String[] indexedVariables) {
-    super(new HashMap<>(), nextFactory);
-    this.indexedVariableNames = indexedVariables;
-    this.indexedVariableResolvers = new VariableResolver[indexedVariables.length];
-  }
-
-  /** 实现基于下标访问变量解析器的语义 */
-  public VariableResolver getIndexedVariableResolver(int index) {
-    if (indexedVariableNames == null) return null;
-
-    //这里表示相应的变量是存在的,但没有相应的解析器,因此进行相应的创建
-    if (indexedVariableResolvers[index] == null) {
-      /**
-       * If the register is null, this means we need to forward-allocate the variable onto the
-       * register table.
-       */
-      return indexedVariableResolvers[index] = super.getVariableResolver(indexedVariableNames[index]);
-    }
-    return indexedVariableResolvers[index];
-  }
-
-  public VariableResolver getVariableResolver(String name) {
-    if (indexedVariableNames == null) return super.getVariableResolver(name);
-
-    //以下表示开启相应的下标解析,因此会首先从当前下标解析器中进行处理
-    int idx;
-    //   if (variableResolvers.containsKey(name)) return variableResolvers.get(name);
-    //相应的下标存在
-    if ((idx = variableIndexOf(name)) != -1) {
-      //没有解析器,则马上创建一个
-      if (indexedVariableResolvers[idx] == null) {
-        indexedVariableResolvers[idx] = new SimpleValueResolver(null);
-      }
-      //同时放到相应的map解析器中,双向存储
-      variableResolvers.put(indexedVariableNames[idx], null);
-      return indexedVariableResolvers[idx];
+    public DefaultLocalVariableResolverFactory(VariableResolverFactory nextFactory) {
+        super(new HashMap<>(), nextFactory);
     }
 
-    return super.getVariableResolver(name);
-  }
+    public DefaultLocalVariableResolverFactory(VariableResolverFactory nextFactory, String[] indexedVariables) {
+        super(new HashMap<>(), nextFactory);
+        this.indexedVariableNames = indexedVariables;
+        this.indexedVariableResolvers = new VariableResolver[indexedVariables.length];
+    }
 
-  public VariableResolver createVariable(String name, Object value, Class<?> type) {
-    if (indexedVariableNames == null) return super.createVariable(name, value, type);
+    /** 实现基于下标访问变量解析器的语义 */
+    public VariableResolver getIndexedVariableResolver(int index) {
+        if(indexedVariableNames == null) return null;
 
-    VariableResolver vr;
-    boolean newVar = false;
-
-    try {
-      int idx;
-      //如果当前已存在相应的变量,则创建起相应的解析器
-      if ((idx = variableIndexOf(name)) != -1) {
-        vr = new SimpleValueResolver(value);
-        if (indexedVariableResolvers[idx] == null) {
-          indexedVariableResolvers[idx] = vr;
+        //这里表示相应的变量是存在的,但没有相应的解析器,因此进行相应的创建
+        if(indexedVariableResolvers[index] == null) {
+            /**
+             * If the register is null, this means we need to forward-allocate the variable onto the
+             * register table.
+             */
+            return indexedVariableResolvers[index] = super.getVariableResolver(indexedVariableNames[index]);
         }
-        variableResolvers.put(indexedVariableNames[idx], vr);
-        vr = indexedVariableResolvers[idx];
-
-        newVar = true;
-      }
-      else {
-        return super.createVariable(name, value, type);
-      }
-
-    }
-    catch (UnresolveablePropertyException e) {
-      vr = null;
+        return indexedVariableResolvers[index];
     }
 
-    //进行相应的类型判定,即不允许重复添加
-    if (!newVar && vr != null && vr.getType() != null) {
-      throw new RuntimeException("variable already defined within scope: " + vr.getType() + " " + name);
-    }
-    else {
-      addResolver(name, vr = new MapVariableResolver(variables, name, type)).setValue(value);
-      return vr;
-    }
-  }
+    public VariableResolver getVariableResolver(String name) {
+        if(indexedVariableNames == null) return super.getVariableResolver(name);
 
-  /** 不要终止委托类标记,即当前内部的提前返回,并不需要外层同样进行处理 */
-  private boolean noTilt = false;
+        //以下表示开启相应的下标解析,因此会首先从当前下标解析器中进行处理
+        int idx;
+        //   if (variableResolvers.containsKey(name)) return variableResolvers.get(name);
+        //相应的下标存在
+        if((idx = variableIndexOf(name)) != -1) {
+            //没有解析器,则马上创建一个
+            if(indexedVariableResolvers[idx] == null) {
+                indexedVariableResolvers[idx] = new SimpleValueResolver(null);
+            }
+            //同时放到相应的map解析器中,双向存储
+            variableResolvers.put(indexedVariableNames[idx], null);
+            return indexedVariableResolvers[idx];
+        }
 
-  @Override
-  public void setTiltFlag(boolean tiltFlag) {
-    if (!noTilt) super.setTiltFlag(tiltFlag);
-  }
+        return super.getVariableResolver(name);
+    }
+
+    public VariableResolver createVariable(String name, Object value, Class<?> type) {
+        if(indexedVariableNames == null) return super.createVariable(name, value, type);
+
+        VariableResolver vr;
+        boolean newVar = false;
+
+        try{
+            int idx;
+            //如果当前已存在相应的变量,则创建起相应的解析器
+            if((idx = variableIndexOf(name)) != -1) {
+                vr = new SimpleValueResolver(value);
+                if(indexedVariableResolvers[idx] == null) {
+                    indexedVariableResolvers[idx] = vr;
+                }
+                variableResolvers.put(indexedVariableNames[idx], vr);
+                vr = indexedVariableResolvers[idx];
+
+                newVar = true;
+            } else {
+                return super.createVariable(name, value, type);
+            }
+
+        } catch(UnresolveablePropertyException e) {
+            vr = null;
+        }
+
+        //进行相应的类型判定,即不允许重复添加
+        if(!newVar && vr != null && vr.getType() != null) {
+            throw new RuntimeException("variable already defined within scope: " + vr.getType() + " " + name);
+        } else {
+            addResolver(name, vr = new MapVariableResolver(variables, name, type)).setValue(value);
+            return vr;
+        }
+    }
+
+    /** 不要终止委托类标记,即当前内部的提前返回,并不需要外层同样进行处理 */
+    private boolean noTilt = false;
+
+    @Override
+    public void setTiltFlag(boolean tiltFlag) {
+        if(!noTilt) super.setTiltFlag(tiltFlag);
+    }
 }

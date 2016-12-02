@@ -25,13 +25,13 @@ import static java.lang.String.valueOf;
 
 /** 各种转字符串 */
 public class StringCH implements ConversionHandler {
-  public Object convertFrom(Object in) {
-    return valueOf(in);
-  }
+    public Object convertFrom(Object in) {
+        return valueOf(in);
+    }
 
 
-  /** 只要不是内部空常量,都可以进行转换 */
-  public boolean canConvertFrom(Class cls) {
-    return cls != BlankLiteral.class;
-  }
+    /** 只要不是内部空常量,都可以进行转换 */
+    public boolean canConvertFrom(Class cls) {
+        return cls != BlankLiteral.class;
+    }
 }

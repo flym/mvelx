@@ -13,7 +13,7 @@ import java.lang.reflect.InvocationTargetException;
  * @author Mike Brock <cbrock@redhat.com>
  */
 public interface StaticStub extends Serializable {
-  /** 通过指定的对象上下文,this值,解析器工厂,以及相应的参数进行程序调用 */
-  Object call(Object ctx, Object thisCtx, VariableResolverFactory factory, Object[] parameters)
-      throws IllegalAccessException, InvocationTargetException;
+    /** 通过指定的对象上下文,this值,解析器工厂,以及相应的参数进行程序调用 */
+    Object call(Object ctx, Object thisCtx, VariableResolverFactory factory, Object[] parameters)
+            throws IllegalAccessException, InvocationTargetException;
 }

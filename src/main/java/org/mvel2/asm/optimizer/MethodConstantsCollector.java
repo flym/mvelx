@@ -39,7 +39,7 @@ import org.mvel2.asm.TypePath;
 /**
  * An {@link MethodVisitor} that collects the {@link Constant}s of the methods
  * it visits.
- * 
+ *
  * @author Eric Bruneton
  */
 public class MethodConstantsCollector extends MethodVisitor {
@@ -47,7 +47,7 @@ public class MethodConstantsCollector extends MethodVisitor {
     private final ConstantPool cp;
 
     public MethodConstantsCollector(final MethodVisitor mv,
-            final ConstantPool cp) {
+                                    final ConstantPool cp) {
         super(Opcodes.ASM5, mv);
         this.cp = cp;
     }
@@ -55,7 +55,7 @@ public class MethodConstantsCollector extends MethodVisitor {
     @Override
     public void visitParameter(String name, int access) {
         cp.newUTF8("MethodParameters");
-        if (name != null) {
+        if(name != null) {
             cp.newUTF8(name);
         }
         mv.visitParameter(name, access);
@@ -69,9 +69,9 @@ public class MethodConstantsCollector extends MethodVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(final String desc,
-            final boolean visible) {
+                                             final boolean visible) {
         cp.newUTF8(desc);
-        if (visible) {
+        if(visible) {
             cp.newUTF8("RuntimeVisibleAnnotations");
         } else {
             cp.newUTF8("RuntimeInvisibleAnnotations");
@@ -82,9 +82,9 @@ public class MethodConstantsCollector extends MethodVisitor {
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef,
-            TypePath typePath, String desc, boolean visible) {
+                                                 TypePath typePath, String desc, boolean visible) {
         cp.newUTF8(desc);
-        if (visible) {
+        if(visible) {
             cp.newUTF8("RuntimeVisibleTypeAnnotations");
         } else {
             cp.newUTF8("RuntimeInvisibleTypeAnnotations");
@@ -95,9 +95,9 @@ public class MethodConstantsCollector extends MethodVisitor {
 
     @Override
     public AnnotationVisitor visitParameterAnnotation(final int parameter,
-            final String desc, final boolean visible) {
+                                                      final String desc, final boolean visible) {
         cp.newUTF8(desc);
-        if (visible) {
+        if(visible) {
             cp.newUTF8("RuntimeVisibleParameterAnnotations");
         } else {
             cp.newUTF8("RuntimeInvisibleParameterAnnotations");
@@ -114,21 +114,21 @@ public class MethodConstantsCollector extends MethodVisitor {
 
     @Override
     public void visitFieldInsn(final int opcode, final String owner,
-            final String name, final String desc) {
+                               final String name, final String desc) {
         cp.newField(owner, name, desc);
         mv.visitFieldInsn(opcode, owner, name, desc);
     }
 
     @Override
     public void visitMethodInsn(final int opcode, final String owner,
-            final String name, final String desc, final boolean itf) {
+                                final String name, final String desc, final boolean itf) {
         cp.newMethod(owner, name, desc, itf);
         mv.visitMethodInsn(opcode, owner, name, desc, itf);
     }
 
     @Override
     public void visitInvokeDynamicInsn(String name, String desc, Handle bsm,
-            Object... bsmArgs) {
+                                       Object... bsmArgs) {
         cp.newInvokeDynamic(name, desc, bsm, bsmArgs);
         mv.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
     }
@@ -147,9 +147,9 @@ public class MethodConstantsCollector extends MethodVisitor {
 
     @Override
     public AnnotationVisitor visitInsnAnnotation(int typeRef,
-            TypePath typePath, String desc, boolean visible) {
+                                                 TypePath typePath, String desc, boolean visible) {
         cp.newUTF8(desc);
-        if (visible) {
+        if(visible) {
             cp.newUTF8("RuntimeVisibleTypeAnnotations");
         } else {
             cp.newUTF8("RuntimeInvisibleTypeAnnotations");
@@ -160,8 +160,8 @@ public class MethodConstantsCollector extends MethodVisitor {
 
     @Override
     public void visitTryCatchBlock(final Label start, final Label end,
-            final Label handler, final String type) {
-        if (type != null) {
+                                   final Label handler, final String type) {
+        if(type != null) {
             cp.newClass(type);
         }
         mv.visitTryCatchBlock(start, end, handler, type);
@@ -169,9 +169,9 @@ public class MethodConstantsCollector extends MethodVisitor {
 
     @Override
     public AnnotationVisitor visitTryCatchAnnotation(int typeRef,
-            TypePath typePath, String desc, boolean visible) {
+                                                     TypePath typePath, String desc, boolean visible) {
         cp.newUTF8(desc);
-        if (visible) {
+        if(visible) {
             cp.newUTF8("RuntimeVisibleTypeAnnotations");
         } else {
             cp.newUTF8("RuntimeInvisibleTypeAnnotations");
@@ -182,9 +182,9 @@ public class MethodConstantsCollector extends MethodVisitor {
 
     @Override
     public void visitLocalVariable(final String name, final String desc,
-            final String signature, final Label start, final Label end,
-            final int index) {
-        if (signature != null) {
+                                   final String signature, final Label start, final Label end,
+                                   final int index) {
+        if(signature != null) {
             cp.newUTF8("LocalVariableTypeTable");
             cp.newUTF8(name);
             cp.newUTF8(signature);
@@ -197,10 +197,10 @@ public class MethodConstantsCollector extends MethodVisitor {
 
     @Override
     public AnnotationVisitor visitLocalVariableAnnotation(int typeRef,
-            TypePath typePath, Label[] start, Label[] end, int[] index,
-            String desc, boolean visible) {
+                                                          TypePath typePath, Label[] start, Label[] end, int[] index,
+                                                          String desc, boolean visible) {
         cp.newUTF8(desc);
-        if (visible) {
+        if(visible) {
             cp.newUTF8("RuntimeVisibleTypeAnnotations");
         } else {
             cp.newUTF8("RuntimeInvisibleTypeAnnotations");

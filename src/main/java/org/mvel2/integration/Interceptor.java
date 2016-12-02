@@ -27,31 +27,31 @@ import org.mvel2.ast.ASTNode;
  * @author Christopher Brock
  */
 public interface Interceptor {
-  int NORMAL_FLOW = 0;
-  int SKIP = 1;
-  int END = 2;
+    int NORMAL_FLOW = 0;
+    int SKIP = 1;
+    int END = 2;
 
-  /**
-   * 在实际的node调用前执行
-   * 当前的返回值没有任何意义
-   * This method is executed before the wrapped statement.
-   *
-   * @param node    The ASTNode wrapped by the interceptor
-   * @param factory The variable factory
-   * @return The response code.  Should return 0.
-   */
-  int doBefore(ASTNode node, VariableResolverFactory factory);
+    /**
+     * 在实际的node调用前执行
+     * 当前的返回值没有任何意义
+     * This method is executed before the wrapped statement.
+     *
+     * @param node    The ASTNode wrapped by the interceptor
+     * @param factory The variable factory
+     * @return The response code.  Should return 0.
+     */
+    int doBefore(ASTNode node, VariableResolverFactory factory);
 
-  /**
-   * 在实际的node调用后执行
-   * 当前的返回值没有任何意义
-   * This method is called after the wrapped statement has completed.  A copy of the top-value of the execution
-   * stack is also availablehere.
-   *
-   * @param exitStackValue The value on the top of the stack after executing the statement.
-   * @param node           The ASTNode wrapped by the interceptor
-   * @param factory        The variable factory
-   * @return The response code.  Should return 0.
-   */
-  int doAfter(Object exitStackValue, ASTNode node, VariableResolverFactory factory);
+    /**
+     * 在实际的node调用后执行
+     * 当前的返回值没有任何意义
+     * This method is called after the wrapped statement has completed.  A copy of the top-value of the execution
+     * stack is also availablehere.
+     *
+     * @param exitStackValue The value on the top of the stack after executing the statement.
+     * @param node           The ASTNode wrapped by the interceptor
+     * @param factory        The variable factory
+     * @return The response code.  Should return 0.
+     */
+    int doAfter(Object exitStackValue, ASTNode node, VariableResolverFactory factory);
 }

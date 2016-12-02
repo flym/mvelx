@@ -30,79 +30,79 @@ import java.util.Set;
  * 意味着使用此工厂的表达式中不能够存在对变量的各种操作，对应于Mvel中不带变量工厂的处理
  */
 public class ImmutableDefaultFactory implements VariableResolverFactory {
-  private boolean tiltFlag;
+    private boolean tiltFlag;
 
-  private void throwError() {
-    throw new ScriptRuntimeException("cannot assign variables; no variable resolver factory available.");
-  }
+    private void throwError() {
+        throw new ScriptRuntimeException("cannot assign variables; no variable resolver factory available.");
+    }
 
-  public VariableResolver createVariable(String name, Object value) {
-    throwError();
-    return null;
-  }
+    public VariableResolver createVariable(String name, Object value) {
+        throwError();
+        return null;
+    }
 
-  public VariableResolver createIndexedVariable(int index, String name, Object value) {
-    throwError();
-    return null;
-  }
+    public VariableResolver createIndexedVariable(int index, String name, Object value) {
+        throwError();
+        return null;
+    }
 
-  public VariableResolver createVariable(String name, Object value, Class<?> type) {
-    throwError();
-    return null;
-  }
+    public VariableResolver createVariable(String name, Object value, Class<?> type) {
+        throwError();
+        return null;
+    }
 
-  public VariableResolver createIndexedVariable(int index, String name, Object value, Class<?> typee) {
-    throwError();
-    return null;
-  }
+    public VariableResolver createIndexedVariable(int index, String name, Object value, Class<?> typee) {
+        throwError();
+        return null;
+    }
 
-  public VariableResolver setIndexedVariableResolver(int index, VariableResolver variableResolver) {
-    throwError();
-    return null;
-  }
+    public VariableResolver setIndexedVariableResolver(int index, VariableResolver variableResolver) {
+        throwError();
+        return null;
+    }
 
-  public VariableResolverFactory getNextFactory() {
-    return null;
-  }
+    public VariableResolverFactory getNextFactory() {
+        return null;
+    }
 
-  public VariableResolverFactory setNextFactory(VariableResolverFactory resolverFactory) {
-    throw new RuntimeException("cannot chain to this factory");
-  }
+    public VariableResolverFactory setNextFactory(VariableResolverFactory resolverFactory) {
+        throw new RuntimeException("cannot chain to this factory");
+    }
 
-  public VariableResolver getVariableResolver(String name) {
-    throw new UnresolveablePropertyException(name);
-  }
+    public VariableResolver getVariableResolver(String name) {
+        throw new UnresolveablePropertyException(name);
+    }
 
-  public VariableResolver getIndexedVariableResolver(int index) {
-    throwError();
-    return null;
-  }
+    public VariableResolver getIndexedVariableResolver(int index) {
+        throwError();
+        return null;
+    }
 
-  public boolean isTarget(String name) {
-    return false;
-  }
+    public boolean isTarget(String name) {
+        return false;
+    }
 
-  public boolean isResolveable(String name) {
-    return false;
-  }
+    public boolean isResolveable(String name) {
+        return false;
+    }
 
-  public Set<String> getKnownVariables() {
-    return null;
-  }
+    public Set<String> getKnownVariables() {
+        return null;
+    }
 
-  public int variableIndexOf(String name) {
-    return -1;
-  }
+    public int variableIndexOf(String name) {
+        return -1;
+    }
 
-  public boolean isIndexedFactory() {
-    return false;
-  }
+    public boolean isIndexedFactory() {
+        return false;
+    }
 
-  public boolean tiltFlag() {
-    return tiltFlag;
-  }
+    public boolean tiltFlag() {
+        return tiltFlag;
+    }
 
-  public void setTiltFlag(boolean tilt) {
-    this.tiltFlag = tilt;
-  }
+    public void setTiltFlag(boolean tilt) {
+        this.tiltFlag = tilt;
+    }
 }

@@ -21,6 +21,6 @@ package org.mvel2.integration.impl;
 /**
  * 标记类，描述一个具备作用域的变量解析器工厂
  * 实际上没什么用
- * */
+ */
 public interface LocalVariableResolverFactory {
 }

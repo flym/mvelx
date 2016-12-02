@@ -2,16 +2,16 @@
  * MVEL 2.0
  * Copyright (C) 2007 The Codehaus
  * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -31,33 +31,31 @@ import static org.mvel2.optimizers.OptimizerFactory.getThreadAccessorOptimizer;
  */
 @SuppressWarnings({"CaughtExceptionImmediatelyRethrown"})
 public class LiteralDeepPropertyNode extends ASTNode {
-  /** 相应的常量值 */
-  private Object literal;
+    /** 相应的常量值 */
+    private Object literal;
 
-  public LiteralDeepPropertyNode(char[] expr, int start, int offset, int fields, Object literal, ParserContext pCtx) {
-    super(pCtx);
-    this.fields = fields;
-    this.expr = expr;
-    this.start = start;
-    this.offset = offset;
+    public LiteralDeepPropertyNode(char[] expr, int start, int offset, int fields, Object literal, ParserContext pCtx) {
+        super(pCtx);
+        this.fields = fields;
+        this.expr = expr;
+        this.start = start;
+        this.offset = offset;
 
-    this.literal = literal;
-  }
-
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    if (accessor != null) {
-      return accessor.getValue(literal, thisValue, factory);
+        this.literal = literal;
     }
-    else {
-      try {
-        AccessorOptimizer aO = getThreadAccessorOptimizer();
-        accessor = aO.optimizeAccessor(pCtx, expr, start, offset,
-            literal, thisValue, factory, null);
-        return aO.getResultOptPass();
-      }
-      finally {
-        OptimizerFactory.clearThreadAccessorOptimizer();
-      }
+
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        if(accessor != null) {
+            return accessor.getValue(literal, thisValue, factory);
+        } else {
+            try{
+                AccessorOptimizer aO = getThreadAccessorOptimizer();
+                accessor = aO.optimizeAccessor(pCtx, expr, start, offset,
+                        literal, thisValue, factory, null);
+                return aO.getResultOptPass();
+            } finally {
+                OptimizerFactory.clearThreadAccessorOptimizer();
+            }
+        }
     }
-  }
 }

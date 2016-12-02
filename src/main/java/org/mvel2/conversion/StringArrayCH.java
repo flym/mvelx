@@ -25,49 +25,48 @@ import java.util.Map;
 
 /** 对象数组转字符串数组，即将每个对象string化 */
 public class StringArrayCH implements ConversionHandler {
-  private static final Map<Class, Converter> CNV =
-      new HashMap<>();
+    private static final Map<Class, Converter> CNV =
+            new HashMap<>();
 
 
-  public Object convertFrom(Object in) {
+    public Object convertFrom(Object in) {
 
-    if (in.getClass().isArray()) {
+        if(in.getClass().isArray()) {
 
-      Object[] old = (Object[]) in;
-      String[] n = new String[old.length];
-      for (int i = 0; i < old.length; i++) {
-        n[i] = String.valueOf(old[i]);
-      }
-
-      return n;
-    }
-    else {
-      return new String[]{String.valueOf(in)};
-    }
-
-    //    return CNV.get(in.getClass()).convert(in);
-  }
-
-
-  public boolean canConvertFrom(Class cls) {
-    return CNV.containsKey(cls);
-  }
-
-  static {
-    //支持非基本类型数组转换为字符串
-    CNV.put(Object[].class,
-        new Converter() {
-          public Object convert(Object o) {
-            Object[] old = (Object[]) o;
+            Object[] old = (Object[]) in;
             String[] n = new String[old.length];
-            for (int i = 0; i < old.length; i++) {
-              n[i] = String.valueOf(old[i]);
+            for(int i = 0; i < old.length; i++) {
+                n[i] = String.valueOf(old[i]);
             }
 
             return n;
-          }
+        } else {
+            return new String[]{String.valueOf(in)};
         }
-    );
 
-  }
+        //    return CNV.get(in.getClass()).convert(in);
+    }
+
+
+    public boolean canConvertFrom(Class cls) {
+        return CNV.containsKey(cls);
+    }
+
+    static {
+        //支持非基本类型数组转换为字符串
+        CNV.put(Object[].class,
+                new Converter() {
+                    public Object convert(Object o) {
+                        Object[] old = (Object[]) o;
+                        String[] n = new String[old.length];
+                        for(int i = 0; i < old.length; i++) {
+                            n[i] = String.valueOf(old[i]);
+                        }
+
+                        return n;
+                    }
+                }
+        );
+
+    }
 }

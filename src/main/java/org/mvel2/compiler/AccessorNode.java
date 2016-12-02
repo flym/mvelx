@@ -28,12 +28,12 @@ import java.io.Serializable;
  * 调用a.set(4),内部先是获取a的值,再将a的值,传递给b,再b.set这样调用.具体就是b.set(a.get(),4)这样的方式
  */
 public interface AccessorNode extends Accessor, Serializable, Cloneable {
-  /** 获取下一个节点 */
-  AccessorNode getNextNode();
+    /** 获取下一个节点 */
+    AccessorNode getNextNode();
 
-  /** 设置下一个节点 */
-  AccessorNode setNextNode(AccessorNode accessorNode);
+    /** 设置下一个节点 */
+    AccessorNode setNextNode(AccessorNode accessorNode);
 
-  /** 用于描述此节点访问器的解析时属性或字符串名 */
-  String nodeExpr();
+    /** 用于描述此节点访问器的解析时属性或字符串名 */
+    String nodeExpr();
 }

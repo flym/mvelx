@@ -28,62 +28,62 @@ import static java.lang.String.valueOf;
 
 /** 将各种数据转换为byte类型 */
 public class ByteCH implements ConversionHandler {
-  private static final Map<Class, Converter> CNV =
-      new HashMap<>();
+    private static final Map<Class, Converter> CNV =
+            new HashMap<>();
 
-  /** 字符串转byte的实现,即采用parse来实现 */
-  private static Converter stringConverter = new Converter() {
-    public Object convert(Object o) {
-      return Byte.parseByte(((String) o));
+    /** 字符串转byte的实现,即采用parse来实现 */
+    private static Converter stringConverter = new Converter() {
+        public Object convert(Object o) {
+            return Byte.parseByte(((String) o));
+        }
+    };
+
+    public Object convertFrom(Object in) {
+        if(!CNV.containsKey(in.getClass())) throw new ConversionException("cannot convert type: "
+                + in.getClass().getName() + " to: " + Integer.class.getName());
+        return CNV.get(in.getClass()).convert(in);
     }
-  };
-
-  public Object convertFrom(Object in) {
-    if (!CNV.containsKey(in.getClass())) throw new ConversionException("cannot convert type: "
-        + in.getClass().getName() + " to: " + Integer.class.getName());
-    return CNV.get(in.getClass()).convert(in);
-  }
 
 
-  public boolean canConvertFrom(Class cls) {
-    return CNV.containsKey(cls);
-  }
+    public boolean canConvertFrom(Class cls) {
+        return CNV.containsKey(cls);
+    }
 
-  static {
-    //已实现的字符串转
-    CNV.put(String.class,
-        stringConverter
-    );
+    static {
+        //已实现的字符串转
+        CNV.put(String.class,
+                stringConverter
+        );
 
-    //任意对象,通过其toString形式处理
-    CNV.put(Object.class,
-        o -> stringConverter.convert(valueOf(o))
-    );
+        //任意对象,通过其toString形式处理
+        CNV.put(Object.class,
+                o -> stringConverter.convert(valueOf(o))
+        );
 
-    //byte类型,宽化处理
-    CNV.put(Byte.class,
-        o -> o
-    );
+        //byte类型,宽化处理
+        CNV.put(Byte.class,
+                o -> o
+        );
 
-    //integer, 窄化处理
-    CNV.put(Integer.class,
-        o -> ((Integer) o).byteValue()
-    );
+        //integer, 窄化处理
+        CNV.put(Integer.class,
+                o -> ((Integer) o).byteValue()
+        );
 
-    //long, 窄化处理
-    CNV.put(Long.class,
-        o -> ((Long) o).byteValue());
+        //long, 窄化处理
+        CNV.put(Long.class,
+                o -> ((Long) o).byteValue());
 
-    //double, 窄化处理
-    CNV.put(Double.class,
-        o -> ((Double) o).byteValue());
+        //double, 窄化处理
+        CNV.put(Double.class,
+                o -> ((Double) o).byteValue());
 
-    //float, 窄化处理
-    CNV.put(Float.class,
-        o -> ((Float) o).byteValue());
+        //float, 窄化处理
+        CNV.put(Float.class,
+                o -> ((Float) o).byteValue());
 
-    //short, 窄化处理
-    CNV.put(Short.class,
-        o -> ((Short) o).byteValue());
-  }
+        //short, 窄化处理
+        CNV.put(Short.class,
+                o -> ((Short) o).byteValue());
+    }
 }

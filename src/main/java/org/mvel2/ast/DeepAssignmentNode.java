@@ -37,97 +37,95 @@ import static org.mvel2.util.ParseTools.*;
  * @author Christopher Brock
  */
 public class DeepAssignmentNode extends ASTNode implements Assignment {
-  /** 当前正在处理的属性名(整个属性表达式) */
-  private String property;
-  // private char[] stmt;
+    /** 当前正在处理的属性名(整个属性表达式) */
+    private String property;
+    // private char[] stmt;
 
-  /** 当前的属性的访问器表达式 */
-  private CompiledAccExpression acc;
-  /** 将 a ?= b 修改为 a ? b的表达式 */
-  private ExecutableStatement statement;
+    /** 当前的属性的访问器表达式 */
+    private CompiledAccExpression acc;
+    /** 将 a ?= b 修改为 a ? b的表达式 */
+    private ExecutableStatement statement;
 
-  public DeepAssignmentNode(char[] expr, int start, int offset, int fields, int operation, String name, ParserContext pCtx) {
-    super(pCtx);
-    this.fields |= DEEP_PROPERTY | fields;
+    public DeepAssignmentNode(char[] expr, int start, int offset, int fields, int operation, String name, ParserContext pCtx) {
+        super(pCtx);
+        this.fields |= DEEP_PROPERTY | fields;
 
-    this.expr = expr;
-    this.start = start;
-    this.offset = offset;
-    int mark;
+        this.expr = expr;
+        this.start = start;
+        this.offset = offset;
+        int mark;
 
-    if (operation != -1) {//有操作符
-      //类型即后面 a + b 之后的结果类型
-      this.egressType = ((statement =
-          (ExecutableStatement) subCompileExpression(
-              createShortFormOperativeAssignment(this.property = name, expr, start, offset, operation), pCtx))).getKnownEgressType();
+        if(operation != -1) {//有操作符
+            //类型即后面 a + b 之后的结果类型
+            this.egressType = ((statement =
+                    (ExecutableStatement) subCompileExpression(
+                            createShortFormOperativeAssignment(this.property = name, expr, start, offset, operation), pCtx))).getKnownEgressType();
+        } else if((mark = find(expr, start, offset, '=')) != -1) {
+            //没有操作符，就是简单的赋值操作
+            property = createStringTrimmed(expr, start, mark - start);
+
+            // this.start = mark + 1;
+            this.start = skipWhitespace(expr, mark + 1);
+
+            if(this.start >= start + offset) {
+                throw new CompileException("unexpected end of statement", expr, mark + 1);
+            }
+
+            this.offset = offset - (this.start - start);
+
+            if((fields & COMPILE_IMMEDIATE) != 0) {
+                statement = (ExecutableStatement) subCompileExpression(expr, this.start, this.offset, pCtx);
+            }
+        } else {
+            property = new String(expr);
+        }
+
+        //对当前属性进行解析并处理
+        if((fields & COMPILE_IMMEDIATE) != 0) {
+            acc = (CompiledAccExpression) compileSetExpression(property.toCharArray(), start, offset, pCtx);
+        }
     }
-    else if ((mark = find(expr, start, offset, '=')) != -1) {
-      //没有操作符，就是简单的赋值操作
-      property = createStringTrimmed(expr, start, mark - start);
 
-      // this.start = mark + 1;
-      this.start = skipWhitespace(expr, mark + 1);
-
-      if (this.start >= start + offset) {
-        throw new CompileException("unexpected end of statement", expr, mark + 1);
-      }
-
-      this.offset = offset - (this.start - start);
-
-      if ((fields & COMPILE_IMMEDIATE) != 0) {
-        statement = (ExecutableStatement) subCompileExpression(expr, this.start, this.offset, pCtx);
-      }
-    }
-    else {
-      property = new String(expr);
+    public DeepAssignmentNode(char[] expr, int start, int offset, int fields, ParserContext pCtx) {
+        this(expr, start, offset, fields, -1, null, pCtx);
     }
 
-    //对当前属性进行解析并处理
-    if ((fields & COMPILE_IMMEDIATE) != 0) {
-      acc = (CompiledAccExpression) compileSetExpression(property.toCharArray(), start, offset, pCtx);
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        //重新编译单元
+        if(statement == null) {
+            statement = (ExecutableStatement) subCompileExpression(expr, this.start, this.offset, pCtx);
+            acc = (CompiledAccExpression) compileSetExpression(property.toCharArray(), statement.getKnownEgressType(), pCtx);
+        }
+        //在之前已经将statement,转换为a+b,因此这里整个表达式即为a = a +b,即对后面进行求值,再重新设置回去
+        //如果本身没有+= 这种操作符,则直接即为a = b这种
+        acc.setValue(ctx, thisValue, factory, ctx = statement.getValue(ctx, thisValue, factory));
+        return ctx;
     }
-  }
 
-  public DeepAssignmentNode(char[] expr, int start, int offset, int fields, ParserContext pCtx) {
-    this(expr, start, offset, fields, -1, null, pCtx);
-  }
-
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //重新编译单元
-    if (statement == null) {
-      statement = (ExecutableStatement) subCompileExpression(expr, this.start, this.offset, pCtx);
-      acc = (CompiledAccExpression) compileSetExpression(property.toCharArray(), statement.getKnownEgressType(), pCtx);
+    @Override
+    public String getAbsoluteName() {
+        //最靠前的属性即为第1个.之前,这里不需要作判断,因为编译时已经处理过了
+        return property.substring(0, property.indexOf('.'));
     }
-    //在之前已经将statement,转换为a+b,因此这里整个表达式即为a = a +b,即对后面进行求值,再重新设置回去
-    //如果本身没有+= 这种操作符,则直接即为a = b这种
-    acc.setValue(ctx, thisValue, factory, ctx = statement.getValue(ctx, thisValue, factory));
-    return ctx;
-  }
 
-  @Override
-  public String getAbsoluteName() {
-    //最靠前的属性即为第1个.之前,这里不需要作判断,因为编译时已经处理过了
-    return property.substring(0, property.indexOf('.'));
-  }
+    public String getAssignmentVar() {
+        return property;
+    }
 
-  public String getAssignmentVar() {
-    return property;
-  }
+    public char[] getExpression() {
+        return subArray(expr, start, offset);
+    }
 
-  public char[] getExpression() {
-    return subArray(expr, start, offset);
-  }
+    public boolean isNewDeclaration() {
+        return false;
+    }
 
-  public boolean isNewDeclaration() {
-    return false;
-  }
+    /** 是赋值节点 */
+    public boolean isAssignment() {
+        return true;
+    }
 
-  /** 是赋值节点 */
-  public boolean isAssignment() {
-    return true;
-  }
-
-  public void setValueStatement(ExecutableStatement stmt) {
-    this.statement = stmt;
-  }
+    public void setValueStatement(ExecutableStatement stmt) {
+        this.statement = stmt;
+    }
 }

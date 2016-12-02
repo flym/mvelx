@@ -26,22 +26,22 @@ import static org.mvel2.util.PropertyTools.getFieldOrAccessor;
 /**
  * 定义 isDef节点，以判断指定的变量是否存在
  * 或者判断当前字段或方法在this值中是否存在
- * */
+ */
 public class IsDef extends ASTNode {
-  public IsDef(char[] expr, int start, int offset, ParserContext pCtx) {
-    super(pCtx);
-    //计算出当前要处理的变量名
-    this.nameCache = new String(this.expr = expr, this.start = start, this.offset = offset);
-  }
+    public IsDef(char[] expr, int start, int offset, ParserContext pCtx) {
+        super(pCtx);
+        //计算出当前要处理的变量名
+        this.nameCache = new String(this.expr = expr, this.start = start, this.offset = offset);
+    }
 
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //先判断此变量名是否在解析上下文中是否存在.
-    //否则判断当前类中是否有此字段或方法,即形成一个简单的当前对象方法或字段引用
-    return factory.isResolveable(nameCache) || (thisValue != null && getFieldOrAccessor(thisValue.getClass(), nameCache) != null);
-  }
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        //先判断此变量名是否在解析上下文中是否存在.
+        //否则判断当前类中是否有此字段或方法,即形成一个简单的当前对象方法或字段引用
+        return factory.isResolveable(nameCache) || (thisValue != null && getFieldOrAccessor(thisValue.getClass(), nameCache) != null);
+    }
 
-  /** isDef 返回类型为boolean */
-  public Class getEgressType() {
-    return Boolean.class;
-  }
+    /** isDef 返回类型为boolean */
+    public Class getEgressType() {
+        return Boolean.class;
+    }
 }

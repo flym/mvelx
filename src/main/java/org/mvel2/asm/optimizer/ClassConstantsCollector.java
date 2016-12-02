@@ -40,7 +40,7 @@ import org.mvel2.asm.TypePath;
 /**
  * A {@link ClassVisitor} that collects the {@link Constant}s of the classes it
  * visits.
- * 
+ *
  * @author Eric Bruneton
  */
 public class ClassConstantsCollector extends ClassVisitor {
@@ -54,24 +54,24 @@ public class ClassConstantsCollector extends ClassVisitor {
 
     @Override
     public void visit(final int version, final int access, final String name,
-            final String signature, final String superName,
-            final String[] interfaces) {
-        if ((access & Opcodes.ACC_DEPRECATED) != 0) {
+                      final String signature, final String superName,
+                      final String[] interfaces) {
+        if((access & Opcodes.ACC_DEPRECATED) != 0) {
             cp.newUTF8("Deprecated");
         }
-        if ((access & Opcodes.ACC_SYNTHETIC) != 0) {
+        if((access & Opcodes.ACC_SYNTHETIC) != 0) {
             cp.newUTF8("Synthetic");
         }
         cp.newClass(name);
-        if (signature != null) {
+        if(signature != null) {
             cp.newUTF8("Signature");
             cp.newUTF8(signature);
         }
-        if (superName != null) {
+        if(superName != null) {
             cp.newClass(superName);
         }
-        if (interfaces != null) {
-            for (int i = 0; i < interfaces.length; ++i) {
+        if(interfaces != null) {
+            for(int i = 0; i < interfaces.length; ++i) {
                 cp.newClass(interfaces[i]);
             }
         }
@@ -80,11 +80,11 @@ public class ClassConstantsCollector extends ClassVisitor {
 
     @Override
     public void visitSource(final String source, final String debug) {
-        if (source != null) {
+        if(source != null) {
             cp.newUTF8("SourceFile");
             cp.newUTF8(source);
         }
-        if (debug != null) {
+        if(debug != null) {
             cp.newUTF8("SourceDebugExtension");
         }
         cv.visitSource(source, debug);
@@ -92,10 +92,10 @@ public class ClassConstantsCollector extends ClassVisitor {
 
     @Override
     public void visitOuterClass(final String owner, final String name,
-            final String desc) {
+                                final String desc) {
         cp.newUTF8("EnclosingMethod");
         cp.newClass(owner);
-        if (name != null && desc != null) {
+        if(name != null && desc != null) {
             cp.newNameType(name, desc);
         }
         cv.visitOuterClass(owner, name, desc);
@@ -103,9 +103,9 @@ public class ClassConstantsCollector extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(final String desc,
-            final boolean visible) {
+                                             final boolean visible) {
         cp.newUTF8(desc);
-        if (visible) {
+        if(visible) {
             cp.newUTF8("RuntimeVisibleAnnotations");
         } else {
             cp.newUTF8("RuntimeInvisibleAnnotations");
@@ -116,9 +116,9 @@ public class ClassConstantsCollector extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef,
-            TypePath typePath, String desc, boolean visible) {
+                                                 TypePath typePath, String desc, boolean visible) {
         cp.newUTF8(desc);
-        if (visible) {
+        if(visible) {
             cp.newUTF8("RuntimeVisibleTypeAnnotations");
         } else {
             cp.newUTF8("RuntimeInvisibleTypeAnnotations");
@@ -135,15 +135,15 @@ public class ClassConstantsCollector extends ClassVisitor {
 
     @Override
     public void visitInnerClass(final String name, final String outerName,
-            final String innerName, final int access) {
+                                final String innerName, final int access) {
         cp.newUTF8("InnerClasses");
-        if (name != null) {
+        if(name != null) {
             cp.newClass(name);
         }
-        if (outerName != null) {
+        if(outerName != null) {
             cp.newClass(outerName);
         }
-        if (innerName != null) {
+        if(innerName != null) {
             cp.newUTF8(innerName);
         }
         cv.visitInnerClass(name, outerName, innerName, access);
@@ -151,20 +151,20 @@ public class ClassConstantsCollector extends ClassVisitor {
 
     @Override
     public FieldVisitor visitField(final int access, final String name,
-            final String desc, final String signature, final Object value) {
-        if ((access & Opcodes.ACC_SYNTHETIC) != 0) {
+                                   final String desc, final String signature, final Object value) {
+        if((access & Opcodes.ACC_SYNTHETIC) != 0) {
             cp.newUTF8("Synthetic");
         }
-        if ((access & Opcodes.ACC_DEPRECATED) != 0) {
+        if((access & Opcodes.ACC_DEPRECATED) != 0) {
             cp.newUTF8("Deprecated");
         }
         cp.newUTF8(name);
         cp.newUTF8(desc);
-        if (signature != null) {
+        if(signature != null) {
             cp.newUTF8("Signature");
             cp.newUTF8(signature);
         }
-        if (value != null) {
+        if(value != null) {
             cp.newConst(value);
         }
         return new FieldConstantsCollector(cv.visitField(access, name, desc,
@@ -173,22 +173,22 @@ public class ClassConstantsCollector extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(final int access, final String name,
-            final String desc, final String signature, final String[] exceptions) {
-        if ((access & Opcodes.ACC_SYNTHETIC) != 0) {
+                                     final String desc, final String signature, final String[] exceptions) {
+        if((access & Opcodes.ACC_SYNTHETIC) != 0) {
             cp.newUTF8("Synthetic");
         }
-        if ((access & Opcodes.ACC_DEPRECATED) != 0) {
+        if((access & Opcodes.ACC_DEPRECATED) != 0) {
             cp.newUTF8("Deprecated");
         }
         cp.newUTF8(name);
         cp.newUTF8(desc);
-        if (signature != null) {
+        if(signature != null) {
             cp.newUTF8("Signature");
             cp.newUTF8(signature);
         }
-        if (exceptions != null) {
+        if(exceptions != null) {
             cp.newUTF8("Exceptions");
-            for (int i = 0; i < exceptions.length; ++i) {
+            for(int i = 0; i < exceptions.length; ++i) {
                 cp.newClass(exceptions[i]);
             }
         }

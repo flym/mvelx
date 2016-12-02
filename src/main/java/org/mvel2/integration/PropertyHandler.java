@@ -26,27 +26,27 @@ package org.mvel2.integration;
  * @see org.mvel2.optimizers.impl.asm.ProducesBytecode
  */
 public interface PropertyHandler {
-  /**
-   * 在指定的属性名，上下文和变量工厂中获取相应的属性值
-   * Retrieves the value of the property.
-   *
-   * @param name            - the name of the property to be resolved.
-   * @param contextObj      - the current context object.
-   * @param variableFactory - the root variable factory provided by the runtime.
-   * @return - the value of the property.
-   */
-  Object getProperty(String name, Object contextObj, VariableResolverFactory variableFactory);
+    /**
+     * 在指定的属性名，上下文和变量工厂中获取相应的属性值
+     * Retrieves the value of the property.
+     *
+     * @param name            - the name of the property to be resolved.
+     * @param contextObj      - the current context object.
+     * @param variableFactory - the root variable factory provided by the runtime.
+     * @return - the value of the property.
+     */
+    Object getProperty(String name, Object contextObj, VariableResolverFactory variableFactory);
 
 
-  /**
-   * 对指定的属性名，上下文，变量工厂和值进行set操作
-   * Sets the value of the property.
-   *
-   * @param name            - the name of the property to be resolved.
-   * @param contextObj      - the current context object.
-   * @param variableFactory - the root variable factory provided by the runtime.
-   * @param value           - the value to be set to the resolved property
-   * @return - the resultant value of the property (should normally be the same as the value passed)
-   */
-  Object setProperty(String name, Object contextObj, VariableResolverFactory variableFactory, Object value);
+    /**
+     * 对指定的属性名，上下文，变量工厂和值进行set操作
+     * Sets the value of the property.
+     *
+     * @param name            - the name of the property to be resolved.
+     * @param contextObj      - the current context object.
+     * @param variableFactory - the root variable factory provided by the runtime.
+     * @param value           - the value to be set to the resolved property
+     * @return - the resultant value of the property (should normally be the same as the value passed)
+     */
+    Object setProperty(String name, Object contextObj, VariableResolverFactory variableFactory, Object value);
 }

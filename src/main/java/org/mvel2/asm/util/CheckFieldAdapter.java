@@ -47,27 +47,23 @@ public class CheckFieldAdapter extends FieldVisitor {
      * Constructs a new {@link CheckFieldAdapter}. <i>Subclasses must not use
      * this constructor</i>. Instead, they must use the
      * {@link #CheckFieldAdapter(int, FieldVisitor)} version.
-     * 
-     * @param fv
-     *            the field visitor to which this adapter must delegate calls.
-     * @throws IllegalStateException
-     *             If a subclass calls this constructor.
+     *
+     * @param fv the field visitor to which this adapter must delegate calls.
+     * @throws IllegalStateException If a subclass calls this constructor.
      */
     public CheckFieldAdapter(final FieldVisitor fv) {
         this(Opcodes.ASM5, fv);
-        if (getClass() != CheckFieldAdapter.class) {
+        if(getClass() != CheckFieldAdapter.class) {
             throw new IllegalStateException();
         }
     }
 
     /**
      * Constructs a new {@link CheckFieldAdapter}.
-     * 
-     * @param api
-     *            the ASM API version implemented by this visitor. Must be one
+     *
+     * @param api the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
-     * @param fv
-     *            the field visitor to which this adapter must delegate calls.
+     * @param fv  the field visitor to which this adapter must delegate calls.
      */
     protected CheckFieldAdapter(final int api, final FieldVisitor fv) {
         super(api, fv);
@@ -75,7 +71,7 @@ public class CheckFieldAdapter extends FieldVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(final String desc,
-            final boolean visible) {
+                                             final boolean visible) {
         checkEnd();
         CheckMethodAdapter.checkDesc(desc, false);
         return new CheckAnnotationAdapter(super.visitAnnotation(desc, visible));
@@ -83,10 +79,10 @@ public class CheckFieldAdapter extends FieldVisitor {
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(final int typeRef,
-            final TypePath typePath, final String desc, final boolean visible) {
+                                                 final TypePath typePath, final String desc, final boolean visible) {
         checkEnd();
         int sort = typeRef >>> 24;
-        if (sort != TypeReference.FIELD) {
+        if(sort != TypeReference.FIELD) {
             throw new IllegalArgumentException("Invalid type reference sort 0x"
                     + Integer.toHexString(sort));
         }
@@ -99,7 +95,7 @@ public class CheckFieldAdapter extends FieldVisitor {
     @Override
     public void visitAttribute(final Attribute attr) {
         checkEnd();
-        if (attr == null) {
+        if(attr == null) {
             throw new IllegalArgumentException(
                     "Invalid attribute (must not be null)");
         }
@@ -114,7 +110,7 @@ public class CheckFieldAdapter extends FieldVisitor {
     }
 
     private void checkEnd() {
-        if (end) {
+        if(end) {
             throw new IllegalStateException(
                     "Cannot call a visit method after visitEnd has been called");
         }

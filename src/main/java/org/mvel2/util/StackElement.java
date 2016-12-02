@@ -7,11 +7,11 @@ import java.io.Serializable;
  * 即存储的都是当前值(value)，next引向上一次存储的值信息
  */
 public class StackElement implements Serializable {
-  public StackElement(StackElement next, Object value) {
-    this.next = next;
-    this.value = value;
-  }
+    public StackElement(StackElement next, Object value) {
+        this.next = next;
+        this.value = value;
+    }
 
-  public StackElement next;
-  public Object value;
+    public StackElement next;
+    public Object value;
 }

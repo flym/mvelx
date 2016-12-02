@@ -5,12 +5,12 @@ package org.mvel2;
  */
 public class PropertyAccessException extends CompileException {
 
-  public PropertyAccessException(String message, char[] expr, int cursor, Throwable e, ParserContext pCtx) {
-    super(message, expr, cursor, e);
-  }
+    public PropertyAccessException(String message, char[] expr, int cursor, Throwable e, ParserContext pCtx) {
+        super(message, expr, cursor, e);
+    }
 
-  public PropertyAccessException(String message, char[] expr, int cursor, ParserContext pCtx) {
-    super(message, expr, cursor);
-  }
+    public PropertyAccessException(String message, char[] expr, int cursor, ParserContext pCtx) {
+        super(message, expr, cursor);
+    }
 
 }

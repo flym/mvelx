@@ -36,7 +36,7 @@ import org.mvel2.asm.Type;
 /**
  * An {@link AnnotationVisitor} that collects the {@link Constant}s of the
  * annotations it visits.
- * 
+ *
  * @author Eric Bruneton
  */
 public class AnnotationConstantsCollector extends AnnotationVisitor {
@@ -44,64 +44,64 @@ public class AnnotationConstantsCollector extends AnnotationVisitor {
     private final ConstantPool cp;
 
     public AnnotationConstantsCollector(final AnnotationVisitor av,
-            final ConstantPool cp) {
+                                        final ConstantPool cp) {
         super(Opcodes.ASM5, av);
         this.cp = cp;
     }
 
     @Override
     public void visit(final String name, final Object value) {
-        if (name != null) {
+        if(name != null) {
             cp.newUTF8(name);
         }
-        if (value instanceof Byte) {
+        if(value instanceof Byte) {
             cp.newInteger(((Byte) value).byteValue());
-        } else if (value instanceof Boolean) {
+        } else if(value instanceof Boolean) {
             cp.newInteger(((Boolean) value).booleanValue() ? 1 : 0);
-        } else if (value instanceof Character) {
+        } else if(value instanceof Character) {
             cp.newInteger(((Character) value).charValue());
-        } else if (value instanceof Short) {
+        } else if(value instanceof Short) {
             cp.newInteger(((Short) value).shortValue());
-        } else if (value instanceof Type) {
+        } else if(value instanceof Type) {
             cp.newUTF8(((Type) value).getDescriptor());
-        } else if (value instanceof byte[]) {
+        } else if(value instanceof byte[]) {
             byte[] v = (byte[]) value;
-            for (int i = 0; i < v.length; i++) {
+            for(int i = 0; i < v.length; i++) {
                 cp.newInteger(v[i]);
             }
-        } else if (value instanceof boolean[]) {
+        } else if(value instanceof boolean[]) {
             boolean[] v = (boolean[]) value;
-            for (int i = 0; i < v.length; i++) {
+            for(int i = 0; i < v.length; i++) {
                 cp.newInteger(v[i] ? 1 : 0);
             }
-        } else if (value instanceof short[]) {
+        } else if(value instanceof short[]) {
             short[] v = (short[]) value;
-            for (int i = 0; i < v.length; i++) {
+            for(int i = 0; i < v.length; i++) {
                 cp.newInteger(v[i]);
             }
-        } else if (value instanceof char[]) {
+        } else if(value instanceof char[]) {
             char[] v = (char[]) value;
-            for (int i = 0; i < v.length; i++) {
+            for(int i = 0; i < v.length; i++) {
                 cp.newInteger(v[i]);
             }
-        } else if (value instanceof int[]) {
+        } else if(value instanceof int[]) {
             int[] v = (int[]) value;
-            for (int i = 0; i < v.length; i++) {
+            for(int i = 0; i < v.length; i++) {
                 cp.newInteger(v[i]);
             }
-        } else if (value instanceof long[]) {
+        } else if(value instanceof long[]) {
             long[] v = (long[]) value;
-            for (int i = 0; i < v.length; i++) {
+            for(int i = 0; i < v.length; i++) {
                 cp.newLong(v[i]);
             }
-        } else if (value instanceof float[]) {
+        } else if(value instanceof float[]) {
             float[] v = (float[]) value;
-            for (int i = 0; i < v.length; i++) {
+            for(int i = 0; i < v.length; i++) {
                 cp.newFloat(v[i]);
             }
-        } else if (value instanceof double[]) {
+        } else if(value instanceof double[]) {
             double[] v = (double[]) value;
-            for (int i = 0; i < v.length; i++) {
+            for(int i = 0; i < v.length; i++) {
                 cp.newDouble(v[i]);
             }
         } else {
@@ -112,8 +112,8 @@ public class AnnotationConstantsCollector extends AnnotationVisitor {
 
     @Override
     public void visitEnum(final String name, final String desc,
-            final String value) {
-        if (name != null) {
+                          final String value) {
+        if(name != null) {
             cp.newUTF8(name);
         }
         cp.newUTF8(desc);
@@ -123,8 +123,8 @@ public class AnnotationConstantsCollector extends AnnotationVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(final String name,
-            final String desc) {
-        if (name != null) {
+                                             final String desc) {
+        if(name != null) {
             cp.newUTF8(name);
         }
         cp.newUTF8(desc);
@@ -134,7 +134,7 @@ public class AnnotationConstantsCollector extends AnnotationVisitor {
 
     @Override
     public AnnotationVisitor visitArray(final String name) {
-        if (name != null) {
+        if(name != null) {
             cp.newUTF8(name);
         }
         return new AnnotationConstantsCollector(av.visitArray(name), cp);

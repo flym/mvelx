@@ -32,62 +32,60 @@ import static org.mvel2.util.ParseTools.subCompileExpression;
 
 /** 描述一个用于正则匹配的表达式节点 */
 public class RegExMatch extends ASTNode {
-  /** 当前变量或属性表达式 */
-  private ExecutableStatement stmt;
-  /** 当前正则表达式字符串的表达式 */
-  private ExecutableStatement patternStmt;
+    /** 当前变量或属性表达式 */
+    private ExecutableStatement stmt;
+    /** 当前正则表达式字符串的表达式 */
+    private ExecutableStatement patternStmt;
 
-  /** 正则表达式起始点 */
-  private int patternStart;
-  /** 正则表达式结束点 */
-  private int patternOffset;
-  /** 相应的正则表达式 */
-  private Pattern p;
+    /** 正则表达式起始点 */
+    private int patternStart;
+    /** 正则表达式结束点 */
+    private int patternOffset;
+    /** 相应的正则表达式 */
+    private Pattern p;
 
-  public RegExMatch(char[] expr, int start, int offset, int fields, int patternStart, int patternOffset, ParserContext pCtx) {
-    super(pCtx);
-    this.expr = expr;
-    this.start = start;
-    this.offset = offset;
-    this.patternStart = patternStart;
-    this.patternOffset = patternOffset;
+    public RegExMatch(char[] expr, int start, int offset, int fields, int patternStart, int patternOffset, ParserContext pCtx) {
+        super(pCtx);
+        this.expr = expr;
+        this.start = start;
+        this.offset = offset;
+        this.patternStart = patternStart;
+        this.patternOffset = patternOffset;
 
-    if ((fields & COMPILE_IMMEDIATE) != 0) {
-      //编译需要被正则处理的表达式
-      this.stmt = (ExecutableStatement) subCompileExpression(expr, start, offset, pCtx);
-      //本身的正则处理器
-      if ((this.patternStmt = (ExecutableStatement)
-          subCompileExpression(expr, patternStart, patternOffset, pCtx)) instanceof ExecutableLiteral) {
+        if((fields & COMPILE_IMMEDIATE) != 0) {
+            //编译需要被正则处理的表达式
+            this.stmt = (ExecutableStatement) subCompileExpression(expr, start, offset, pCtx);
+            //本身的正则处理器
+            if((this.patternStmt = (ExecutableStatement)
+                    subCompileExpression(expr, patternStart, patternOffset, pCtx)) instanceof ExecutableLiteral) {
 
-        //如果是常量,则尝试直接进行编译此正则式
-        try {
-          p = compile(valueOf(patternStmt.getValue(null, null)));
+                //如果是常量,则尝试直接进行编译此正则式
+                try{
+                    p = compile(valueOf(patternStmt.getValue(null, null)));
+                } catch(PatternSyntaxException e) {
+                    throw new CompileException("bad regular expression", expr, patternStart, e);
+                }
+            }
         }
-        catch (PatternSyntaxException e) {
-          throw new CompileException("bad regular expression", expr, patternStart, e);
+    }
+
+
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        //根据正则式是否已处理好决定如何运行
+        if(p == null) {
+            //这里因为正则式是一个表达式,因此不能够直接进行缓存,而是每次都重新编译
+            return compile(valueOf(patternStmt.getValue(ctx, thisValue, factory))).matcher(valueOf(stmt.getValue(ctx, thisValue, factory))).matches();
+        } else {
+            return p.matcher(valueOf(stmt.getValue(ctx, thisValue, factory))).matches();
         }
-      }
     }
-  }
 
-
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //根据正则式是否已处理好决定如何运行
-    if (p == null) {
-      //这里因为正则式是一个表达式,因此不能够直接进行缓存,而是每次都重新编译
-      return compile(valueOf(patternStmt.getValue(ctx, thisValue, factory))).matcher(valueOf(stmt.getValue(ctx, thisValue, factory))).matches();
+    //正则表达式匹配,结果为boolean
+    public Class getEgressType() {
+        return Boolean.class;
     }
-    else {
-      return p.matcher(valueOf(stmt.getValue(ctx, thisValue, factory))).matches();
+
+    public ExecutableStatement getStatement() {
+        return stmt;
     }
-  }
-
-  //正则表达式匹配,结果为boolean
-  public Class getEgressType() {
-    return Boolean.class;
-  }
-
-  public ExecutableStatement getStatement() {
-    return stmt;
-  }
 }

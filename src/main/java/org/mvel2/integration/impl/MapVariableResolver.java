@@ -33,65 +33,64 @@ import static org.mvel2.DataConversion.convert;
  * 即变量的值被存储在一个统一的变量map中
  */
 public class MapVariableResolver implements VariableResolver {
-  /** 相应的变量名 */
-  private String name;
-  /** 已知的变量类型(可能为null) */
-  private Class<?> knownType;
-  /** 存储变量信息的map */
-  private Map<String, Object> variableMap;
+    /** 相应的变量名 */
+    private String name;
+    /** 已知的变量类型(可能为null) */
+    private Class<?> knownType;
+    /** 存储变量信息的map */
+    private Map<String, Object> variableMap;
 
-  /** 通过相应的map+key名来进行构建 */
-  public MapVariableResolver(Map<String, Object> variableMap, String name) {
-    this.variableMap = variableMap;
-    this.name = name;
-  }
-
-  /** 通过相应的map+key名+值类型来进行构建 */
-  public MapVariableResolver(Map<String, Object> variableMap, String name, Class knownType) {
-    this.name = name;
-    this.knownType = knownType;
-    this.variableMap = variableMap;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public Class getType() {
-    return knownType;
-  }
-
-  /** 设置并转换值 */
-  public void setValue(Object value) {
-    //如果有声明类型,则尝试进行类型转换
-    if (knownType != null && value != null && value.getClass() != knownType) {
-      if (!canConvert(knownType, value.getClass())) {
-        throw new RuntimeException("cannot assign " + value.getClass().getName() + " to type: "
-            + knownType.getName());
-      }
-      try {
-        value = convert(value, knownType);
-      }
-      catch (Exception e) {
-        throw new RuntimeException("cannot convert value of " + value.getClass().getName()
-            + " to: " + knownType.getName());
-      }
+    /** 通过相应的map+key名来进行构建 */
+    public MapVariableResolver(Map<String, Object> variableMap, String name) {
+        this.variableMap = variableMap;
+        this.name = name;
     }
 
-    //noinspection unchecked
-    variableMap.put(name, value);
-  }
+    /** 通过相应的map+key名+值类型来进行构建 */
+    public MapVariableResolver(Map<String, Object> variableMap, String name, Class knownType) {
+        this.name = name;
+        this.knownType = knownType;
+        this.variableMap = variableMap;
+    }
 
-  public Object getValue() {
-    return variableMap.get(name);
-  }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-  /** 没有特殊的标记 */
-  public int getFlags() {
-    return 0;
-  }
+    public String getName() {
+        return name;
+    }
+
+    public Class getType() {
+        return knownType;
+    }
+
+    /** 设置并转换值 */
+    public void setValue(Object value) {
+        //如果有声明类型,则尝试进行类型转换
+        if(knownType != null && value != null && value.getClass() != knownType) {
+            if(!canConvert(knownType, value.getClass())) {
+                throw new RuntimeException("cannot assign " + value.getClass().getName() + " to type: "
+                        + knownType.getName());
+            }
+            try{
+                value = convert(value, knownType);
+            } catch(Exception e) {
+                throw new RuntimeException("cannot convert value of " + value.getClass().getName()
+                        + " to: " + knownType.getName());
+            }
+        }
+
+        //noinspection unchecked
+        variableMap.put(name, value);
+    }
+
+    public Object getValue() {
+        return variableMap.get(name);
+    }
+
+    /** 没有特殊的标记 */
+    public int getFlags() {
+        return 0;
+    }
 }

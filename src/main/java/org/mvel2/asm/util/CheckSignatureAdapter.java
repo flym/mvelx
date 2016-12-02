@@ -34,7 +34,7 @@ import org.mvel2.asm.signature.SignatureVisitor;
 
 /**
  * A {@link SignatureVisitor} that checks that its methods are properly used.
- * 
+ *
  * @author Eric Bruneton
  */
 public class CheckSignatureAdapter extends SignatureVisitor {
@@ -103,14 +103,12 @@ public class CheckSignatureAdapter extends SignatureVisitor {
      * Creates a new {@link CheckSignatureAdapter} object. <i>Subclasses must
      * not use this constructor</i>. Instead, they must use the
      * {@link #CheckSignatureAdapter(int, int, SignatureVisitor)} version.
-     * 
-     * @param type
-     *            the type of signature to be checked. See
-     *            {@link #CLASS_SIGNATURE}, {@link #METHOD_SIGNATURE} and
-     *            {@link #TYPE_SIGNATURE}.
-     * @param sv
-     *            the visitor to which this adapter must delegate calls. May be
-     *            <tt>null</tt>.
+     *
+     * @param type the type of signature to be checked. See
+     *             {@link #CLASS_SIGNATURE}, {@link #METHOD_SIGNATURE} and
+     *             {@link #TYPE_SIGNATURE}.
+     * @param sv   the visitor to which this adapter must delegate calls. May be
+     *             <tt>null</tt>.
      */
     public CheckSignatureAdapter(final int type, final SignatureVisitor sv) {
         this(Opcodes.ASM5, type, sv);
@@ -118,20 +116,17 @@ public class CheckSignatureAdapter extends SignatureVisitor {
 
     /**
      * Creates a new {@link CheckSignatureAdapter} object.
-     * 
-     * @param api
-     *            the ASM API version implemented by this visitor. Must be one
-     *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
-     * @param type
-     *            the type of signature to be checked. See
-     *            {@link #CLASS_SIGNATURE}, {@link #METHOD_SIGNATURE} and
-     *            {@link #TYPE_SIGNATURE}.
-     * @param sv
-     *            the visitor to which this adapter must delegate calls. May be
-     *            <tt>null</tt>.
+     *
+     * @param api  the ASM API version implemented by this visitor. Must be one
+     *             of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
+     * @param type the type of signature to be checked. See
+     *             {@link #CLASS_SIGNATURE}, {@link #METHOD_SIGNATURE} and
+     *             {@link #TYPE_SIGNATURE}.
+     * @param sv   the visitor to which this adapter must delegate calls. May be
+     *             <tt>null</tt>.
      */
     protected CheckSignatureAdapter(final int api, final int type,
-            final SignatureVisitor sv) {
+                                    final SignatureVisitor sv) {
         super(api);
         this.type = type;
         this.state = EMPTY;
@@ -142,20 +137,20 @@ public class CheckSignatureAdapter extends SignatureVisitor {
 
     @Override
     public void visitFormalTypeParameter(final String name) {
-        if (type == TYPE_SIGNATURE
+        if(type == TYPE_SIGNATURE
                 || (state != EMPTY && state != FORMAL && state != BOUND)) {
             throw new IllegalStateException();
         }
         CheckMethodAdapter.checkIdentifier(name, "formal type parameter");
         state = FORMAL;
-        if (sv != null) {
+        if(sv != null) {
             sv.visitFormalTypeParameter(name);
         }
     }
 
     @Override
     public SignatureVisitor visitClassBound() {
-        if (state != FORMAL) {
+        if(state != FORMAL) {
             throw new IllegalStateException();
         }
         state = BOUND;
@@ -165,7 +160,7 @@ public class CheckSignatureAdapter extends SignatureVisitor {
 
     @Override
     public SignatureVisitor visitInterfaceBound() {
-        if (state != FORMAL && state != BOUND) {
+        if(state != FORMAL && state != BOUND) {
             throw new IllegalArgumentException();
         }
         SignatureVisitor v = sv == null ? null : sv.visitInterfaceBound();
@@ -176,7 +171,7 @@ public class CheckSignatureAdapter extends SignatureVisitor {
 
     @Override
     public SignatureVisitor visitSuperclass() {
-        if (type != CLASS_SIGNATURE || (state & (EMPTY | FORMAL | BOUND)) == 0) {
+        if(type != CLASS_SIGNATURE || (state & (EMPTY | FORMAL | BOUND)) == 0) {
             throw new IllegalArgumentException();
         }
         state = SUPER;
@@ -186,7 +181,7 @@ public class CheckSignatureAdapter extends SignatureVisitor {
 
     @Override
     public SignatureVisitor visitInterface() {
-        if (state != SUPER) {
+        if(state != SUPER) {
             throw new IllegalStateException();
         }
         SignatureVisitor v = sv == null ? null : sv.visitInterface();
@@ -197,7 +192,7 @@ public class CheckSignatureAdapter extends SignatureVisitor {
 
     @Override
     public SignatureVisitor visitParameterType() {
-        if (type != METHOD_SIGNATURE
+        if(type != METHOD_SIGNATURE
                 || (state & (EMPTY | FORMAL | BOUND | PARAM)) == 0) {
             throw new IllegalArgumentException();
         }
@@ -208,7 +203,7 @@ public class CheckSignatureAdapter extends SignatureVisitor {
 
     @Override
     public SignatureVisitor visitReturnType() {
-        if (type != METHOD_SIGNATURE
+        if(type != METHOD_SIGNATURE
                 || (state & (EMPTY | FORMAL | BOUND | PARAM)) == 0) {
             throw new IllegalArgumentException();
         }
@@ -221,7 +216,7 @@ public class CheckSignatureAdapter extends SignatureVisitor {
 
     @Override
     public SignatureVisitor visitExceptionType() {
-        if (state != RETURN) {
+        if(state != RETURN) {
             throw new IllegalStateException();
         }
         SignatureVisitor v = sv == null ? null : sv.visitExceptionType();
@@ -232,39 +227,39 @@ public class CheckSignatureAdapter extends SignatureVisitor {
 
     @Override
     public void visitBaseType(final char descriptor) {
-        if (type != TYPE_SIGNATURE || state != EMPTY) {
+        if(type != TYPE_SIGNATURE || state != EMPTY) {
             throw new IllegalStateException();
         }
-        if (descriptor == 'V') {
-            if (!canBeVoid) {
+        if(descriptor == 'V') {
+            if(!canBeVoid) {
                 throw new IllegalArgumentException();
             }
         } else {
-            if ("ZCBSIFJD".indexOf(descriptor) == -1) {
+            if("ZCBSIFJD".indexOf(descriptor) == -1) {
                 throw new IllegalArgumentException();
             }
         }
         state = SIMPLE_TYPE;
-        if (sv != null) {
+        if(sv != null) {
             sv.visitBaseType(descriptor);
         }
     }
 
     @Override
     public void visitTypeVariable(final String name) {
-        if (type != TYPE_SIGNATURE || state != EMPTY) {
+        if(type != TYPE_SIGNATURE || state != EMPTY) {
             throw new IllegalStateException();
         }
         CheckMethodAdapter.checkIdentifier(name, "type variable");
         state = SIMPLE_TYPE;
-        if (sv != null) {
+        if(sv != null) {
             sv.visitTypeVariable(name);
         }
     }
 
     @Override
     public SignatureVisitor visitArrayType() {
-        if (type != TYPE_SIGNATURE || state != EMPTY) {
+        if(type != TYPE_SIGNATURE || state != EMPTY) {
             throw new IllegalStateException();
         }
         state = SIMPLE_TYPE;
@@ -274,43 +269,43 @@ public class CheckSignatureAdapter extends SignatureVisitor {
 
     @Override
     public void visitClassType(final String name) {
-        if (type != TYPE_SIGNATURE || state != EMPTY) {
+        if(type != TYPE_SIGNATURE || state != EMPTY) {
             throw new IllegalStateException();
         }
         CheckMethodAdapter.checkInternalName(name, "class name");
         state = CLASS_TYPE;
-        if (sv != null) {
+        if(sv != null) {
             sv.visitClassType(name);
         }
     }
 
     @Override
     public void visitInnerClassType(final String name) {
-        if (state != CLASS_TYPE) {
+        if(state != CLASS_TYPE) {
             throw new IllegalStateException();
         }
         CheckMethodAdapter.checkIdentifier(name, "inner class name");
-        if (sv != null) {
+        if(sv != null) {
             sv.visitInnerClassType(name);
         }
     }
 
     @Override
     public void visitTypeArgument() {
-        if (state != CLASS_TYPE) {
+        if(state != CLASS_TYPE) {
             throw new IllegalStateException();
         }
-        if (sv != null) {
+        if(sv != null) {
             sv.visitTypeArgument();
         }
     }
 
     @Override
     public SignatureVisitor visitTypeArgument(final char wildcard) {
-        if (state != CLASS_TYPE) {
+        if(state != CLASS_TYPE) {
             throw new IllegalStateException();
         }
-        if ("+-=".indexOf(wildcard) == -1) {
+        if("+-=".indexOf(wildcard) == -1) {
             throw new IllegalArgumentException();
         }
         SignatureVisitor v = sv == null ? null : sv.visitTypeArgument(wildcard);
@@ -319,11 +314,11 @@ public class CheckSignatureAdapter extends SignatureVisitor {
 
     @Override
     public void visitEnd() {
-        if (state != CLASS_TYPE) {
+        if(state != CLASS_TYPE) {
             throw new IllegalStateException();
         }
         state = END;
-        if (sv != null) {
+        if(sv != null) {
             sv.visitEnd();
         }
     }

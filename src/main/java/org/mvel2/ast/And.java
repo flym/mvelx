@@ -28,52 +28,52 @@ import static org.mvel2.util.CompilerTools.expectType;
  */
 public class And extends BooleanNode {
 
-  public And(ASTNode left, ASTNode right, boolean strongTyping, ParserContext pCtx) {
-    super(pCtx);
-    //因为是 && 运算,因此期望两边都是boolean类型
-    expectType(pCtx, this.left = left, Boolean.class, strongTyping);
-    expectType(pCtx, this.right = right, Boolean.class, strongTyping);
-  }
-
-  public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
-    //与java && 相同,即计算两边值,然后再处理.因为是 && 运算,因此与满足java中的懒计算原则.
-    // 如果left计算为false,那么就是直接返回,而不是再计算右侧
-    return (((Boolean) left.getReducedValueAccelerated(ctx, thisValue, factory))
-        && ((Boolean) right.getReducedValueAccelerated(ctx, thisValue, factory)));
-  }
-
-  public String toString() {
-    return "(" + left.toString() + " && " + right.toString() + ")";
-  }
-
-  /**
-   * 替换最右侧节点
-   * 因为and是从左至右,因此相应的最右侧就是作为and节点的最右侧节点
-   */
-  public void setRightMost(ASTNode right) {
-    And n = this;
-    while (n.right != null && n.right instanceof And) {
-      n = (And) n.right;
+    public And(ASTNode left, ASTNode right, boolean strongTyping, ParserContext pCtx) {
+        super(pCtx);
+        //因为是 && 运算,因此期望两边都是boolean类型
+        expectType(pCtx, this.left = left, Boolean.class, strongTyping);
+        expectType(pCtx, this.right = right, Boolean.class, strongTyping);
     }
-    n.right = right;
-  }
 
-  /**
-   * 获取最右侧,也是获取同一优先级的最右侧节点.即作为同一and类型的最右节点
-   * 在初始状态下 a && b,即是获取为 b
-   */
-  public ASTNode getRightMost() {
-    And n = this;
-    while (n.right != null && n.right instanceof And) {
-      n = (And) n.right;
+    public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        //与java && 相同,即计算两边值,然后再处理.因为是 && 运算,因此与满足java中的懒计算原则.
+        // 如果left计算为false,那么就是直接返回,而不是再计算右侧
+        return (((Boolean) left.getReducedValueAccelerated(ctx, thisValue, factory))
+                && ((Boolean) right.getReducedValueAccelerated(ctx, thisValue, factory)));
     }
-    return n.right;
-  }
 
-  /** 返回类型为boolean */
-  public Class getEgressType() {
-    return Boolean.class;
-  }
+    public String toString() {
+        return "(" + left.toString() + " && " + right.toString() + ")";
+    }
+
+    /**
+     * 替换最右侧节点
+     * 因为and是从左至右,因此相应的最右侧就是作为and节点的最右侧节点
+     */
+    public void setRightMost(ASTNode right) {
+        And n = this;
+        while(n.right != null && n.right instanceof And) {
+            n = (And) n.right;
+        }
+        n.right = right;
+    }
+
+    /**
+     * 获取最右侧,也是获取同一优先级的最右侧节点.即作为同一and类型的最右节点
+     * 在初始状态下 a && b,即是获取为 b
+     */
+    public ASTNode getRightMost() {
+        And n = this;
+        while(n.right != null && n.right instanceof And) {
+            n = (And) n.right;
+        }
+        return n.right;
+    }
+
+    /** 返回类型为boolean */
+    public Class getEgressType() {
+        return Boolean.class;
+    }
 }
 
 

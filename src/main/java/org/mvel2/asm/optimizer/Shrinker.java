@@ -52,7 +52,7 @@ import org.mvel2.asm.commons.SimpleRemapper;
 
 /**
  * A class file shrinker utility.
- * 
+ *
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */
@@ -63,11 +63,11 @@ public class Shrinker {
     public static void main(final String[] args) throws IOException {
         Properties properties = new Properties();
         int n = args.length - 1;
-        for (int i = 0; i < n - 1; ++i) {
+        for(int i = 0; i < n - 1; ++i) {
             properties.load(new FileInputStream(args[i]));
         }
 
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+        for(Map.Entry<Object, Object> entry : properties.entrySet()) {
             MAPPING.put((String) entry.getKey(), (String) entry.getValue());
         }
 
@@ -80,7 +80,7 @@ public class Shrinker {
             @Override
             public String map(String key) {
                 String s = super.map(key);
-                if (s != null) {
+                if(s != null) {
                     unused.remove(key);
                 }
                 return s;
@@ -88,9 +88,9 @@ public class Shrinker {
         });
 
         Iterator<String> i = unused.iterator();
-        while (i.hasNext()) {
+        while(i.hasNext()) {
             String s = i.next();
-            if (!s.endsWith("/remove")) {
+            if(!s.endsWith("/remove")) {
                 System.out.println("INFO: unused mapping " + s);
             }
         }
@@ -98,12 +98,12 @@ public class Shrinker {
 
     static void optimize(final File f, final File d, final Remapper remapper)
             throws IOException {
-        if (f.isDirectory()) {
+        if(f.isDirectory()) {
             File[] files = f.listFiles();
-            for (int i = 0; i < files.length; ++i) {
+            for(int i = 0; i < files.length; ++i) {
                 optimize(files[i], d, remapper);
             }
-        } else if (f.getName().endsWith(".class")) {
+        } else if(f.getName().endsWith(".class")) {
             ConstantPool cp = new ConstantPool();
             ClassReader cr = new ClassReader(new FileInputStream(f));
             // auto-boxing removal requires to recompute the maxs 
@@ -119,24 +119,24 @@ public class Shrinker {
             cr = new ClassReader(cw.toByteArray());
             cw = new ClassWriter(0);
             Iterator<Constant> i = constants.iterator();
-            while (i.hasNext()) {
+            while(i.hasNext()) {
                 Constant c = i.next();
                 c.write(cw);
             }
             cr.accept(cw, ClassReader.SKIP_DEBUG);
 
-            if (MAPPING.get(cr.getClassName() + "/remove") != null) {
+            if(MAPPING.get(cr.getClassName() + "/remove") != null) {
                 return;
             }
             String n = remapper.mapType(cr.getClassName());
             File g = new File(d, n + ".class");
-            if (!g.exists() || g.lastModified() < f.lastModified()) {
-                if (!g.getParentFile().exists() && !g.getParentFile().mkdirs()) {
+            if(!g.exists() || g.lastModified() < f.lastModified()) {
+                if(!g.getParentFile().exists() && !g.getParentFile().mkdirs()) {
                     throw new IOException("Cannot create directory "
                             + g.getParentFile());
                 }
                 OutputStream os = new FileOutputStream(g);
-                try {
+                try{
                     os.write(cw.toByteArray());
                 } finally {
                     os.close();
@@ -149,51 +149,51 @@ public class Shrinker {
 
         public int compare(final Constant c1, final Constant c2) {
             int d = getSort(c1) - getSort(c2);
-            if (d == 0) {
-                switch (c1.type) {
-                case 'I':
-                    return ((Integer)c1.intVal).compareTo(c2.intVal);
-                case 'J':
-                    return ((Long)c1.longVal).compareTo(c2.longVal);
-                case 'F':
-                    return ((Float)c1.floatVal).compareTo(c2.floatVal);
-                case 'D':
-                    return ((Double)c1.doubleVal).compareTo(c2.doubleVal);
-                case 's':
-                case 'S':
-                case 'C':
-                case 't':
-                    return c1.strVal1.compareTo(c2.strVal1);
-                case 'T':
-                    d = c1.strVal1.compareTo(c2.strVal1);
-                    if (d == 0) {
-                        d = c1.strVal2.compareTo(c2.strVal2);
-                    }
-                    break;
-                case 'y':
-                    d = c1.strVal1.compareTo(c2.strVal1);
-                    if (d == 0) {
-                        d = c1.strVal2.compareTo(c2.strVal2);
-                        if (d == 0) {
-                            Handle bsm1 = (Handle) c1.objVal3;
-                            Handle bsm2 = (Handle) c2.objVal3;
-                            d = compareHandle(bsm1, bsm2);
-                            if (d == 0) {
-                                d = compareObjects(c1.objVals, c2.objVals);
+            if(d == 0) {
+                switch(c1.type) {
+                    case 'I':
+                        return ((Integer) c1.intVal).compareTo(c2.intVal);
+                    case 'J':
+                        return ((Long) c1.longVal).compareTo(c2.longVal);
+                    case 'F':
+                        return ((Float) c1.floatVal).compareTo(c2.floatVal);
+                    case 'D':
+                        return ((Double) c1.doubleVal).compareTo(c2.doubleVal);
+                    case 's':
+                    case 'S':
+                    case 'C':
+                    case 't':
+                        return c1.strVal1.compareTo(c2.strVal1);
+                    case 'T':
+                        d = c1.strVal1.compareTo(c2.strVal1);
+                        if(d == 0) {
+                            d = c1.strVal2.compareTo(c2.strVal2);
+                        }
+                        break;
+                    case 'y':
+                        d = c1.strVal1.compareTo(c2.strVal1);
+                        if(d == 0) {
+                            d = c1.strVal2.compareTo(c2.strVal2);
+                            if(d == 0) {
+                                Handle bsm1 = (Handle) c1.objVal3;
+                                Handle bsm2 = (Handle) c2.objVal3;
+                                d = compareHandle(bsm1, bsm2);
+                                if(d == 0) {
+                                    d = compareObjects(c1.objVals, c2.objVals);
+                                }
                             }
                         }
-                    }
-                    break;
+                        break;
 
-                default:
-                    d = c1.strVal1.compareTo(c2.strVal1);
-                    if (d == 0) {
-                        d = c1.strVal2.compareTo(c2.strVal2);
-                        if (d == 0) {
-                            d = ((String) c1.objVal3)
-                                    .compareTo((String) c2.objVal3);
+                    default:
+                        d = c1.strVal1.compareTo(c2.strVal1);
+                        if(d == 0) {
+                            d = c1.strVal2.compareTo(c2.strVal2);
+                            if(d == 0) {
+                                d = ((String) c1.objVal3)
+                                        .compareTo((String) c2.objVal3);
+                            }
                         }
-                    }
                 }
             }
             return d;
@@ -201,11 +201,11 @@ public class Shrinker {
 
         private static int compareHandle(Handle h1, Handle h2) {
             int d = h1.getTag() - h2.getTag();
-            if (d == 0) {
+            if(d == 0) {
                 d = h1.getOwner().compareTo(h2.getOwner());
-                if (d == 0) {
+                if(d == 0) {
                     d = h1.getName().compareTo(h2.getName());
-                    if (d == 0) {
+                    if(d == 0) {
                         d = h1.getDesc().compareTo(h2.getDesc());
                     }
                 }
@@ -221,16 +221,16 @@ public class Shrinker {
         private static int compareObjects(Object[] objVals1, Object[] objVals2) {
             int length = objVals1.length;
             int d = length - objVals2.length;
-            if (d == 0) {
-                for (int i = 0; i < length; i++) {
+            if(d == 0) {
+                for(int i = 0; i < length; i++) {
                     Object objVal1 = objVals1[i];
                     Object objVal2 = objVals2[i];
                     d = objVal1.getClass().getName()
                             .compareTo(objVal2.getClass().getName());
-                    if (d == 0) {
-                        if (objVal1 instanceof Type) {
+                    if(d == 0) {
+                        if(objVal1 instanceof Type) {
                             d = compareType((Type) objVal1, (Type) objVal2);
-                        } else if (objVal1 instanceof Handle) {
+                        } else if(objVal1 instanceof Handle) {
                             d = compareHandle((Handle) objVal1,
                                     (Handle) objVal2);
                         } else {
@@ -238,7 +238,7 @@ public class Shrinker {
                         }
                     }
 
-                    if (d != 0) {
+                    if(d != 0) {
                         return d;
                     }
                 }
@@ -247,35 +247,35 @@ public class Shrinker {
         }
 
         private static int getSort(final Constant c) {
-            switch (c.type) {
-            case 'I':
-                return 0;
-            case 'J':
-                return 1;
-            case 'F':
-                return 2;
-            case 'D':
-                return 3;
-            case 's':
-                return 4;
-            case 'S':
-                return 5;
-            case 'C':
-                return 6;
-            case 'T':
-                return 7;
-            case 'G':
-                return 8;
-            case 'M':
-                return 9;
-            case 'N':
-                return 10;
-            case 'y':
-                return 11;
-            case 't':
-                return 12;
-            default:
-                return 100 + c.type - 'h';
+            switch(c.type) {
+                case 'I':
+                    return 0;
+                case 'J':
+                    return 1;
+                case 'F':
+                    return 2;
+                case 'D':
+                    return 3;
+                case 's':
+                    return 4;
+                case 'S':
+                    return 5;
+                case 'C':
+                    return 6;
+                case 'T':
+                    return 7;
+                case 'G':
+                    return 8;
+                case 'M':
+                    return 9;
+                case 'N':
+                    return 10;
+                case 'y':
+                    return 11;
+                case 't':
+                    return 12;
+                default:
+                    return 100 + c.type - 'h';
             }
         }
     }

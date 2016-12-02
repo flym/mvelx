@@ -37,7 +37,7 @@ import org.mvel2.asm.Type;
 
 /**
  * A constant pool.
- * 
+ *
  * @author Eric Bruneton
  */
 public class ConstantPool extends HashMap<Constant, Constant> {
@@ -57,7 +57,7 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     public Constant newInteger(final int value) {
         key1.set(value);
         Constant result = get(key1);
-        if (result == null) {
+        if(result == null) {
             result = new Constant(key1);
             put(result);
         }
@@ -67,7 +67,7 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     public Constant newFloat(final float value) {
         key1.set(value);
         Constant result = get(key1);
-        if (result == null) {
+        if(result == null) {
             result = new Constant(key1);
             put(result);
         }
@@ -77,7 +77,7 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     public Constant newLong(final long value) {
         key1.set(value);
         Constant result = get(key1);
-        if (result == null) {
+        if(result == null) {
             result = new Constant(key1);
             put(result);
         }
@@ -87,7 +87,7 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     public Constant newDouble(final double value) {
         key1.set(value);
         Constant result = get(key1);
-        if (result == null) {
+        if(result == null) {
             result = new Constant(key1);
             put(result);
         }
@@ -97,7 +97,7 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     public Constant newUTF8(final String value) {
         key1.set('s', value, null, null);
         Constant result = get(key1);
-        if (result == null) {
+        if(result == null) {
             result = new Constant(key1);
             put(result);
         }
@@ -107,7 +107,7 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     private Constant newString(final String value) {
         key2.set('S', value, null, null);
         Constant result = get(key2);
-        if (result == null) {
+        if(result == null) {
             newUTF8(value);
             result = new Constant(key2);
             put(result);
@@ -118,7 +118,7 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     public Constant newClass(final String value) {
         key2.set('C', value, null, null);
         Constant result = get(key2);
-        if (result == null) {
+        if(result == null) {
             newUTF8(value);
             result = new Constant(key2);
             put(result);
@@ -129,7 +129,7 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     public Constant newMethodType(final String methodDescriptor) {
         key2.set('t', methodDescriptor, null, null);
         Constant result = get(key2);
-        if (result == null) {
+        if(result == null) {
             newUTF8(methodDescriptor);
             result = new Constant(key2);
             put(result);
@@ -138,11 +138,11 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     }
 
     public Constant newHandle(final int tag, final String owner,
-            final String name, final String desc) {
+                              final String name, final String desc) {
         key4.set((char) ('h' - 1 + tag), owner, name, desc);
         Constant result = get(key4);
-        if (result == null) {
-            if (tag <= Opcodes.H_PUTSTATIC) {
+        if(result == null) {
+            if(tag <= Opcodes.H_PUTSTATIC) {
                 newField(owner, name, desc);
             } else {
                 newMethod(owner, name, desc, tag == Opcodes.H_INVOKEINTERFACE);
@@ -154,31 +154,31 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     }
 
     public Constant newConst(final Object cst) {
-        if (cst instanceof Integer) {
+        if(cst instanceof Integer) {
             int val = ((Integer) cst).intValue();
             return newInteger(val);
-        } else if (cst instanceof Float) {
+        } else if(cst instanceof Float) {
             float val = ((Float) cst).floatValue();
             return newFloat(val);
-        } else if (cst instanceof Long) {
+        } else if(cst instanceof Long) {
             long val = ((Long) cst).longValue();
             return newLong(val);
-        } else if (cst instanceof Double) {
+        } else if(cst instanceof Double) {
             double val = ((Double) cst).doubleValue();
             return newDouble(val);
-        } else if (cst instanceof String) {
+        } else if(cst instanceof String) {
             return newString((String) cst);
-        } else if (cst instanceof Type) {
+        } else if(cst instanceof Type) {
             Type t = (Type) cst;
             int s = t.getSort();
-            if (s == Type.OBJECT) {
+            if(s == Type.OBJECT) {
                 return newClass(t.getInternalName());
-            } else if (s == Type.METHOD) {
+            } else if(s == Type.METHOD) {
                 return newMethodType(t.getDescriptor());
             } else { // s == primitive type or array
                 return newClass(t.getDescriptor());
             }
-        } else if (cst instanceof Handle) {
+        } else if(cst instanceof Handle) {
             Handle h = (Handle) cst;
             return newHandle(h.getTag(), h.getOwner(), h.getName(), h.getDesc());
         } else {
@@ -187,10 +187,10 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     }
 
     public Constant newField(final String owner, final String name,
-            final String desc) {
+                             final String desc) {
         key3.set('G', owner, name, desc);
         Constant result = get(key3);
-        if (result == null) {
+        if(result == null) {
             newClass(owner);
             newNameType(name, desc);
             result = new Constant(key3);
@@ -200,10 +200,10 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     }
 
     public Constant newMethod(final String owner, final String name,
-            final String desc, final boolean itf) {
+                              final String desc, final boolean itf) {
         key3.set(itf ? 'N' : 'M', owner, name, desc);
         Constant result = get(key3);
-        if (result == null) {
+        if(result == null) {
             newClass(owner);
             newNameType(name, desc);
             result = new Constant(key3);
@@ -213,14 +213,14 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     }
 
     public Constant newInvokeDynamic(String name, String desc, Handle bsm,
-            Object... bsmArgs) {
+                                     Object... bsmArgs) {
         key5.set(name, desc, bsm, bsmArgs);
         Constant result = get(key5);
-        if (result == null) {
+        if(result == null) {
             newNameType(name, desc);
             newHandle(bsm.getTag(), bsm.getOwner(), bsm.getName(),
                     bsm.getDesc());
-            for (int i = 0; i < bsmArgs.length; i++) {
+            for(int i = 0; i < bsmArgs.length; i++) {
                 newConst(bsmArgs[i]);
             }
             result = new Constant(key5);
@@ -232,7 +232,7 @@ public class ConstantPool extends HashMap<Constant, Constant> {
     public Constant newNameType(final String name, final String desc) {
         key2.set('T', name, desc, null);
         Constant result = get(key2);
-        if (result == null) {
+        if(result == null) {
             newUTF8(name);
             newUTF8(desc);
             result = new Constant(key2);
