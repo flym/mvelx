@@ -12,9 +12,10 @@ import java.util.Map;
  */
 public class OptimizerFactory {
     /** 通过动态转换(从asm和reflect之间)的访问模式 */
-    public static String DYNAMIC = "dynamic";
+    public static final String DYNAMIC = "dynamic";
     /** 通过反映进行属性，方法访问的处理模式 */
-    public static String SAFE_REFLECTIVE = "reflective";
+    public static final String SAFE_REFLECTIVE = "reflective";
+    public static final String ASM = "ASM";
 
     /** 默认的优化器 */
     private static String defaultOptimizer;
@@ -29,24 +30,7 @@ public class OptimizerFactory {
     static {
         accessorCompilers.put(SAFE_REFLECTIVE, new ReflectiveAccessorOptimizer());
         accessorCompilers.put(DYNAMIC, new DynamicOptimizer());
-//     因为as已经内置到mvel中，因此这里的启动一定会成功。这里即启用asm优化器
-//     并且dynamic优化器也依赖于ASM，从整个代码层面来看，以下的代码一定会成功
-//     By default, activate the JIT if ASM is present in the classpath
-        try{
-            if(OptimizerFactory.class.getClassLoader() != null) {
-                OptimizerFactory.class.getClassLoader().loadClass("org.mvel2.asm.ClassWriter");
-            } else {
-                ClassLoader.getSystemClassLoader().loadClass("org.mvel2.asm.ClassWriter");
-            }
-            accessorCompilers.put("ASM", new ASMAccessorOptimizer());
-        } catch(ClassNotFoundException e) {
-            defaultOptimizer = SAFE_REFLECTIVE;
-        } catch(Throwable e) {
-            e.printStackTrace();
-            System.err.println("[MVEL] Notice: Possible incorrect version of ASM present (3.0 required).  " +
-                    "Disabling JIT compiler.  Reflective Optimizer will be used.");
-            defaultOptimizer = SAFE_REFLECTIVE;
-        }
+        accessorCompilers.put(ASM, new ASMAccessorOptimizer());
 
         //因为已经内置了asm处理，因此除非显示的禁用jit，一定会采用dynamic优化器处理
         if(Boolean.getBoolean("mvel2.disable.jit"))
