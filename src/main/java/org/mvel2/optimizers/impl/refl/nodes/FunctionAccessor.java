@@ -36,8 +36,8 @@ public class FunctionAccessor extends BaseAccessor {
         val value = function.call(ctx, elCtx, variableFactory, parms);
 
         //根据是否是下级节点决定相应的逻辑处理
-        if(nextNode != null) {
-            return nextNode.getValue(value, elCtx, variableFactory);
+        if(hasNextNode()) {
+            return fetchNextAccessNode(value, elCtx, variableFactory).getValue(value, elCtx, variableFactory);
         }
 
         return value;

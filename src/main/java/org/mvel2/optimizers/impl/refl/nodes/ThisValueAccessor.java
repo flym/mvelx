@@ -1,6 +1,5 @@
 package org.mvel2.optimizers.impl.refl.nodes;
 
-import lombok.NoArgsConstructor;
 import org.mvel2.ParserContext;
 import org.mvel2.integration.VariableResolverFactory;
 
@@ -18,8 +17,8 @@ public class ThisValueAccessor extends BaseAccessor {
 
     public Object getValue(Object ctx, Object elCtx, VariableResolverFactory vars) {
         //根据是否有子节点决定相应的值
-        if(nextNode != null) {
-            return this.nextNode.getValue(elCtx, elCtx, vars);
+        if(hasNextNode()) {
+            return fetchNextAccessNode(elCtx, elCtx, vars).getValue(elCtx, elCtx, vars);
         } else {
             //因为是this值,则直接返回相应的this值即可.在这里ctx和elCtx实际上相同,均从最开始传递下来
             return elCtx;
@@ -28,13 +27,18 @@ public class ThisValueAccessor extends BaseAccessor {
 
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
         //不需要直接修改this值,因此只能将this值往后传
-        if(nextNode == null)
+        if(!hasNextNode())
             throw new RuntimeException("assignment to reserved variable 'this' not permitted");
-        return this.nextNode.setValue(elCtx, elCtx, variableFactory, value);
+        return fetchNextAccessNode(elCtx, elCtx, variableFactory).setValue(elCtx, elCtx, variableFactory, value);
 
     }
 
     public Class getKnownEgressType() {
         return Object.class;
+    }
+
+    @Override
+    public boolean ctxSensitive() {
+        return false;
     }
 }

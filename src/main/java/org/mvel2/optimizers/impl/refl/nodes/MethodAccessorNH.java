@@ -48,13 +48,13 @@ public class MethodAccessorNH extends BaseAccessor {
             try{
                 //正常的调用,并根据是否返回null来决定是否加上空值处理器
                 Object v = method.invoke(ctx, executeAll(elCtx, vars));
-                if(v == null) nullHandler.getProperty(method.getName(), ctx, vars);
+                if(v == null)
+                    v = nullHandler.getProperty(method.getName(), ctx, vars);
 
-                if(nextNode != null) {
-                    return nextNode.getValue(v, elCtx, vars);
-                } else {
-                    return v;
+                if(hasNextNode()) {
+                    return fetchNextAccessNode(v, elCtx, vars).getValue(v, elCtx, vars);
                 }
+                return v;
             } catch(IllegalArgumentException e) {
                 //先尝试可能的方法重写调用.
                 if(ctx != null && method.getDeclaringClass() != ctx.getClass()) {
@@ -74,10 +74,11 @@ public class MethodAccessorNH extends BaseAccessor {
         } else {
             //参数转换调用,则先对参数进行转换,再进行调用
             try{
-                if(nextNode != null) {
-                    return nextNode.getValue(method.invoke(ctx, executeAndCoerce(parameterTypes, elCtx, vars)), elCtx, vars);
+                Object value = method.invoke(ctx, executeAndCoerce(parameterTypes, elCtx, vars));
+                if(hasNextNode()) {
+                    return fetchNextAccessNode(value, elCtx, vars).getValue(value, elCtx, vars);
                 } else {
-                    return method.invoke(ctx, executeAndCoerce(parameterTypes, elCtx, vars));
+                    return value;
                 }
             } catch(Exception e) {
                 throw new RuntimeException("cannot invoke method", e);
@@ -89,10 +90,11 @@ public class MethodAccessorNH extends BaseAccessor {
     private Object executeOverrideTarget(Method o, Object ctx, Object elCtx, VariableResolverFactory vars) {
         try{
             Object v = o.invoke(ctx, executeAll(elCtx, vars));
-            if(v == null) v = nullHandler.getProperty(o.getName(), ctx, vars);
+            if(v == null)
+                v = nullHandler.getProperty(o.getName(), ctx, vars);
 
-            if(nextNode != null) {
-                return nextNode.getValue(v, elCtx, vars);
+            if(hasNextNode()) {
+                return fetchNextAccessNode(v, elCtx, vars).getValue(v, elCtx, vars);
             } else {
                 return v;
             }
@@ -124,7 +126,8 @@ public class MethodAccessorNH extends BaseAccessor {
 
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
         //这里有问题,应该先调用相应的方法,再调用子节点
-        return nextNode.setValue(ctx, elCtx, variableFactory, value);
+        Object ctxValue = getValue(ctx, elCtx, variableFactory);
+        return fetchNextAccessNode(ctxValue, elCtx, variableFactory).setValue(ctx, elCtx, variableFactory, value);
     }
 
     /** 声明的类型即方法的返回类型 */

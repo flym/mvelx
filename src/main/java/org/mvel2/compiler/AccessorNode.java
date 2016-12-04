@@ -31,8 +31,11 @@ public interface AccessorNode extends Accessor, Serializable, Cloneable {
     /** 获取下一个节点 */
     AccessorNode getNextNode();
 
+    /** 获取最新的入参类型 */
+    Class<?> getLastCtxType();
+
     /** 设置下一个节点 */
-    AccessorNode setNextNode(AccessorNode accessorNode);
+    AccessorNode setNextNode(AccessorNode accessorNode, Class<?> currentCtxType);
 
     /** 用于描述此节点访问器的解析时属性或字符串名 */
     String nodeExpr();

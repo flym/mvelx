@@ -1,20 +1,3 @@
-/**
- * MVEL (The MVFLEX Expression Language)
- * <p>
- * Copyright (C) 2007 Christopher Brock, MVFLEX/Valhalla Project and the Codehaus
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.mvel2.optimizers.impl.refl.nodes;
 
 import lombok.Getter;
@@ -72,8 +55,9 @@ public class GetterAccessorNH extends BaseAccessor {
         try{
             //获取相应的值,再转由子节点处理
             Object v = method.invoke(ctx, EMPTY);
-            if(v == null) v = nullHandler.getProperty(method.getName(), ctx, vars);
-            return nextNode.setValue(v, elCtx, vars, value);
+            if(v == null)
+                v = nullHandler.getProperty(method.getName(), ctx, vars);
+            return fetchNextAccessNode(v, elCtx, vars).setValue(v, elCtx, vars, value);
 
         } catch(CompileException e) {
             throw e;
@@ -99,16 +83,16 @@ public class GetterAccessorNH extends BaseAccessor {
     private Object nullHandle(String name, Object v, Object ctx, Object elCtx, VariableResolverFactory vars) {
         //值非空,转由next或直接返回
         if(v != null) {
-            if(nextNode != null) {
-                return nextNode.getValue(v, elCtx, vars);
+            if(hasNextNode()) {
+                return fetchNextAccessNode(v, elCtx, vars).getValue(v, elCtx, vars);
             } else {
                 return v;
             }
         }
         //值为空,则交由null值处理或继续转向next
         else {
-            if(nextNode != null) {
-                return nextNode.getValue(nullHandler.getProperty(name, ctx, vars), elCtx, vars);
+            if(hasNextNode()) {
+                return fetchNextAccessNode(null, elCtx, vars).getValue(nullHandler.getProperty(name, ctx, vars), elCtx, vars);
             } else {
                 return nullHandler.getProperty(name, ctx, vars);
             }

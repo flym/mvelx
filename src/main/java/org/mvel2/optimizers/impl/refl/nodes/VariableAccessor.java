@@ -21,8 +21,8 @@ public class VariableAccessor extends BaseAccessor {
 
         //直接从相应的解析器上下文通过变量名的方式获取到解析器,再通过解析器获取到相应的值
         val value = vrf.getVariableResolver(property).getValue();
-        if(nextNode != null) {
-            return nextNode.getValue(value, elCtx, vrf);
+        if(hasNextNode()) {
+            return fetchNextAccessNode(value, elCtx, vrf).getValue(value, elCtx, vrf);
         }
 
         return value;
@@ -30,8 +30,9 @@ public class VariableAccessor extends BaseAccessor {
 
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
         //通过next来判定是否由自己进行值设置,还是转交由next节点处理
-        if(nextNode != null) {
-            return nextNode.setValue(variableFactory.getVariableResolver(property).getValue(), elCtx, variableFactory, value);
+        if(hasNextNode()) {
+            Object ctxValue = variableFactory.getVariableResolver(property).getValue();
+            return fetchNextAccessNode(ctxValue, elCtx, variableFactory).setValue(ctxValue, elCtx, variableFactory, value);
         } else {
             variableFactory.getVariableResolver(property).setValue(value);
         }
@@ -42,5 +43,10 @@ public class VariableAccessor extends BaseAccessor {
     /** 无法探测类型,因此声明类型未知 */
     public Class getKnownEgressType() {
         return Object.class;
+    }
+
+    @Override
+    public boolean ctxSensitive() {
+        return false;
     }
 }

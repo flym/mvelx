@@ -41,7 +41,7 @@ public class ListAccessor extends BaseAccessor {
     }
 
     public String toString() {
-        return "Array Accessor -> [" + index + "]";
+        return "ListAccessor[" + index + "]";
     }
 
     /** list取值,相应的类型未知,因此声明类型为Object */

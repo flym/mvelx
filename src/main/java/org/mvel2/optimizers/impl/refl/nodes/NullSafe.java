@@ -4,6 +4,7 @@ import org.mvel2.ParserContext;
 import org.mvel2.compiler.Accessor;
 import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.optimizers.OptimizerFactory;
+import org.mvel2.util.ClassUtils;
 
 /**
  * 对象安全的访问器,即在具体的处理时，如果当前对象为null，则不再处理剩下的处理
@@ -18,6 +19,8 @@ public class NullSafe extends BaseAccessor {
     private ParserContext pCtx;
 
     public NullSafe(char[] expr, int start, int offset, ParserContext pCtx) {
+        super(new String(expr, start, offset), pCtx);
+
         this.expr = expr;
         this.start = start;
         this.offset = offset;
@@ -30,11 +33,11 @@ public class NullSafe extends BaseAccessor {
             return null;
 
         //真实调用还未进行编译,则尝试编译,并将相应的调用委托给相应的编译好的访问器
-        if(nextNode == null) {
+        if(!hasNextNode()) {
             final Accessor a = OptimizerFactory.getAccessorCompiler(OptimizerFactory.SAFE_REFLECTIVE)
                     .optimizeAccessor(pCtx, expr, start, offset, ctx, elCtx, variableFactory, ctx.getClass());
 
-            nextNode = new BaseAccessor(new String(expr, start, offset), pCtx) {
+            setNextNode(new BaseAccessor(new String(expr, start, offset), pCtx) {
                 public Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory) {
                     return a.getValue(ctx, elCtx, variableFactory);
                 }
@@ -46,16 +49,17 @@ public class NullSafe extends BaseAccessor {
                 public Class getKnownEgressType() {
                     return a.getKnownEgressType();
                 }
-            };
+            }, ClassUtils.getType(ctx));
         }
-        return nextNode.getValue(ctx, elCtx, variableFactory);
+        return fetchNextAccessNode(ctx, elCtx, variableFactory).getValue(ctx, elCtx, variableFactory);
     }
 
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
         //当前对象为null，跳过
         if(ctx == null)
             return null;
-        return nextNode.setValue(ctx, elCtx, variableFactory, value);
+
+        return fetchNextAccessNode(ctx, elCtx, variableFactory).setValue(ctx, elCtx, variableFactory, value);
     }
 
     /** 类型未知,为Object类型 */

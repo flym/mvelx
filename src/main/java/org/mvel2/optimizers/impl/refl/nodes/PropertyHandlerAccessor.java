@@ -29,8 +29,8 @@ public class PropertyHandlerAccessor extends BaseAccessor {
         //正常的处理流程
         try{
             val value = propertyHandler.getProperty(propertyName, ctx, variableFactory);
-            if(nextNode != null) {
-                return nextNode.getValue(value, elCtx, variableFactory);
+            if(hasNextNode()) {
+                return fetchNextAccessNode(value, elCtx, variableFactory).getValue(value, elCtx, variableFactory);
             }
 
             return value;
@@ -41,8 +41,9 @@ public class PropertyHandlerAccessor extends BaseAccessor {
 
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
         //由next是否有值,决定是否转发请求
-        if(nextNode != null) {
-            return nextNode.setValue(propertyHandler.getProperty(propertyName, ctx, variableFactory), ctx, variableFactory, value);
+        if(hasNextNode()) {
+            Object ctxValue = propertyHandler.getProperty(propertyName, ctx, variableFactory);
+            return fetchNextAccessNode(ctxValue, elCtx, variableFactory).setValue(ctxValue, ctx, variableFactory, value);
         } else {
             return propertyHandler.setProperty(propertyName, ctx, variableFactory, value);
         }

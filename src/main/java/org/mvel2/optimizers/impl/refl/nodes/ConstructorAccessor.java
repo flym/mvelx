@@ -1,20 +1,3 @@
-/**
- * MVEL (The MVFLEX Expression Language)
- * <p>
- * Copyright (C) 2007 Christopher Brock, MVFLEX/Valhalla Project and the Codehaus
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.mvel2.optimizers.impl.refl.nodes;
 
 import lombok.Getter;
@@ -51,11 +34,12 @@ public class ConstructorAccessor extends InvokableAccessor {
             if(!coercionNeeded) {
                 //根据是否存在nextNode决定是否转发请求
                 try{
-                    if(nextNode != null) {
-                        return nextNode.getValue(constructor.newInstance(executeAll(elCtx, variableFactory)), elCtx, variableFactory);
-                    } else {
-                        return constructor.newInstance(executeAll(elCtx, variableFactory));
+                    Object value = constructor.newInstance(executeAll(elCtx, variableFactory));
+                    if(hasNextNode()) {
+                        return fetchNextAccessNode(value, elCtx, variableFactory).getValue(value, elCtx, variableFactory);
                     }
+
+                    return value;
                 } catch(IllegalArgumentException e) {
                     //默认处理报错，重新设置标记位处理
                     coercionNeeded = true;
@@ -66,12 +50,11 @@ public class ConstructorAccessor extends InvokableAccessor {
             //参数是可变的,即... 可变参数的情况
             else {
                 //变参处理,先根据相应的参数个数重新解析参数,再进行对象创建
-                if(nextNode != null) {
-                    return nextNode.getValue(constructor.newInstance(executeAndCoerce(parameterTypes, elCtx, variableFactory, constructor.isVarArgs())),
-                            elCtx, variableFactory);
-                } else {
-                    return constructor.newInstance(executeAndCoerce(parameterTypes, elCtx, variableFactory, constructor.isVarArgs()));
+                Object value = constructor.newInstance(executeAndCoerce(parameterTypes, elCtx, variableFactory, constructor.isVarArgs()));
+                if(hasNextNode()) {
+                    return fetchNextAccessNode(value, elCtx, variableFactory).getValue(value, elCtx, variableFactory);
                 }
+                return value;
             }
         } catch(Exception e) {
             throw new RuntimeException("cannot construct object", e);

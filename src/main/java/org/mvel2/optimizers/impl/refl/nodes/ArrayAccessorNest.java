@@ -17,6 +17,8 @@
  */
 package org.mvel2.optimizers.impl.refl.nodes;
 
+import lombok.val;
+import org.mvel2.ParserContext;
 import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.util.ParseTools;
@@ -38,29 +40,33 @@ public class ArrayAccessorNest extends BaseAccessor {
     private boolean requireConversion;
 
     /** 使用下标表达式来构建出相应的数组访问器 */
-    public ArrayAccessorNest(String index) {
-        this((ExecutableStatement) ParseTools.subCompileExpression(index.toCharArray()), index);
+    public ArrayAccessorNest(String index, ParserContext parserContext) {
+        this((ExecutableStatement) ParseTools.subCompileExpression(index.toCharArray()), index, parserContext);
     }
 
     /** 使用已编译好的下标表达式进行构建 */
-    public ArrayAccessorNest(ExecutableStatement stmt, String property) {
+    public ArrayAccessorNest(ExecutableStatement stmt, String property, ParserContext parserContext) {
+        super(property, parserContext);
         this.index = stmt;
         this.property = property;
     }
 
     public Object getValue(Object ctx, Object elCtx, VariableResolverFactory vars) {
         //这里采用强转处理,实际上这里有bug,如果ctx为基本类型,则会报classCast,进而转为反优化处理.
-        if(nextNode != null) {
-            return nextNode.getValue(((Object[]) ctx)[(Integer) index.getValue(ctx, elCtx, vars)], elCtx, vars);
-        } else {
-            return ((Object[]) ctx)[(Integer) index.getValue(ctx, elCtx, vars)];
+        val indexV = (Integer) index.getValue(ctx, elCtx, vars);
+        val value = ((Object[]) ctx)[indexV];
+        if(hasNextNode()) {
+            return fetchNextAccessNode(value, elCtx, vars).getValue(value, elCtx, vars);
         }
+
+        return value;
     }
 
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory vars, Object value) {
-        if(nextNode != null) {
+        if(hasNextNode()) {
             //这里的类型强转有问题
-            return nextNode.setValue(((Object[]) ctx)[(Integer) index.getValue(ctx, elCtx, vars)], elCtx, vars, value);
+            Object ctxValue = ((Object[]) ctx)[(Integer) index.getValue(ctx, elCtx, vars)];
+            return fetchNextAccessNode(ctxValue, elCtx, vars).setValue(ctxValue, elCtx, vars, value);
         } else {
             //还没有找到数组中的元素类型,因此先检测类型,再判断是否需要进行类型转换,以便能够set到数组中
             if(baseComponentType == null) {
@@ -80,16 +86,11 @@ public class ArrayAccessorNest extends BaseAccessor {
         }
     }
 
-    @Override
-    public String nodeExpr() {
-        return property;
-    }
-
     public Class getKnownEgressType() {
         return baseComponentType;
     }
 
     public String toString() {
-        return "Array Accessor -> [" + index + "]";
+        return "ArrayAccessorNest[" + property + "]";
     }
 }

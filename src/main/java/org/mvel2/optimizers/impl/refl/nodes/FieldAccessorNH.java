@@ -33,11 +33,11 @@ public class FieldAccessorNH extends BaseAccessor {
             if(v == null)
                 v = nullHandler.getProperty(field.getName(), elCtx, vars);
 
-            if(nextNode != null) {
-                return nextNode.getValue(v, elCtx, vars);
-            } else {
-                return v;
+            if(hasNextNode()) {
+                return fetchNextAccessNode(v, elCtx, vars).getValue(v, elCtx, vars);
             }
+
+            return v;
         } catch(Exception e) {
             throw new RuntimeException("unable to access field", e);
         }
@@ -45,9 +45,9 @@ public class FieldAccessorNH extends BaseAccessor {
 
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
         try{
-            if(nextNode != null) {
-                //此处有bug,应该先调用field.get(ctx)获取相应的值
-                return nextNode.setValue(ctx, elCtx, variableFactory, value);
+            if(hasNextNode()) {
+                Object ctxValue = field.get(ctx);
+                return fetchNextAccessNode(ctxValue, elCtx, variableFactory).setValue(ctx, elCtx, variableFactory, value);
             }
             //先尝试参数不作类型转换,出错了再转换
             else if(coercionRequired) {

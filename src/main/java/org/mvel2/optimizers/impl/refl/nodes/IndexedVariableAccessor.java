@@ -36,8 +36,8 @@ public class IndexedVariableAccessor extends BaseAccessor {
     public Object getValue(Object ctx, Object elCtx, VariableResolverFactory vrf) {
         //因为数据存储在相应的解析器上下文中,因此直接以下标的方式获取到解析器,再获取相应的值
         val value = vrf.getIndexedVariableResolver(register).getValue();
-        if(nextNode != null) {
-            return nextNode.getValue(value, elCtx, vrf);
+        if(hasNextNode()) {
+            return fetchNextAccessNode(value, elCtx, vrf).getValue(value, elCtx, vrf);
         }
 
         return value;
@@ -45,8 +45,9 @@ public class IndexedVariableAccessor extends BaseAccessor {
 
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
         //根据是否有next来决定是自己执行set操作,还是转交相应的处理逻辑
-        if(nextNode != null) {
-            return nextNode.setValue(variableFactory.getIndexedVariableResolver(register).getValue(), elCtx, variableFactory, value);
+        if(hasNextNode()) {
+            Object ctxValue = variableFactory.getIndexedVariableResolver(register).getValue();
+            return fetchNextAccessNode(ctxValue, elCtx, variableFactory).setValue(ctxValue, elCtx, variableFactory, value);
         } else {
             variableFactory.getIndexedVariableResolver(register).setValue(value);
             return value;
@@ -56,5 +57,10 @@ public class IndexedVariableAccessor extends BaseAccessor {
     /** 返回类型未知,因此为通用Object类型 */
     public Class getKnownEgressType() {
         return Object.class;
+    }
+
+    @Override
+    public boolean ctxSensitive() {
+        return false;
     }
 }

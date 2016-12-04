@@ -2,6 +2,7 @@ package org.mvel2.optimizers.impl.refl.nodes;
 
 import lombok.Getter;
 import lombok.val;
+import org.mvel2.ParserContext;
 import org.mvel2.integration.VariableResolverFactory;
 
 import java.lang.reflect.Array;
@@ -12,7 +13,8 @@ public class ArrayAccessor extends BaseAccessor {
     @Getter
     private final int index;
 
-    public ArrayAccessor(int index) {
+    public ArrayAccessor(int index, ParserContext parserContext) {
+        super("[" + index + "]", parserContext);
         this.index = index;
     }
 
@@ -48,6 +50,6 @@ public class ArrayAccessor extends BaseAccessor {
     }
 
     public String toString() {
-        return "Array Accessor -> [" + index + "]";
+        return "ArrayAccessor[" + index + "]";
     }
 }

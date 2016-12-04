@@ -1,20 +1,3 @@
-/**
- * MVEL (The MVFLEX Expression Language)
- * <p>
- * Copyright (C) 2007 Christopher Brock, MVFLEX/Valhalla Project and the Codehaus
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.mvel2.optimizers.impl.refl.nodes;
 
 import org.mvel2.ParserContext;
@@ -52,11 +35,12 @@ public class DynamicFunctionAccessor extends BaseAccessor {
             }
         }
 
-        if(nextNode != null) {
-            return nextNode.getValue(function.call(ctx, elCtx, variableFactory, params), elCtx, variableFactory);
-        } else {
-            return function.call(ctx, elCtx, variableFactory, params);
+        Object value = function.call(ctx, elCtx, variableFactory, params);
+        if(hasNextNode()) {
+            return fetchNextAccessNode(value, elCtx, variableFactory).getValue(value, elCtx, variableFactory);
         }
+
+        return value;
     }
 
     /** 函数只能被调用,因此没有设置函数一说 */

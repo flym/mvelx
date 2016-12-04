@@ -62,8 +62,9 @@ public class GetterAccessor extends BaseAccessor {
     /** 不直接进行设置值,但是如果有下一级节点,则将相应的值传递给下一级节点 */
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory vars, Object value) {
         try{
-            if(nextNode != null) {
-                return nextNode.setValue(method.invoke(ctx, EMPTY), elCtx, vars, value);
+            if(hasNextNode()) {
+                Object ctxValue = method.invoke(ctx, EMPTY);
+                return fetchNextAccessNode(ctxValue, elCtx, vars).setValue(ctxValue, elCtx, vars, value);
             } else {
                 //不需要单独设置值
                 throw new RuntimeException("bad payload");

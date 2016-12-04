@@ -45,6 +45,9 @@
         <org.slf4j.version>1.7.21</org.slf4j.version>
         <ch.qos.logback.version>1.1.3</ch.qos.logback.version>
 
+        <!-- 工具包 -->
+        <guava.version>19.0</guava.version>
+
         <!-- 测试 -->
         <testng.version>6.9.10</testng.version>
 
@@ -69,6 +72,12 @@
             <version>${ch.qos.logback.version}</version>
             <scope>runtime</scope>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
         </dependency>
 
         <!-- 测试 -->

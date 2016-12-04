@@ -1,5 +1,6 @@
 package org.mvel2.optimizers.impl.refl.nodes;
 
+import org.mvel2.ParserContext;
 import org.mvel2.integration.GlobalListenerFactory;
 import org.mvel2.integration.VariableResolverFactory;
 
@@ -12,20 +13,21 @@ public class Notify extends BaseAccessor {
     /** 当前处理的属性名 */
     private String name;
 
-    public Notify(String name) {
+    public Notify(String name, ParserContext parserContext) {
+        super(name, parserContext);
         this.name = name;
     }
 
     public Object getValue(Object ctx, Object elCtx, VariableResolverFactory vrf) {
         //调用前进行get调用通知
         GlobalListenerFactory.notifyGetListeners(ctx, name, vrf);
-        return nextNode.getValue(ctx, elCtx, vrf);
+        return fetchNextAccessNode(ctx, elCtx, vrf).getValue(ctx, elCtx, vrf);
     }
 
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
         //调用前进行set调用通知
         GlobalListenerFactory.notifySetListeners(ctx, name, variableFactory, value);
-        return nextNode.setValue(ctx, elCtx, variableFactory, value);
+        return fetchNextAccessNode(ctx, elCtx, variableFactory).setValue(ctx, elCtx, variableFactory, value);
     }
 
     /** 声明类型未知,为Object */

@@ -32,11 +32,11 @@ public class MethodAccessor extends InvokableAccessor {
         //先按照不需要进行参数转换的逻辑来执行
         if(!coercionNeeded) {
             try{
-                if(nextNode != null) {
-                    return nextNode.getValue(method.invoke(ctx, executeAll(elCtx, vars, method)), elCtx, vars);
-                } else {
-                    return method.invoke(ctx, executeAll(elCtx, vars, method));
+                Object value = method.invoke(ctx, executeAll(elCtx, vars, method));
+                if(hasNextNode()) {
+                    return fetchNextAccessNode(value, elCtx, vars).getValue(value, elCtx, vars);
                 }
+                return value;
             } catch(IllegalArgumentException e) {
                 //调用失败了,则重新尝试方法重写的可能
                 if(ctx != null && method.getDeclaringClass() != ctx.getClass()) {
@@ -56,11 +56,12 @@ public class MethodAccessor extends InvokableAccessor {
         } else {
             try{
                 //尝试进行参数转换并处理
-                if(nextNode != null) {
-                    return nextNode.getValue(method.invoke(ctx, executeAndCoerce(parameterTypes, elCtx, vars, method.isVarArgs())), elCtx, vars);
-                } else {
-                    return method.invoke(ctx, executeAndCoerce(parameterTypes, elCtx, vars, method.isVarArgs()));
+                Object value = method.invoke(ctx, executeAndCoerce(parameterTypes, elCtx, vars, method.isVarArgs()));
+                if(hasNextNode()) {
+                    return fetchNextAccessNode(value, elCtx, vars).getValue(value, elCtx, vars);
                 }
+
+                return value;
             } catch(IllegalArgumentException e) {
                 //参数转换之后仍调用失败,则尝试从父类找到定义更宽泛的方法来进行调用
                 //比如,当前方法定义为get(X) 而父类定义为get(Object),则往往父类的调用很可能成功
@@ -84,10 +85,11 @@ public class MethodAccessor extends InvokableAccessor {
         if(!coercionNeeded) {
             try{
                 try{
-                    if(nextNode != null) {
-                        return nextNode.getValue(o.invoke(ctx, executeAll(elCtx, vars, o)), elCtx, vars);
+                    Object value = o.invoke(ctx, executeAll(elCtx, vars, o));
+                    if(hasNextNode()) {
+                        return fetchNextAccessNode(value, elCtx, vars).getValue(value, elCtx, vars);
                     } else {
-                        return o.invoke(ctx, executeAll(elCtx, vars, o));
+                        return value;
                     }
                 } catch(IllegalArgumentException e) {
                     if(coercionNeeded) throw e;
@@ -101,10 +103,11 @@ public class MethodAccessor extends InvokableAccessor {
         } else {
             //按照参数转换和变长参数处理之后再执行
             try{
-                if(nextNode != null) {
-                    return nextNode.getValue(o.invoke(ctx, executeAndCoerce(o.getParameterTypes(), elCtx, vars, o.isVarArgs())), elCtx, vars);
+                Object value = o.invoke(ctx, executeAndCoerce(o.getParameterTypes(), elCtx, vars, o.isVarArgs()));
+                if(hasNextNode()) {
+                    return fetchNextAccessNode(value, elCtx, vars).getValue(value, elCtx, vars);
                 } else {
-                    return o.invoke(ctx, executeAndCoerce(o.getParameterTypes(), elCtx, vars, o.isVarArgs()));
+                    return value;
                 }
             } catch(Exception e2) {
                 throw new RuntimeException("unable to invoke method (expected target: " + method.getDeclaringClass().getName() + "::" + method.getName() + "; " +
@@ -151,12 +154,14 @@ public class MethodAccessor extends InvokableAccessor {
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
         //这里仅支持按实际参数直接调用,不需要参数转换.是一个潜在处理的问题
         try{
-            return nextNode.setValue(method.invoke(ctx, executeAll(elCtx, variableFactory, method)), elCtx, variableFactory, value);
+            Object ctxValue = method.invoke(ctx, executeAll(elCtx, variableFactory, method));
+            return fetchNextAccessNode(ctxValue, elCtx, variableFactory).setValue(ctxValue, elCtx, variableFactory, value);
         } catch(IllegalArgumentException e) {
             if(ctx != null && method.getDeclaringClass() != ctx.getClass()) {
                 Method o = getBestCandidate(parameterTypes, method.getName(), ctx.getClass(), ctx.getClass().getMethods(), true);
                 if(o != null) {
-                    return nextNode.setValue(executeOverrideTarget(o, ctx, elCtx, variableFactory), elCtx, variableFactory, value);
+                    Object ctxValue = executeOverrideTarget(o, ctx, elCtx, variableFactory);
+                    return fetchNextAccessNode(ctxValue, elCtx, variableFactory).setValue(ctxValue, elCtx, variableFactory, value);
                 }
             }
 

@@ -38,8 +38,8 @@ public class MapAccessorNest extends BaseAccessor {
     public Object getValue(Object ctx, Object elCtx, VariableResolverFactory vrf) {
         //直接先计算出属性值,再调用相应的map.get来获取相应的值
         val value = ((Map) ctx).get(propertyStatement.getValue(ctx, elCtx, vrf));
-        if(nextNode != null) {
-            return nextNode.getValue(value, elCtx, vrf);
+        if(hasNextNode()) {
+            return fetchNextAccessNode(value, elCtx, vrf).getValue(value, elCtx, vrf);
         }
 
         return value;
@@ -48,8 +48,9 @@ public class MapAccessorNest extends BaseAccessor {
     @SuppressWarnings("unchecked")
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory vars, Object value) {
         //如果有next节点,则将set操作转交由next来完成
-        if(nextNode != null) {
-            return nextNode.setValue(((Map) ctx).get(propertyStatement.getValue(ctx, elCtx, vars)), elCtx, vars, value);
+        if(hasNextNode()) {
+            Object ctxValue = ((Map) ctx).get(propertyStatement.getValue(ctx, elCtx, vars));
+            return fetchNextAccessNode(ctxValue, elCtx, vars).setValue(ctxValue, elCtx, vars, value);
         } else {
             //自己进行put,判断是否需要根据转换类型来决定是否需要进行数据转换
             if(conversionType != null) {

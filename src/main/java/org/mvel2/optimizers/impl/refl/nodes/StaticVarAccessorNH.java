@@ -29,8 +29,8 @@ public class StaticVarAccessorNH extends BaseAccessor {
             if(v == null)
                 v = nullHandler.getProperty(field.getName(), elCtx, vars);
 
-            if(nextNode != null) {
-                return nextNode.getValue(v, elCtx, vars);
+            if(hasNextNode()) {
+                return fetchNextAccessNode(v, elCtx, vars).getValue(v, elCtx, vars);
             } else {
                 return v;
             }
@@ -42,10 +42,11 @@ public class StaticVarAccessorNH extends BaseAccessor {
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
         //设置值,不需要空值处理器参与,因此只需要通过next来决定是否转发请求
         try{
-            if(nextNode == null) {
+            if(!hasNextNode()) {
                 field.set(null, value);
             } else {
-                return nextNode.setValue(field.get(null), elCtx, variableFactory, value);
+                Object ctxValue = field.get(null);
+                return fetchNextAccessNode(ctxValue, elCtx, variableFactory).setValue(ctxValue, elCtx, variableFactory, value);
             }
         } catch(Exception e) {
             throw new RuntimeException("error accessing static variable", e);
