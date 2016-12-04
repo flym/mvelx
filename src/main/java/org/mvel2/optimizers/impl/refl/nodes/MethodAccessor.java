@@ -1,7 +1,9 @@
 package org.mvel2.optimizers.impl.refl.nodes;
 
+import org.mvel2.ParserContext;
 import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
+import org.mvel2.util.InvokableUtils;
 
 import java.lang.reflect.Method;
 
@@ -15,11 +17,12 @@ public class MethodAccessor extends InvokableAccessor {
     private final Method method;
 
     /** 通过方法以及相应的参数执行单元来进行方法访问器构建 */
-    public MethodAccessor(Method method, ExecutableStatement[] parms) {
+    public MethodAccessor(Method method, ExecutableStatement[] params, ParserContext parserContext) {
+        super(InvokableUtils.fullInvokeName(method.getName(), params), parserContext);
         this.method = method;
         //需要重新设置相应的方法参数类型信息以及参数个数
         this.length = (this.parameterTypes = this.method.getParameterTypes()).length;
-        this.parms = parms;
+        this.parms = params;
     }
 
     public Object getValue(Object ctx, Object elCtx, VariableResolverFactory vars) {
@@ -168,11 +171,5 @@ public class MethodAccessor extends InvokableAccessor {
     /** 返回类型为方法的声明返回类型 */
     public Class getKnownEgressType() {
         return method.getReturnType();
-    }
-
-    @Override
-    public String nodeExpr() {
-        //todo
-        return null;
     }
 }

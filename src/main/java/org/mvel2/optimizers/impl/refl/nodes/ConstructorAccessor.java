@@ -18,8 +18,10 @@
 package org.mvel2.optimizers.impl.refl.nodes;
 
 import lombok.Getter;
+import org.mvel2.ParserContext;
 import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
+import org.mvel2.util.InvokableUtils;
 
 import java.lang.reflect.Constructor;
 
@@ -33,11 +35,13 @@ public class ConstructorAccessor extends InvokableAccessor {
     private final Constructor constructor;
 
     /** 通过相应的构造函数,相应的参数访问器来进行构建 */
-    public ConstructorAccessor(Constructor constructor, ExecutableStatement[] parms) {
+    public ConstructorAccessor(Constructor constructor, ExecutableStatement[] params, ParserContext parserContext) {
+        super(InvokableUtils.fullInvokeName("new " + constructor.getDeclaringClass().getName(), params), parserContext);
+
         this.constructor = constructor;
         //相应的参数个数不能由参数访问器来决定,因为可能存在可变参数访问,因此由构造函数的方法声明来决定
         this.length = (this.parameterTypes = constructor.getParameterTypes()).length;
-        this.parms = parms;
+        this.parms = params;
     }
 
     public Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory) {
@@ -97,9 +101,8 @@ public class ConstructorAccessor extends InvokableAccessor {
     }
 
     @Override
-    public String nodeExpr() {
-        //todo
-        return null;
+    public boolean ctxSensitive() {
+        return false;
     }
 
     /** 返回相应的参数执行表达式 */

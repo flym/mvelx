@@ -1,23 +1,7 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.mvel2.compiler;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.mvel2.*;
 import org.mvel2.ast.*;
 import org.mvel2.util.*;
@@ -42,14 +26,40 @@ import static org.mvel2.util.ParseTools.unboxPrimitive;
  */
 public class ExpressionCompiler extends AbstractParser {
     /** 当前编译表达式返回的类型 */
+    @Getter
+    @Setter
     private Class returnType;
 
     /** 是否只是验证表达式是否合法 */
+    @Setter
     private boolean verifyOnly = false;
     /** 表示当前是否正在验证中 */
     private boolean verifying = true;
     /** 是否需要二次优化(即去and操作) */
     private boolean secondPassOptimization = false;
+
+    public ExpressionCompiler(char[] expression) {
+        setExpression(expression);
+    }
+
+    public ExpressionCompiler(String expression, ParserContext ctx) {
+        setExpression(expression);
+        this.pCtx = ctx;
+    }
+
+    public ExpressionCompiler(char[] expression, int start, int offset, ParserContext ctx) {
+        this.expr = expression;
+        this.start = start;
+        this.end = start + offset;
+        this.end = trimLeft(this.end);
+        this.length = this.end - start;
+        this.pCtx = ctx;
+    }
+
+    public ExpressionCompiler(char[] expression, ParserContext ctx) {
+        setExpression(expression);
+        this.pCtx = ctx;
+    }
 
     /** 主要的编译操作，返回编译表达式 */
     public CompiledExpression compile() {
@@ -296,7 +306,7 @@ public class ExpressionCompiler extends AbstractParser {
 
             //如果并不仅仅是验证,还需要进一步优化，因此进行相应的优化操作
             if(!verifyOnly) {
-                return new CompiledExpression(finalizePayload(astBuild, secondPassOptimization, pCtx), null, returnType, pCtx.getParserConfiguration(), literalOnly == 1);
+                return new CompiledExpression(new String(expr, start, length), finalizePayload(astBuild, secondPassOptimization, pCtx), returnType, pCtx.getParserConfiguration(), literalOnly == 1);
             }
             //仅验证，因此这里分析出相应的返回类型，直接返回null
             else {
@@ -502,41 +512,6 @@ public class ExpressionCompiler extends AbstractParser {
         }
 
         return tk;
-    }
-
-    public ExpressionCompiler(char[] expression) {
-        setExpression(expression);
-    }
-
-    public ExpressionCompiler(String expression, ParserContext ctx) {
-        setExpression(expression);
-        this.pCtx = ctx;
-    }
-
-    public ExpressionCompiler(char[] expression, int start, int offset, ParserContext ctx) {
-        this.expr = expression;
-        this.start = start;
-        this.end = start + offset;
-        this.end = trimLeft(this.end);
-        this.length = this.end - start;
-        this.pCtx = ctx;
-    }
-
-    public ExpressionCompiler(char[] expression, ParserContext ctx) {
-        setExpression(expression);
-        this.pCtx = ctx;
-    }
-
-    public void setVerifyOnly(boolean verifyOnly) {
-        this.verifyOnly = verifyOnly;
-    }
-
-    public Class getReturnType() {
-        return returnType;
-    }
-
-    public void setReturnType(Class returnType) {
-        this.returnType = returnType;
     }
 
     /** 当前表达式是否仅是常量 */

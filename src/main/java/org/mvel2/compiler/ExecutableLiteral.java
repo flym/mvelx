@@ -23,6 +23,7 @@ import org.mvel2.integration.VariableResolverFactory;
 
 /**
  * 表示一个常量的计算单元,表示其本身引用一个常量,并不需要额外进行计算和处理
+ *
  * @author Christopher Brock
  */
 public class ExecutableLiteral implements ExecutableStatement, Safe {
@@ -107,5 +108,10 @@ public class ExecutableLiteral implements ExecutableStatement, Safe {
 
     public boolean isExplicitCast() {
         return false;
+    }
+
+    @Override
+    public String nodeExpr() {
+        return String.valueOf(literal);
     }
 }

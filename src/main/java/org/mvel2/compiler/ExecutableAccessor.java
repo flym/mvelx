@@ -107,6 +107,11 @@ public class ExecutableAccessor implements ExecutableStatement {
     public String toString() {
         return node.toString();
     }
+
+    @Override
+    public String nodeExpr() {
+        return node.getName();
+    }
 }
 
 

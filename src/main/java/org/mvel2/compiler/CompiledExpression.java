@@ -20,6 +20,8 @@ import static org.mvel2.MVELRuntime.execute;
  * 在数据存储上，内部通过链接一个节点链来表示整个表达式
  */
 public class CompiledExpression implements Serializable, ExecutableStatement {
+    /** 原始表达式 */
+    private String expr;
     /** 当前表达式第一个节点(剩下的信息通过第1个节点来调用) */
     @Getter
     private ASTNode firstNode;
@@ -46,7 +48,8 @@ public class CompiledExpression implements Serializable, ExecutableStatement {
     @Getter
     private ParserConfiguration parserConfiguration;
 
-    public CompiledExpression(ASTLinkedList astMap, String sourceName, Class egressType, ParserConfiguration parserConfiguration, boolean literalOnly) {
+    public CompiledExpression(String expr, ASTLinkedList astMap, Class egressType, ParserConfiguration parserConfiguration, boolean literalOnly) {
+        this.expr = expr;
         this.firstNode = astMap.firstNode();
         this.knownEgressType = astMap.isSingleNode() ? astMap.firstNonSymbol().getEgressType() : egressType;
         this.literalOnly = literalOnly;
@@ -60,6 +63,7 @@ public class CompiledExpression implements Serializable, ExecutableStatement {
     }
 
     /** 判定相应的入参和出参是否兼容 */
+    @SuppressWarnings("unchecked")
     public void computeTypeConversionRule() {
         if(knownIngressType != null && knownEgressType != null) {
             convertableIngressEgress = knownIngressType.isAssignableFrom(knownEgressType);
@@ -108,5 +112,10 @@ public class CompiledExpression implements Serializable, ExecutableStatement {
             node = node.nextASTNode;
         }
         return appender.toString();
+    }
+
+    @Override
+    public String nodeExpr() {
+        return expr;
     }
 }

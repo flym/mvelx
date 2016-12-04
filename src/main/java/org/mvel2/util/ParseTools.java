@@ -7,7 +7,7 @@ import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.integration.impl.ClassImportResolverFactory;
 import org.mvel2.math.MathProcessor;
 
-import java.io.*;
+import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -15,8 +15,6 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.*;
 
 import static java.lang.Class.forName;
@@ -24,7 +22,6 @@ import static java.lang.Double.parseDouble;
 import static java.lang.String.valueOf;
 import static java.lang.System.arraycopy;
 import static java.lang.Thread.currentThread;
-import static java.nio.ByteBuffer.allocateDirect;
 import static org.mvel2.DataConversion.canConvert;
 import static org.mvel2.DataTypes.*;
 import static org.mvel2.compiler.AbstractParser.LITERALS;
@@ -480,7 +477,7 @@ public class ParseTools {
             try{
                 cls = Class.forName(className, true, classLoader);
             } catch(ClassNotFoundException e) {
-                /**
+                /*
                  * Now try the system classloader.
                  */
                 if(classLoader != Thread.currentThread().getContextClassLoader()) {
@@ -510,7 +507,7 @@ public class ParseTools {
 
 
     /** 捕获构建函数参数以及剩下的数据信息,即将构建的参数内容以及后续的内容拆分开 */
-    public static String[] captureContructorAndResidual(char[] cs, int start, int offset) {
+    public static String[] captureConstructorAndResidual(char[] cs, int start, int offset) {
         int depth = 0;
         int end = start + offset;
         boolean inQuotes = false;
@@ -763,8 +760,10 @@ public class ParseTools {
                     throw new CompileException("illegal unicode escape sequence", escapeStr, pos);
                 else {
                     while(++pos - s != 5) {
+                        //noinspection StatementWithEmptyBody
                         if((escapeStr[pos] > ('0' - 1) && escapeStr[pos] < ('9' + 1)) ||
                                 (escapeStr[pos] > ('A' - 1) && escapeStr[pos] < ('F' + 1))) {
+                            //nothing to do 这里本身就要跳过相应的字符
                         } else {
                             throw new CompileException("illegal unicode escape sequence", escapeStr, pos);
                         }
@@ -1680,13 +1679,19 @@ public class ParseTools {
 
     public static int find(char[] c, int start, int offset, char find) {
         int length = start + offset;
-        for(int i = start; i < length; i++) if(c[i] == find) return i;
+        for(int i = start; i < length; i++)
+            if(c[i] == find)
+                return i;
+
         return -1;
     }
 
     /** 从后往前找1个字符的位置信息 */
     public static int findLast(char[] c, int start, int offset, char find) {
-        for(int i = start + offset; i >= start; i--) if(c[i] == find) return i;
+        for(int i = start + offset; i >= start; i--)
+            if(c[i] == find)
+                return i;
+
         return -1;
     }
 
@@ -1737,42 +1742,6 @@ public class ParseTools {
 
     public static boolean isDigit(final int c) {
         return c > ('0' - 1) && c < ('9' + 1);
-    }
-
-    public static float similarity(String s1, String s2) {
-        if(s1 == null || s2 == null)
-            return s1 == null && s2 == null ? 1f : 0f;
-
-        char[] c1 = s1.toCharArray();
-        char[] c2 = s2.toCharArray();
-
-        char[] comp;
-        char[] against;
-
-        float same = 0;
-        float baselength;
-
-        int cur1 = 0;
-
-        if(c1.length > c2.length) {
-            baselength = c1.length;
-            comp = c1;
-            against = c2;
-        } else {
-            baselength = c2.length;
-            comp = c2;
-            against = c1;
-        }
-
-        while(cur1 < comp.length && cur1 < against.length) {
-            if(comp[cur1] == against[cur1]) {
-                same++;
-            }
-
-            cur1++;
-        }
-
-        return same / baselength;
     }
 
     /** 查找到字符串数组针对于set时，其正确的结尾属性,如 a.b,其结尾为a,并且相应的位置为 a.的位置，b则为要处理的属性 */
@@ -1948,7 +1917,7 @@ public class ParseTools {
         if(compiled.isSingleNode()) {
             ASTNode tk = compiled.getFirstNode();
 
-            if(tk.isLiteral() && !tk.isThisVal()) {
+            if(tk.isLiteral()) {
                 return new ExecutableLiteral(tk.getLiteralValue());
             }
             return tk.canSerializeAccessor() ? new ExecutableAccessorSafe(tk, compiled.getKnownEgressType()) :
@@ -1968,67 +1937,6 @@ public class ParseTools {
             n[i] = c;
         }
         return new String(n);
-    }
-
-    /** 使用系统默认编码读取文件，并返回相应的字符信息 */
-    public static char[] loadFromFile(File file) throws IOException {
-        return loadFromFile(file, null);
-    }
-
-    /** 使用指定编码读取文件，并返回相应的字符内容 */
-    public static char[] loadFromFile(File file, String encoding) throws IOException {
-        if(!file.exists())
-            throw new RuntimeException("cannot find file: " + file.getName());
-
-        FileInputStream inStream = null;
-        ReadableByteChannel fc = null;
-        try{
-            fc = (inStream = new FileInputStream(file)).getChannel();
-            ByteBuffer buf = allocateDirect(10);
-
-            StringAppender sb = new StringAppender((int) file.length(), encoding);
-
-            int read = 0;
-            while(read >= 0) {
-                buf.rewind();
-                read = fc.read(buf);
-                buf.rewind();
-
-                for(; read > 0; read--) {
-                    sb.append(buf.get());
-                }
-            }
-
-            //noinspection unchecked
-            return sb.toChars();
-        } catch(FileNotFoundException e) {
-            // this can't be thrown, we check for this explicitly.
-        } finally {
-            if(inStream != null) inStream.close();
-            if(fc != null) fc.close();
-        }
-
-        return null;
-    }
-
-    public static char[] readIn(InputStream inStream, String encoding) throws IOException {
-        try{
-            byte[] buf = new byte[10];
-
-            StringAppender sb = new StringAppender(10, encoding);
-
-            int bytesRead;
-            while((bytesRead = inStream.read(buf)) > 0) {
-                for(int i = 0; i < bytesRead; i++) {
-                    sb.append(buf[i]);
-                }
-            }
-
-            //noinspection unchecked
-            return sb.toChars();
-        } finally {
-            if(inStream != null) inStream.close();
-        }
     }
 
     public static Class forNameWithInner(String className, ClassLoader classLoader) throws ClassNotFoundException {

@@ -1,5 +1,6 @@
 package org.mvel2.optimizers.impl.refl.nodes;
 
+import org.mvel2.ParserContext;
 import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
 
@@ -17,6 +18,10 @@ public abstract class InvokableAccessor extends BaseAccessor {
     protected Class[] parameterTypes;
     /** 表示是否需要进行可变参数处理(默认值false，当失败时转换为true) */
     protected boolean coercionNeeded = false;
+
+    protected InvokableAccessor(String nodeExpr, ParserContext parserContext) {
+        super(nodeExpr, parserContext);
+    }
 
     /**
      * 对指定的目标类型参数信息将其转换为正式可用的参数列表(同时对参数进行求值操作)

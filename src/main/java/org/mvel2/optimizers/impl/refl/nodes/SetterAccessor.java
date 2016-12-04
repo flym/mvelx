@@ -8,7 +8,6 @@ import java.lang.reflect.Method;
 
 import static org.mvel2.DataConversion.convert;
 import static org.mvel2.util.ParseTools.getBestCandidate;
-import static org.mvel2.util.ParseTools.subCompileExpression;
 
 /** 描述一个setter方法的访问器 */
 public class SetterAccessor extends BaseAccessor {
@@ -80,11 +79,5 @@ public class SetterAccessor extends BaseAccessor {
         } catch(Exception e2) {
             throw new RuntimeException("unable to invoke method", e2);
         }
-    }
-
-    @Override
-    public String nodeExpr() {
-        //todo
-        return null;
     }
 }

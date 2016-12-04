@@ -47,6 +47,9 @@ public abstract class BaseAccessor implements AccessorNode {
         if(ctx == null)
             return lastNextNode;
 
+        if(!lastNextNode.ctxSensitive())
+            return lastNextNode;
+
         Class<?> clazz = ctx.getClass();
         if(clazz == lastCtxClass)
             return lastNextNode;

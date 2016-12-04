@@ -36,4 +36,9 @@ public interface AccessorNode extends Accessor, Serializable, Cloneable {
 
     /** 用于描述此节点访问器的解析时属性或字符串名 */
     String nodeExpr();
+
+    /** 是否是上下文类型感知的,如果不是，则每次执行时将忽略相应的类型信息，每次都是此节点 */
+    default boolean ctxSensitive() {
+        return true;
+    }
 }

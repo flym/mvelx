@@ -114,10 +114,4 @@ public class GetterAccessorNH extends BaseAccessor {
             }
         }
     }
-
-    @Override
-    public String nodeExpr() {
-        //todo
-        return null;
-    }
 }

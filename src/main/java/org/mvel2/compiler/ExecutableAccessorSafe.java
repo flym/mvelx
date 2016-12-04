@@ -94,4 +94,9 @@ public class ExecutableAccessorSafe implements ExecutableStatement, Safe {
     public boolean isExplicitCast() {
         return node != null && node instanceof TypeCast;
     }
+
+    @Override
+    public String nodeExpr() {
+        return node.getName();
+    }
 }

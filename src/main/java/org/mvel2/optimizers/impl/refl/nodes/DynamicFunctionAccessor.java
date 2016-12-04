@@ -17,9 +17,11 @@
  */
 package org.mvel2.optimizers.impl.refl.nodes;
 
+import org.mvel2.ParserContext;
 import org.mvel2.ast.Function;
-import org.mvel2.compiler.Accessor;
+import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
+import org.mvel2.util.InvokableUtils;
 
 
 /**
@@ -28,31 +30,32 @@ import org.mvel2.integration.VariableResolverFactory;
  */
 public class DynamicFunctionAccessor extends BaseAccessor {
     /** 相对应的值访问器 */
-    private Accessor[] parameters;
+    private ExecutableStatement[] parameters;
 
     /** 根据相应的参数值访问器来构建相应的函数访问器 */
-    public DynamicFunctionAccessor(Accessor[] parms) {
-        this.parameters = parms;
+    public DynamicFunctionAccessor(ExecutableStatement[] params, String property, ParserContext parserContext) {
+        super(InvokableUtils.fullInvokeName(property, params), parserContext);
+        this.parameters = params;
     }
 
     public Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory) {
         //整个处理过程,即先获取相应的参数信息,将所有的参数收集之后,再直接调用相应的函数call即可
         //在调用时,当前ctx即表示函数对象本身
-        Object[] parms = null;
+        Object[] params = null;
 
         Function function = (Function) ctx;
 
         if(parameters != null && parameters.length != 0) {
-            parms = new Object[parameters.length];
-            for(int i = 0; i < parms.length; i++) {
-                parms[i] = parameters[i].getValue(ctx, elCtx, variableFactory);
+            params = new Object[parameters.length];
+            for(int i = 0; i < params.length; i++) {
+                params[i] = parameters[i].getValue(ctx, elCtx, variableFactory);
             }
         }
 
         if(nextNode != null) {
-            return nextNode.getValue(function.call(ctx, elCtx, variableFactory, parms), elCtx, variableFactory);
+            return nextNode.getValue(function.call(ctx, elCtx, variableFactory, params), elCtx, variableFactory);
         } else {
-            return function.call(ctx, elCtx, variableFactory, parms);
+            return function.call(ctx, elCtx, variableFactory, params);
         }
     }
 
@@ -67,8 +70,7 @@ public class DynamicFunctionAccessor extends BaseAccessor {
     }
 
     @Override
-    public String nodeExpr() {
-        //todo
-        return null;
+    public boolean ctxSensitive() {
+        return false;
     }
 }

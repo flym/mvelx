@@ -102,7 +102,6 @@ public class ASTBinaryTree {
                     throw new RuntimeException("Condition of ternary operator is not of type boolean. Found " + leftType);
                 return rightType;
         }
-        // TODO: should throw new RuntimeException("Unknown operator");
         // it doesn't because I am afraid I am not covering all the OperatorNode types
         return root.getEgressType();
     }

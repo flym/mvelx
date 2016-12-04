@@ -35,7 +35,11 @@ public class Notify extends BaseAccessor {
 
     @Override
     public String nodeExpr() {
-        //todo
-        return null;
+        return name;
+    }
+
+    @Override
+    public boolean ctxSensitive() {
+        return false;
     }
 }

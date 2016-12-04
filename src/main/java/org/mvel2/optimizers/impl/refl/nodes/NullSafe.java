@@ -2,7 +2,6 @@ package org.mvel2.optimizers.impl.refl.nodes;
 
 import org.mvel2.ParserContext;
 import org.mvel2.compiler.Accessor;
-import org.mvel2.compiler.AccessorNode;
 import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.optimizers.OptimizerFactory;
 
@@ -27,21 +26,15 @@ public class NullSafe extends BaseAccessor {
 
     public Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory) {
         //当前对象为null，跳过
-        if(ctx == null) return null;
+        if(ctx == null)
+            return null;
+
         //真实调用还未进行编译,则尝试编译,并将相应的调用委托给相应的编译好的访问器
         if(nextNode == null) {
             final Accessor a = OptimizerFactory.getAccessorCompiler(OptimizerFactory.SAFE_REFLECTIVE)
                     .optimizeAccessor(pCtx, expr, start, offset, ctx, elCtx, variableFactory, ctx.getClass());
 
-            nextNode = new AccessorNode() {
-                public AccessorNode getNextNode() {
-                    return null;
-                }
-
-                public AccessorNode setNextNode(AccessorNode accessorNode) {
-                    return null;
-                }
-
+            nextNode = new BaseAccessor(new String(expr, start, offset), pCtx) {
                 public Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory) {
                     return a.getValue(ctx, elCtx, variableFactory);
                 }
@@ -53,12 +46,6 @@ public class NullSafe extends BaseAccessor {
                 public Class getKnownEgressType() {
                     return a.getKnownEgressType();
                 }
-
-                @Override
-                public String nodeExpr() {
-                    //todo
-                    return null;
-                }
             };
         }
         return nextNode.getValue(ctx, elCtx, variableFactory);
@@ -66,7 +53,8 @@ public class NullSafe extends BaseAccessor {
 
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
         //当前对象为null，跳过
-        if(ctx == null) return null;
+        if(ctx == null)
+            return null;
         return nextNode.setValue(ctx, elCtx, variableFactory, value);
     }
 
@@ -77,7 +65,11 @@ public class NullSafe extends BaseAccessor {
 
     @Override
     public String nodeExpr() {
-        //todo
-        return null;
+        return "?";
+    }
+
+    @Override
+    public boolean ctxSensitive() {
+        return false;
     }
 }

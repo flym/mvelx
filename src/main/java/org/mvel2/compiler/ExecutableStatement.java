@@ -56,4 +56,7 @@ public interface ExecutableStatement extends Accessor, Serializable, Cloneable {
 
     /** 当前执行节点是否是空节点 */
     boolean isEmptyStatement();
+
+    /** 原执行表达式 */
+    String nodeExpr();
 }

@@ -1,8 +1,10 @@
 package org.mvel2.optimizers.impl.refl.nodes;
 
+import org.mvel2.ParserContext;
 import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.PropertyHandler;
 import org.mvel2.integration.VariableResolverFactory;
+import org.mvel2.util.InvokableUtils;
 
 import java.lang.reflect.Method;
 
@@ -30,7 +32,9 @@ public class MethodAccessorNH extends BaseAccessor {
     private PropertyHandler nullHandler;
 
     /** 使用定义方法,相应的参数处理单元,以及相应的空值处理器来进行方法访问器构建 */
-    public MethodAccessorNH(Method method, ExecutableStatement[] params, PropertyHandler handler) {
+    public MethodAccessorNH(Method method, ExecutableStatement[] params, PropertyHandler handler, ParserContext parserContext) {
+        super(InvokableUtils.fullInvokeName(method.getName(), params), parserContext);
+
         this.method = method;
         this.length = (this.parameterTypes = this.method.getParameterTypes()).length;
 
@@ -128,9 +132,4 @@ public class MethodAccessorNH extends BaseAccessor {
         return method.getReturnType();
     }
 
-    @Override
-    public String nodeExpr() {
-        //todo
-        return null;
-    }
 }

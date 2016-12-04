@@ -2,6 +2,7 @@ package org.mvel2.optimizers.impl.refl.nodes;
 
 import lombok.val;
 import org.mvel2.DataConversion;
+import org.mvel2.ParserContext;
 import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
 
@@ -18,13 +19,13 @@ public class ListAccessorNest extends BaseAccessor {
 
 
     /** 通过下标表达式+相应的值类型构建出相应的访问器 */
-    public ListAccessorNest(String index, Class conversionType) {
-        this.index = (ExecutableStatement) subCompileExpression(index.toCharArray());
-        this.conversionType = conversionType;
+    public ListAccessorNest(String index, Class conversionType, ParserContext parserContext) {
+        this((ExecutableStatement) subCompileExpression(index.toCharArray()), conversionType, index, parserContext);
     }
 
     /** 通过下标计算单元+相应的值类型构建出相应的访问器 */
-    public ListAccessorNest(ExecutableStatement index, Class conversionType) {
+    public ListAccessorNest(ExecutableStatement index, Class conversionType, String property, ParserContext parserContext) {
+        super("[" + property + "]", parserContext);
         this.index = index;
         this.conversionType = conversionType;
     }
@@ -65,11 +66,5 @@ public class ListAccessorNest extends BaseAccessor {
     /** 类型未知,为Object类型 */
     public Class getKnownEgressType() {
         return Object.class;
-    }
-
-    @Override
-    public String nodeExpr() {
-        //todo
-        return null;
     }
 }

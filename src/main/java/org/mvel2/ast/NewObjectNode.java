@@ -114,7 +114,7 @@ public class NewObjectNode extends ASTNode {
 
                 //非数组，准备处理相应的构造器以及相应的参数信息
                 if(!typeDescr.isArray()) {
-                    String[] cnsResid = captureContructorAndResidual(expr, start, offset);
+                    String[] cnsResid = captureConstructorAndResidual(expr, start, offset);
 
                     //构建参数
                     final List<char[]> constructorParms

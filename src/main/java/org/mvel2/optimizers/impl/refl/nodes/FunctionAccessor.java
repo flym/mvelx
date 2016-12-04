@@ -1,9 +1,11 @@
 package org.mvel2.optimizers.impl.refl.nodes;
 
 import lombok.val;
+import org.mvel2.ParserContext;
 import org.mvel2.ast.FunctionInstance;
-import org.mvel2.compiler.Accessor;
+import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
+import org.mvel2.util.InvokableUtils;
 
 
 /** 描述一个函数调用访问器 */
@@ -11,12 +13,13 @@ public class FunctionAccessor extends BaseAccessor {
     /** 函数定义实体对象 */
     private FunctionInstance function;
     /** 相应的参数信息 */
-    private Accessor[] parameters;
+    private ExecutableStatement[] parameters;
 
     /** 通过相应的函数实例以及相应的参数构建出相应的访问器 */
-    public FunctionAccessor(FunctionInstance function, Accessor[] parms) {
+    public FunctionAccessor(FunctionInstance function, ExecutableStatement[] params, ParserContext parserContext) {
+        super(InvokableUtils.fullInvokeName(function.getFunction().getName(), params), parserContext);
         this.function = function;
-        this.parameters = parms;
+        this.parameters = params;
     }
 
     public Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory) {
@@ -51,8 +54,7 @@ public class FunctionAccessor extends BaseAccessor {
     }
 
     @Override
-    public String nodeExpr() {
-        //todo
-        return null;
+    public boolean ctxSensitive() {
+        return false;
     }
 }

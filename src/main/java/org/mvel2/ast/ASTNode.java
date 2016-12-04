@@ -1,25 +1,6 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.mvel2.ast;
 
 import lombok.extern.slf4j.Slf4j;
-import org.mvel2.CompileException;
 import org.mvel2.ParserConfiguration;
 import org.mvel2.ParserContext;
 import org.mvel2.compiler.Accessor;
@@ -54,18 +35,11 @@ public class ASTNode implements Cloneable, Serializable {
     /** 数字节点 */
     public static final int NUMERIC = 1 << 5;
 
-    /** 表示该节点是否应该被反转,当前已实际无作用 */
-    @Deprecated
-    public static final int INVERT = 1 << 6;
-
     /** 表示该节点是一个赋值节点 */
     public static final int ASSIGN = 1 << 7;
 
     /** 当前节点中存在集合处理(如变量名中存在[这种操作符） */
     public static final int COLLECTION = 1 << 8;
-    /** 当前节点是一个this引用节点，实际上不再使用 */
-    @Deprecated
-    public static final int THISREF = 1 << 9;
     /** 内联的集合,即{12,3,4} 这种数据 */
     public static final int INLINE_COLLECTION = 1 << 10;
 
@@ -111,9 +85,6 @@ public class ASTNode implements Cloneable, Serializable {
 
     /** 表示当前节点应该被废掉 */
     public static final int DISCARD = 1 << 29;
-
-
-    // *** //
 
     /** 即在 a[x] 或 xy(xxx)中第一次出现[符号的位置 与endOfName不同的地方在于后者认为a.x是一起的,则firstUnion则认定下标在第1个.处 */
     protected int firstUnion;
@@ -181,6 +152,7 @@ public class ASTNode implements Cloneable, Serializable {
                 return getReducedValueAccelerated(ctx, thisValue, factory);
             }
         } else {
+            assert e != null;
             throw e;
         }
     }
@@ -192,7 +164,7 @@ public class ASTNode implements Cloneable, Serializable {
         }
 
         AccessorOptimizer optimizer;
-        Object retVal = null;
+        Object retVal;
 
         if((fields & NOJIT) != 0 || factory != null && factory.isResolveable(nameCache)) {
             optimizer = getAccessorCompiler(SAFE_REFLECTIVE);
@@ -301,13 +273,7 @@ public class ASTNode implements Cloneable, Serializable {
         //判断当前字符串是否是一个数字，如果是数字，则设置相应的标记
         if(isNumber(name, start, offset)) {
             egressType = (literal = handleNumericConversion(name, start, offset)).getClass();
-            if(((fields |= NUMERIC | LITERAL | IDENTIFIER) & INVERT) != 0) {
-                try{
-                    literal = ~((Integer) literal);
-                } catch(ClassCastException e) {
-                    throw new CompileException("bitwise (~) operator can only be applied to integers", expr, start);
-                }
-            }
+            fields |= NUMERIC | LITERAL | IDENTIFIER;
             return;
         }
 
@@ -363,10 +329,6 @@ public class ASTNode implements Cloneable, Serializable {
     /** 表示当前节点是否是常量节点 */
     public boolean isLiteral() {
         return (fields & LITERAL) != 0;
-    }
-
-    public boolean isThisVal() {
-        return (fields & THISREF) != 0;
     }
 
     /** 当前节点是否是操作符节点 */

@@ -2,6 +2,7 @@ package org.mvel2.optimizers.impl.refl.nodes;
 
 import lombok.Getter;
 import lombok.val;
+import org.mvel2.ParserContext;
 import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
 
@@ -11,7 +12,8 @@ public class IndexedCharSeqAccessorNest extends BaseAccessor {
     @Getter
     private final ExecutableStatement index;
 
-    public IndexedCharSeqAccessorNest(ExecutableStatement index) {
+    public IndexedCharSeqAccessorNest(ExecutableStatement index, String property, ParserContext parserContext) {
+        super("[" + property + "]", parserContext);
         this.index = index;
     }
 
@@ -38,11 +40,5 @@ public class IndexedCharSeqAccessorNest extends BaseAccessor {
     /** 字符串下标处理返回类型即为字符 */
     public Class getKnownEgressType() {
         return Character.class;
-    }
-
-    @Override
-    public String nodeExpr() {
-        //todo
-        return null;
     }
 }

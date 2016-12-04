@@ -469,14 +469,6 @@ public class CompilerTools {
         return null;
     }
 
-    /** 将相应的节点转换为访问器 */
-    @Deprecated
-    public static Accessor extractAccessor(ASTNode n) {
-        if(n instanceof LiteralNode) return new ExecutableLiteral(n.getLiteralValue());
-        else return new ExecutableAccessor(n, n.getEgressType());
-    }
-
-
     /** 获取在变量工厂中作为类引用已经引入的各项信息 */
     public static Map<String, Object> getInjectedImports(VariableResolverFactory factory) {
         if(factory == null) return null;
