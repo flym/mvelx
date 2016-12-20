@@ -290,7 +290,7 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
                 if(curr != null) returnType = curr.getClass();
                 //支持安全式访问
                 if(cursor < end) {
-                    if(nullSafe) {
+                    if(nullSafe || (pCtx != null && pCtx.getParserConfiguration().isNullSafe())) {
                         int os = expr[cursor] == '.' ? 1 : 0;
                         addAccessorNode(new NullSafe(expr, cursor + os, length - cursor - os, pCtx), ClassUtils.getType(curr));
                         if(curr == null)
@@ -494,7 +494,7 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
             return o;
         }
         //map属性获取的方式(前提是有此key或者是允许null安全),即如果map没有此属性，也仍然不能访问此值
-        else if(ctx instanceof Map && (((Map) ctx).containsKey(property) || nullSafe)) {
+        else if(ctx instanceof Map && (((Map) ctx).containsKey(property) || nullSafe || (pCtx != null && pCtx.getParserConfiguration().isNullSafe()))) {
             addAccessorNode(new MapAccessor(property, pCtx), ClassUtils.getType(ctx));
             return ((Map) ctx).get(property);
         }

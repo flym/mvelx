@@ -1,5 +1,7 @@
 package org.mvel2;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.mvel2.compiler.AbstractParser;
 import org.mvel2.integration.Interceptor;
 import org.mvel2.util.MethodStub;
@@ -19,6 +21,8 @@ import static org.mvel2.util.ParseTools.forNameWithInner;
  * 解析配置主要用于存储相应的引用类信息,因为这些可以认为是全局使用的
  * The reuseable parser configuration object.
  */
+@Setter
+@Getter
 public class ParserConfiguration implements Serializable {
     /** 使用到的引用的类名或方法名(不全是类名).也可能为方法句柄，或者是静态字段值等 */
     protected Map<String, Object> imports;
@@ -38,6 +42,9 @@ public class ParserConfiguration implements Serializable {
      */
     private boolean allowBootstrapBypass = true;
 
+    /** 在当前整个处理当中是否开启nullSafe处理 */
+    private boolean nullSafe;
+
     public ParserConfiguration() {
     }
 
@@ -45,10 +52,6 @@ public class ParserConfiguration implements Serializable {
     public ParserConfiguration(Map<String, Object> imports, Map<String, Interceptor> interceptors) {
         addAllImports(imports);
         this.interceptors = interceptors;
-    }
-
-    public HashSet<String> getPackageImports() {
-        return packageImports;
     }
 
     /** 通过引用名获取之前已import进来的类名，并且期望相应的类型为class类型 */
@@ -82,6 +85,7 @@ public class ParserConfiguration implements Serializable {
     }
 
     /** 尝试添加指定枚举类的成员，或者是类的公式字段信息为import中，以方便后续拿到相应的引用 */
+    @SuppressWarnings("unchecked")
     private boolean addClassMemberStaticImports(String packageName) {
         try{
             Class c = Class.forName(packageName);
@@ -206,19 +210,6 @@ public class ParserConfiguration implements Serializable {
         this.imports.put(name, method);
     }
 
-    /** 获取相应的拦截器列表 */
-    public Map<String, Interceptor> getInterceptors() {
-        return interceptors;
-    }
-
-    public void setInterceptors(Map<String, Interceptor> interceptors) {
-        this.interceptors = interceptors;
-    }
-
-    public Map<String, Object> getImports() {
-        return imports;
-    }
-
     /** 将新的引用完全添加到现有引用当中来 */
     public void setImports(Map<String, Object> imports) {
         if(imports == null) return;
@@ -248,10 +239,6 @@ public class ParserConfiguration implements Serializable {
         return classLoader == null ? classLoader = Thread.currentThread().getContextClassLoader() : classLoader;
     }
 
-    public void setClassLoader(ClassLoader classLoader) {
-        this.classLoader = classLoader;
-    }
-
     /** 重置相应的引用信息 */
     public void setAllImports(Map<String, Object> imports) {
         initImports();
@@ -275,14 +262,5 @@ public class ParserConfiguration implements Serializable {
     public void flushCaches() {
         if(nonValidImports != null)
             nonValidImports.clear();
-    }
-
-    public boolean isAllowBootstrapBypass() {
-        return allowBootstrapBypass;
-    }
-
-    /** 设置当前是否允许二次优化标记 */
-    public void setAllowBootstrapBypass(boolean allowBootstrapBypass) {
-        this.allowBootstrapBypass = allowBootstrapBypass;
     }
 }

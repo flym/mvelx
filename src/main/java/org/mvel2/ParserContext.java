@@ -746,10 +746,4 @@ public class ParserContext implements Serializable {
         }
         return returnTypeCache;
     }
-
-    // Introduce some new Fluent API stuff here.
-
-    public static ParserContext create() {
-        return new ParserContext();
-    }
 }
