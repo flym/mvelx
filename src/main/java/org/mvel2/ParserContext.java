@@ -70,8 +70,6 @@ public class ParserContext implements Serializable {
 
     /** 当前是否是一个函数上下文,即正在一个解析函数的过程当中 */
     private boolean functionContext = false;
-    /** 无用字段 */
-    private boolean compiled = false;
     /** 是否是严格类型调用的，即相应的泛型也严格处理 */
     private boolean strictTypeEnforcement = false;
     /** 是否是强类型处理 */
@@ -128,7 +126,6 @@ public class ParserContext implements Serializable {
         ctx.lastTypeParameters = lastTypeParameters;
         ctx.errorList = errorList;
 
-        ctx.compiled = compiled;
         ctx.strictTypeEnforcement = strictTypeEnforcement;
         ctx.strongTyping = strongTyping;
 
@@ -188,7 +185,6 @@ public class ParserContext implements Serializable {
         ctx.lastTypeParameters = lastTypeParameters;
         ctx.errorList = errorList;
 
-        ctx.compiled = compiled;
         ctx.strictTypeEnforcement = strictTypeEnforcement;
         ctx.strongTyping = strongTyping;
 
@@ -561,14 +557,6 @@ public class ParserContext implements Serializable {
 
     public void setVariables(HashMap<String, Class> variables) {
         this.variables = variables;
-    }
-
-    public boolean isCompiled() {
-        return compiled;
-    }
-
-    public void setCompiled(boolean compiled) {
-        this.compiled = compiled;
     }
 
     public boolean hasImports() {
