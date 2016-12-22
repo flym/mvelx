@@ -11,6 +11,7 @@ import java.util.Map;
 
 /** @author flym */
 public class MvelUtils {
+    private static Map<String, CompiledExpression> cacheMap = Maps.newHashMap();
 
     /** 编译并执行 */
     public static Object test(String expr) {
@@ -29,8 +30,11 @@ public class MvelUtils {
 
     /** 编译并执行，并使用自己的编译上下文 */
     public static Object test(String expr, Object ctx, Map<String, Object> ctxMap, ParserContext parserContext) {
-        ExpressionCompiler compiler = new ExpressionCompiler(expr, parserContext);
-        CompiledExpression compiled = compiler.compile();
+        CompiledExpression compiled = cacheMap.computeIfAbsent(expr, k -> {
+            ExpressionCompiler compiler = new ExpressionCompiler(k, parserContext);
+            return compiler.compile();
+        });
+
         return compiled.getValue(ctx, new MapVariableResolverFactory(ctxMap));
     }
 

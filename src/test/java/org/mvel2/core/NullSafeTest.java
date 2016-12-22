@@ -1,10 +1,13 @@
 /* Created by flym at 12/20/16 */
 package org.mvel2.core;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.mvel2.ParserContext;
+import org.mvel2.core.nullsafe_test.Order;
+import org.mvel2.core.nullsafe_test.Trade;
 import org.mvel2.core.nullsafe_test.User;
 import org.mvel2.core.util.MvelUtils;
 import org.testng.Assert;
@@ -42,8 +45,22 @@ public class NullSafeTest {
             ParserContext parserContext = new ParserContext();
             parserContext.getParserConfiguration().setNullSafe(true);
 
-            Object obj = MvelUtils.test(expr, ctx, null, parserContext);
+            Object obj = MvelUtils.test(expr2, ctx, null, parserContext);
             Assert.assertNull(obj);
+        });
+
+        //计算复杂的表达式
+        String expr3 = "var v = 0;for(ord : t.orders){v += ord.num;} return v; ";
+        MvelUtils.doTwice(() -> {
+            ParserContext parserContext = new ParserContext();
+            parserContext.getParserConfiguration().setNullSafe(true);
+
+            Map<String, Object> ctxMap = Maps.newHashMap();
+            Trade trade = new Trade(Lists.newArrayList(new Order(2), new Order(3)));
+            ctxMap.put("t", trade);
+
+            Object obj = MvelUtils.test(expr3, ctxMap, ctxMap, parserContext);
+            Assert.assertEquals(obj, 5);
         });
     }
 
