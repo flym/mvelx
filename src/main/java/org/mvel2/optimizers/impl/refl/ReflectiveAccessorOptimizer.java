@@ -292,7 +292,7 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
                 if(cursor < end) {
                     if(nullSafe || (pCtx != null && pCtx.getParserConfiguration().isNullSafe())) {
                         int os = expr[cursor] == '.' ? 1 : 0;
-                        addAccessorNode(new NullSafe(expr, cursor + os, length - cursor - os, pCtx), ClassUtils.getType(curr));
+                        addAccessorNode(new NullSafe(expr, cursor + os, end - cursor - os, pCtx), ClassUtils.getType(curr));
                         if(curr == null)
                             break;
                     }

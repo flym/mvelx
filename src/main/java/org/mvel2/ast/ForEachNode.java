@@ -32,6 +32,7 @@ import static org.mvel2.util.ParseTools.*;
 
 /**
  * 描述在java5中for(i:col)这种表达式
+ *
  * @author Christopher Brock
  */
 public class ForEachNode extends BlockNode {

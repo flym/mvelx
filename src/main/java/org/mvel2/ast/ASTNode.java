@@ -130,6 +130,11 @@ public class ASTNode implements Cloneable, Serializable {
      * @param thisValue 程序调用时传递的this变量,即最开始传递的ctx
      */
     public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
+        //优先处理常量问题
+        if ((fields & (LITERAL)) != 0) {
+            return literal;
+        }
+
         if(accessor != null) {
             try{
                 return accessor.getValue(ctx, thisValue, factory);
