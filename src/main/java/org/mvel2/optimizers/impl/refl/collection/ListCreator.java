@@ -19,6 +19,7 @@ package org.mvel2.optimizers.impl.refl.collection;
 
 import org.mvel2.compiler.Accessor;
 import org.mvel2.integration.VariableResolverFactory;
+import org.mvel2.optimizers.impl.refl.nodes.BaseAccessor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,9 +28,10 @@ import java.util.List;
 /**
  * 集合创建器,使用已知的值访问器信息直接创建出相应的列表
  * 用于直接以内联方式创建集合时处理,如 a = [a,b,c]这种创建时,在这种情况下,值信息是已知的
+ *
  * @author Christopher Brock
  */
-public class ListCreator implements Accessor {
+public class ListCreator extends BaseAccessor implements Accessor {
     /** 预先处理的值访问器信息 */
     private Accessor[] values;
 
@@ -45,6 +47,7 @@ public class ListCreator implements Accessor {
 
     /** 通过已知的值访问器来创建出相应的访问器 */
     public ListCreator(Accessor[] values) {
+        super(null, null);
         this.values = values;
     }
 
@@ -60,5 +63,10 @@ public class ListCreator implements Accessor {
     /** 返回相应的值列表 */
     public Accessor[] getValues() {
         return values;
+    }
+
+    @Override
+    public boolean ctxSensitive() {
+        return false;
     }
 }

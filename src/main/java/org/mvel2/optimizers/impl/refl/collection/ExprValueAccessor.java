@@ -22,23 +22,28 @@ import org.mvel2.compiler.Accessor;
 import org.mvel2.compiler.ExecutableLiteral;
 import org.mvel2.compiler.ExecutableStatement;
 import org.mvel2.integration.VariableResolverFactory;
+import org.mvel2.optimizers.impl.refl.nodes.BaseAccessor;
 import org.mvel2.util.ParseTools;
 
 import static org.mvel2.DataConversion.canConvert;
 import static org.mvel2.DataConversion.convert;
 import static org.mvel2.util.ParseTools.getSubComponentType;
+import static org.mvel2.util.ParseTools.subCompileExpression;
 import static org.mvel2.util.ReflectionUtil.isAssignableFrom;
 
 /**
  * 一个将表达式封装为可执行的访问器的表达式访问器
+ *
  * @author Christopher Brock
  */
-public class ExprValueAccessor implements Accessor {
+public class ExprValueAccessor extends BaseAccessor implements Accessor {
     /** 封装好的可执行语句 */
     public ExecutableStatement stmt;
 
     /** 使用表达式+期望的声明类型+变量工厂+解析上下文创建出相应的访问器 */
     public ExprValueAccessor(String ex, Class expectedType, Object ctx, VariableResolverFactory factory, ParserContext pCtx) {
+        super(ex, pCtx);
+
         //直接硬编译为可执行表达式
         stmt = (ExecutableStatement) ParseTools.subCompileExpression(ex.toCharArray(), pCtx);
 
@@ -86,5 +91,10 @@ public class ExprValueAccessor implements Accessor {
 
     public Class getKnownEgressType() {
         return stmt.getKnownEgressType();
+    }
+
+    @Override
+    public boolean ctxSensitive() {
+        return false;
     }
 }

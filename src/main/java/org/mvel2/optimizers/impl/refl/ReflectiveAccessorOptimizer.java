@@ -89,8 +89,8 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
     }
 
     /** 进行相应的get式访问优化 */
-    public Accessor optimizeAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx, Object thisRef,
-                                     VariableResolverFactory factory, Class ingressType) {
+    public AccessorNode optimizeAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx, Object thisRef,
+                                         VariableResolverFactory factory, Class ingressType) {
         this.rootNode = this.currNode = null;
         this.expr = property;
         this.start = start;
@@ -111,9 +111,9 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
 
     /** 进行相应的设置值访问器创建 */
     @SuppressWarnings("unchecked")
-    public Accessor optimizeSetAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx,
-                                        Object thisRef, VariableResolverFactory factory, boolean rootThisRef,
-                                        Object value, Class ingressType) {
+    public AccessorNode optimizeSetAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx,
+                                            Object thisRef, VariableResolverFactory factory, boolean rootThisRef,
+                                            Object value, Class ingressType) {
         this.rootNode = this.currNode = null;
         this.expr = property;
         this.start = start;
@@ -262,7 +262,7 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
     }
 
     /** 编译get访问处理链 */
-    private Accessor compileGetChain() {
+    private AccessorNode compileGetChain() {
         Object curr = ctx;
         cursor = start;
 
@@ -916,7 +916,7 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
     }
 
     /** 根据当前的值以及具体的子类型的参考类型创建起相应的值创建访问器,这里的type类型为参考类型 */
-    private Accessor _getAccessor(Object o, Class type) {
+    private AccessorNode _getAccessor(Object o, Class type) {
         //当前值为list，通过一个子值访问器的列表来构造一个list的创建访问器
         if(o instanceof List) {
             Accessor[] a = new Accessor[((List) o).size()];
@@ -990,8 +990,8 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
 
 
     /** 优化直接集合变量的访问 */
-    public Accessor optimizeCollection(ParserContext pCtx, Object o, Class type, char[] property, int start, int offset,
-                                       Object ctx, Object thisRef, VariableResolverFactory factory) {
+    public AccessorNode optimizeCollection(ParserContext pCtx, Object o, Class type, char[] property, int start, int offset,
+                                           Object ctx, Object thisRef, VariableResolverFactory factory) {
         this.start = this.cursor = start;
         this.length = start + offset;
         this.returnType = type;
@@ -999,9 +999,10 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
         this.variableFactory = factory;
         this.pCtx = pCtx;
 
-        Accessor root = _getAccessor(o, returnType);
+        AccessorNode root = _getAccessor(o, returnType);
 
         //这里表示如果集合变量后面还有更多的操作，如[1,2,3].length这种，则将当前的访问器和后面
+        //如果length仅与start相同，即表示没有不是继续联合访问
         if(property != null && length > start) {
             return new Union(pCtx, root, property, cursor, offset);
         } else {
@@ -1009,10 +1010,9 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
         }
     }
 
-
     /** 优化对象的创建过程，提供对象创建访问器 */
-    public Accessor optimizeObjectCreation(ParserContext pCtx, char[] property, int start, int offset,
-                                           Object ctx, Object thisRef, VariableResolverFactory factory) {
+    public AccessorNode optimizeObjectCreation(ParserContext pCtx, char[] property, int start, int offset,
+                                               Object ctx, Object thisRef, VariableResolverFactory factory) {
         this.length = start + offset;
         this.cursor = this.start = start;
         this.pCtx = pCtx;

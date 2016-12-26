@@ -1,24 +1,8 @@
-/**
- * MVEL (The MVFLEX Expression Language)
- * <p>
- * Copyright (C) 2007 Christopher Brock, MVFLEX/Valhalla Project and the Codehaus
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.mvel2.optimizers.impl.refl.collection;
 
 import org.mvel2.compiler.Accessor;
 import org.mvel2.integration.VariableResolverFactory;
+import org.mvel2.optimizers.impl.refl.nodes.BaseAccessor;
 
 import java.lang.reflect.Array;
 
@@ -30,7 +14,7 @@ import static java.lang.reflect.Array.newInstance;
  *
  * @author Christopher Brock
  */
-public class ArrayCreator implements Accessor {
+public class ArrayCreator extends BaseAccessor implements Accessor {
     /** 数组中的每一项的值 */
     public Accessor[] template;
     /** 构建出来的数组类型 */
@@ -58,6 +42,7 @@ public class ArrayCreator implements Accessor {
 
     /** 使用数组对象值+相应的定义类型进行构建 */
     public ArrayCreator(Accessor[] template, Class arrayType) {
+        super(null, null);
         this.template = template;
         this.arrayType = arrayType;
     }
@@ -70,5 +55,10 @@ public class ArrayCreator implements Accessor {
     /** 相应的声明类型为所定义的类型 */
     public Class getKnownEgressType() {
         return arrayType;
+    }
+
+    @Override
+    public boolean ctxSensitive() {
+        return false;
     }
 }

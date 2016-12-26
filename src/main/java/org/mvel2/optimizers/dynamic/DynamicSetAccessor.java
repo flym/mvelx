@@ -1,33 +1,17 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.mvel2.optimizers.dynamic;
 
 import org.mvel2.ParserContext;
 import org.mvel2.compiler.Accessor;
+import org.mvel2.compiler.AccessorNode;
 import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.optimizers.AccessorOptimizer;
 import org.mvel2.optimizers.OptimizerFactory;
+import org.mvel2.optimizers.impl.refl.nodes.BaseAccessor;
 
 import static java.lang.System.currentTimeMillis;
 
 /** 处理对象设置值之类的动态优化访问器 */
-public class DynamicSetAccessor implements DynamicAccessor {
+public class DynamicSetAccessor extends BaseAccessor implements DynamicAccessor {
     /** 处理的表达式 */
     private char[] property;
     /** 当前语句起始下标 */
@@ -48,7 +32,10 @@ public class DynamicSetAccessor implements DynamicAccessor {
     /** 当前使用的访问器(可能为优化版本) */
     private Accessor _accessor;
 
-    public DynamicSetAccessor(ParserContext context, char[] property, int start, int offset, Accessor _accessor) {
+    public DynamicSetAccessor(ParserContext context, char[] property, int start, int offset, Class ctxClass, AccessorNode _accessor) {
+        super(new String(property, start, offset), context);
+        setNextNode(_accessor, ctxClass);
+
         assert _accessor != null;
         this._safeAccessor = this._accessor = _accessor;
         this.context = context;
@@ -63,6 +50,8 @@ public class DynamicSetAccessor implements DynamicAccessor {
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
         //如果未优化,则按照处理策略进行优化
         //处理策略即在指定时间内运行了多少次
+        //todo 暂时屏蔽
+        /*
         if(!opt) {
             if(++runcount > DynamicOptimizer.tenuringThreshold) {
                 if((currentTimeMillis() - stamp) < DynamicOptimizer.timeSpan) {
@@ -74,8 +63,9 @@ public class DynamicSetAccessor implements DynamicAccessor {
                 }
             }
         }
+        */
 
-        _accessor.setValue(ctx, elCtx, variableFactory, value);
+        fetchNextAccessNode(ctx, elCtx, variableFactory).setValue(ctx, elCtx, variableFactory, value);
         return value;
     }
 

@@ -18,13 +18,14 @@
 
 package org.mvel2.optimizers.dynamic;
 
-import org.mvel2.compiler.Accessor;
+import org.mvel2.compiler.AccessorNode;
 
 /**
  * 动态访问器，用于支持使用多个访问器在运行中切换实现的处理式
  * 即优化时可以采用访问器2,在安全访问时也可以使用访问器1
  */
-public interface DynamicAccessor extends Accessor {
+public interface DynamicAccessor extends AccessorNode {
+
     /** 反优化，表示在后面的处理中将不再使用原来的优化器.同时可以解释相应的优化类资源 */
     void deoptimize();
 }

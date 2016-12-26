@@ -187,7 +187,7 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
                         + "integration/VariableResolverFactory;Ljava/lang/Object;)Ljava/lang/Object;", null, null)).visitCode();
     }
 
-    public Accessor optimizeAccessor(ParserContext pCtx, char[] property, int start, int offset, Object staticContext,
+    public AccessorNode optimizeAccessor(ParserContext pCtx, char[] property, int start, int offset, Object staticContext,
                                      Object thisRef, VariableResolverFactory factory, Class ingressType) {
         time = System.currentTimeMillis();
 
@@ -211,7 +211,7 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
         return compileAccessor();
     }
 
-    public Accessor optimizeSetAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx,
+    public AccessorNode optimizeSetAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx,
                                         Object thisRef, VariableResolverFactory factory, boolean rootThisRef,
                                         Object value, Class ingressType) {
         this.expr = property;
@@ -638,7 +638,7 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
     }
 
     @SuppressWarnings("unchecked")
-    private Accessor _initializeAccessor() throws Exception {
+    private AccessorNode _initializeAccessor() throws Exception {
         if(deferFinish) {
             return null;
         }
@@ -671,10 +671,11 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
             throw e;
         }
 
-        return (Accessor) o;
+        //todo 这里是强行返回的，可能编译并不能通过
+        return (AccessorNode) o;
     }
 
-    private Accessor compileAccessor() {
+    private AccessorNode compileAccessor() {
         assert debug("<<INITIATE COMPILE>>");
 
         Object curr = ctx;
@@ -1881,7 +1882,25 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
             classLoader = new JITClassLoader(currentThread().getContextClassLoader());
         } catch(Exception e) {
             throw new RuntimeException(e);
-        }
+        }/**
+ * MVEL 2.0
+ * Copyright (C) 2007 The Codehaus
+ * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
     }
 
     private ContextClassLoader getContextClassLoader() {
@@ -2477,7 +2496,7 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
     }
 
 
-    public Accessor optimizeCollection(ParserContext pCtx, Object o, Class type, char[] property, int start, int offset,
+    public AccessorNode optimizeCollection(ParserContext pCtx, Object o, Class type, char[] property, int start, int offset,
                                        Object ctx, Object thisRef, VariableResolverFactory factory) {
         this.expr = property;
         this.cursor = this.start = start;
@@ -2502,7 +2521,7 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
         _finishJIT();
 
         try{
-            Accessor compiledAccessor = _initializeAccessor();
+            AccessorNode compiledAccessor = _initializeAccessor();
 
             if(property != null && length > start) {
                 return new Union(pCtx, compiledAccessor, property, start, length);
@@ -2560,7 +2579,7 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
         }
     }
 
-    public Accessor optimizeObjectCreation(ParserContext pCtx, char[] property, int start, int offset, Object ctx,
+    public AccessorNode optimizeObjectCreation(ParserContext pCtx, char[] property, int start, int offset, Object ctx,
                                            Object thisRef, VariableResolverFactory factory) {
         _initJIT();
 
@@ -2655,7 +2674,7 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
                 _finishJIT();
 
-                Accessor acc = _initializeAccessor();
+                AccessorNode acc = _initializeAccessor();
 
                 if(cnsRes.length > 1 && cnsRes[1] != null && !cnsRes[1].trim().equals("")) {
                     return new Union(pCtx, acc, cnsRes[1].toCharArray(), 0, cnsRes[1].length());
@@ -2677,7 +2696,7 @@ public class ASMAccessorOptimizer extends AbstractOptimizer implements AccessorO
                 mv.visitMethodInsn(INVOKESPECIAL, getInternalName(cls), "<init>", getConstructorDescriptor(cns), false);
 
                 _finishJIT();
-                Accessor acc = _initializeAccessor();
+                AccessorNode acc = _initializeAccessor();
 
                 if(cnsRes.length > 1 && cnsRes[1] != null && !cnsRes[1].trim().equals("")) {
                     return new Union(pCtx, acc, cnsRes[1].toCharArray(), 0, cnsRes[1].length());

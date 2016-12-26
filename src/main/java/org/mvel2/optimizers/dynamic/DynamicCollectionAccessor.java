@@ -19,9 +19,11 @@
 package org.mvel2.optimizers.dynamic;
 
 import org.mvel2.ParserContext;
-import org.mvel2.compiler.Accessor;
+import org.mvel2.compiler.AccessorNode;
 import org.mvel2.integration.VariableResolverFactory;
+import org.mvel2.optimizers.AccessorOptimizeType;
 import org.mvel2.optimizers.OptimizerFactory;
+import org.mvel2.optimizers.impl.refl.nodes.BaseAccessor;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -32,7 +34,7 @@ import static java.lang.System.currentTimeMillis;
  * @see org.mvel2.optimizers.impl.refl.nodes.Union
  * 整个逻辑与DynamicGetAccessor或setAccessor相一致
  */
-public class DynamicCollectionAccessor implements DynamicAccessor {
+public class DynamicCollectionAccessor extends BaseAccessor implements DynamicAccessor {
     private ParserContext pCtx;
     private Object rootObject;
     private Class colType;
@@ -42,16 +44,18 @@ public class DynamicCollectionAccessor implements DynamicAccessor {
     private int offset;
 
     private long stamp;
-    private int type;
+    private AccessorOptimizeType type;
 
-    private int runcount;
+    private int runCount;
 
     private boolean opt = false;
 
-    private Accessor _safeAccessor;
-    private Accessor _accessor;
+    private AccessorNode _safeAccessor;
+    private AccessorNode _accessor;
 
-    public DynamicCollectionAccessor(ParserContext pCtx, Object rootObject, Class colType, char[] property, int start, int offset, int type, Accessor _accessor) {
+    public DynamicCollectionAccessor(ParserContext pCtx, Object rootObject, Class colType, char[] property, int start, int offset, AccessorOptimizeType type, Class ctxClass, AccessorNode _accessor) {
+        super(_accessor.nodeExpr(), pCtx);
+
         this.pCtx = pCtx;
         this.rootObject = rootObject;
         this.colType = colType;
@@ -66,24 +70,27 @@ public class DynamicCollectionAccessor implements DynamicAccessor {
     }
 
     public Object getValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory) {
+        //todo 暂时屏蔽
+        /*
         if(!opt) {
-            if(++runcount > DynamicOptimizer.tenuringThreshold) {
+            if(++runCount > DynamicOptimizer.tenuringThreshold) {
                 if((currentTimeMillis() - stamp) < DynamicOptimizer.timeSpan) {
                     opt = true;
 
                     return optimize(pCtx, ctx, elCtx, variableFactory);
                 } else {
-                    runcount = 0;
+                    runCount = 0;
                     stamp = currentTimeMillis();
                 }
             }
         }
+        */
 
         return _accessor.getValue(ctx, elCtx, variableFactory);
     }
 
     public Object setValue(Object ctx, Object elCtx, VariableResolverFactory variableFactory, Object value) {
-        runcount++;
+        runCount++;
         return _accessor.setValue(ctx, elCtx, variableFactory, value);
     }
 
@@ -102,19 +109,21 @@ public class DynamicCollectionAccessor implements DynamicAccessor {
     public void deoptimize() {
         this._accessor = this._safeAccessor;
         opt = false;
-        runcount = 0;
+        runCount = 0;
         stamp = currentTimeMillis();
-    }
-
-    public long getStamp() {
-        return stamp;
-    }
-
-    public int getRuncount() {
-        return runcount;
     }
 
     public Class getKnownEgressType() {
         return colType;
+    }
+
+    @Override
+    public AccessorNode setNextNode(AccessorNode accessorNode, Class<?> currentCtxType) {
+        return _accessor.setNextNode(accessorNode, currentCtxType);
+    }
+
+    @Override
+    public Class<?> getLastCtxType() {
+        return _accessor.getLastCtxType();
     }
 }

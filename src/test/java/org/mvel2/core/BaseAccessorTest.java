@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.mvel2.MVEL;
 import org.mvel2.core.base_accessor_test.String2List1;
 import org.mvel2.core.base_accessor_test.String2List2;
-import org.mvel2.optimizers.OptimizerFactory;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -53,8 +52,6 @@ public class BaseAccessorTest {
 
     @Test(dataProvider = "p4doBaseTest")
     public void doBaseTest(String expr, Map<String, Object> ctx1, Map<String, Object> ctx2, Object expectV1, Object expectV2) {
-        OptimizerFactory.setDefaultOptimizer(OptimizerFactory.SAFE_REFLECTIVE);
-
         Serializable expression = MVEL.compileExpression(expr);
         for(int i = 0; i < 2; i++) {
             Object v1 = MVEL.executeExpression(expression, ctx1);

@@ -1,28 +1,11 @@
-/**
- * MVEL 2.0
- * Copyright (C) 2007 The Codehaus
- * Mike Brock, Dhanji Prasanna, John Graham, Mark Proctor
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.mvel2.optimizers.dynamic;
 
 
 import org.mvel2.ParserContext;
-import org.mvel2.compiler.Accessor;
+import org.mvel2.compiler.AccessorNode;
 import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.optimizers.AbstractOptimizer;
+import org.mvel2.optimizers.AccessorOptimizeType;
 import org.mvel2.optimizers.AccessorOptimizer;
 
 import java.util.concurrent.locks.Lock;
@@ -90,60 +73,56 @@ public class DynamicOptimizer extends AbstractOptimizer implements AccessorOptim
         }
     }
 
-    public static final int REGULAR_ACCESSOR = 0;
-
     /** 进行正常的方法调用或访问 */
-    public Accessor optimizeAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx, Object thisRef,
-                                     VariableResolverFactory factory, Class ingressType) {
+    public AccessorNode optimizeAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx, Object thisRef,
+                                         VariableResolverFactory factory, Class ingressType) {
         readLock.lock();
         try{
             Class ctxClass = ctx == null ? null : ctx.getClass();
             pCtx.optimizationNotify();
-            return classLoader.registerDynamicAccessor(new DynamicGetAccessor(pCtx, property, start, offset, 0, ctxClass,
+            return classLoader.registerDynamicAccessor(new DynamicGetAccessor(pCtx, property, start, offset, AccessorOptimizeType.ACCESS_REGULAR, ctxClass,
                     firstStage.optimizeAccessor(pCtx, property, start, offset, ctx, thisRef, factory, ingressType)));
         } finally {
             readLock.unlock();
         }
     }
 
-    public static final int SET_ACCESSOR = 1;
-
     /** 进行动态的set方法调用 */
-    public Accessor optimizeSetAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx, Object thisRef,
-                                        VariableResolverFactory factory, boolean rootThisRef, Object value, Class valueType) {
+    public AccessorNode optimizeSetAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx, Object thisRef,
+                                            VariableResolverFactory factory, boolean rootThisRef, Object value, Class valueType) {
 
         readLock.lock();
         try{
-            return classLoader.registerDynamicAccessor(new DynamicSetAccessor(pCtx, property, start, offset,
+            Class ctxClass = ctx == null ? null : ctx.getClass();
+            return classLoader.registerDynamicAccessor(new DynamicSetAccessor(pCtx, property, start, offset, ctxClass,
                     firstStage.optimizeSetAccessor(pCtx, property, start, offset, ctx, thisRef, factory, rootThisRef, value, valueType)));
         } finally {
             readLock.unlock();
         }
     }
 
-    public static final int COLLECTION = 2;
 
     /** 进行动态的内联集合类访问 */
-    public Accessor optimizeCollection(ParserContext pCtx, Object rootObject, Class type, char[] property, int start,
-                                       int offset, Object ctx, Object thisRef, VariableResolverFactory factory) {
+    public AccessorNode optimizeCollection(ParserContext pCtx, Object rootObject, Class type, char[] property, int start,
+                                           int offset, Object ctx, Object thisRef, VariableResolverFactory factory) {
         readLock.lock();
         try{
-            return classLoader.registerDynamicAccessor(new DynamicCollectionAccessor(pCtx, rootObject, type, property, start, offset, 2,
+            Class ctxClass = ctx == null ? null : ctx.getClass();
+            return classLoader.registerDynamicAccessor(new DynamicCollectionAccessor(pCtx, rootObject, type, property, start, offset, AccessorOptimizeType.ACCESS_COLLECTION, ctxClass,
                     firstStage.optimizeCollection(pCtx, rootObject, type, property, start, offset, ctx, thisRef, factory)));
         } finally {
             readLock.unlock();
         }
     }
 
-    public static final int OBJ_CREATION = 3;
 
     /** 进行动态的对象创建访问 */
-    public Accessor optimizeObjectCreation(ParserContext pCtx, char[] property, int start, int offset,
-                                           Object ctx, Object thisRef, VariableResolverFactory factory) {
+    public AccessorNode optimizeObjectCreation(ParserContext pCtx, char[] property, int start, int offset,
+                                               Object ctx, Object thisRef, VariableResolverFactory factory) {
         readLock.lock();
         try{
             Class ctxClass = ctx == null ? null : ctx.getClass();
-            return classLoader.registerDynamicAccessor(new DynamicGetAccessor(pCtx, property, start, offset, 3, ctxClass,
+            return classLoader.registerDynamicAccessor(new DynamicGetAccessor(pCtx, property, start, offset, AccessorOptimizeType.ACCESS_OBJ_CREATION, ctxClass,
                     firstStage.optimizeObjectCreation(pCtx, property, start, offset, ctx, thisRef, factory)));
         } finally {
             readLock.unlock();
