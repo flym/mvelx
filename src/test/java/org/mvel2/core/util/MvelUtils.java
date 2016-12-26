@@ -43,4 +43,9 @@ public class MvelUtils {
         for(int i = 0; i < 2; i++)
             runnable.run();
     }
+
+    /** 清除相应的缓存 */
+    public static void clearCache() {
+        cacheMap.clear();
+    }
 }

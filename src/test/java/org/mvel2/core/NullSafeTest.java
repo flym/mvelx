@@ -21,7 +21,7 @@ import java.util.Map;
  * @author flym
  */
 @Slf4j
-public class NullSafeTest {
+public class NullSafeTest extends BaseTest {
     private static Map<String, User> createUser() {
         val map = Maps.<String, User>newHashMap();
         map.put("u", new User());
@@ -73,7 +73,7 @@ public class NullSafeTest {
             Object obj = MvelUtils.test(expr, ctx);
             log.debug("result:{}", obj);
         } catch(Exception e) {
-            log.debug("期望的异常:{}", e.getMessage(), e);
+            log.debug("期望的异常:{}", e.getMessage());
             return;
         }
 
