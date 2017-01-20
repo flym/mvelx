@@ -40,7 +40,7 @@ public abstract class BaseAccessor implements AccessorNode {
 
     public AccessorNode setNextNode(AccessorNode accessorNode, Class<?> currentCtxType) {
         this.lastCtxClass = currentCtxType;
-        if(lastCtxClass != null)
+        if(lastCtxClass != null && accessorNode != null)
             accessorNodeMap.put(lastCtxClass, accessorNode);
 
         return this.nextNode = lastNextNode = accessorNode;
