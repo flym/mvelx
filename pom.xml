@@ -12,7 +12,7 @@
     <description>简单高效的脚本执行引擎</description>
 
     <scm>
-        <developerConnection>scm:git:ssh://git@github.com:flym/mvelx.git</developerConnection>
+        <developerConnection>scm:git:git@github.com:flym/mvelx.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
     <developers>
