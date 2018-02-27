@@ -23,7 +23,6 @@ package org.mvel2;
 /**
  * 数据类型内部表示法，用于表示相应的类型，在进行类型 操作时会根据类型的大小，进行宽化或窄化，如 int + long 就会返回long
  * 100以上表示数字类型
- * Contains constants for standard internal types.
  */
 public interface DataTypes {
     int NULL = -1;

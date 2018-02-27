@@ -11,7 +11,6 @@ import static org.mvel2.util.ReflectionUtil.toNonPrimitiveType;
 
 /**
  * 内部自带的对象转换器,即把当前内置的实现全部打包进行一起处理，统一对外提供工具处理类
- * The DataConversion factory is where all of MVEL's type converters are registered with the runtime.
  *
  * @author Mike Brock
  * @see ConversionHandler
@@ -122,10 +121,9 @@ public class DataConversion {
 
     /**
      * 注册并添加新的转换器
-     * Register a new {@link ConversionHandler} with the factory.
      *
-     * @param type    - Target type represented by the conversion handler.
-     * @param handler - An instance of the handler.
+     * @param type    - 目标类型
+     * @param handler - 实际的转换器对象
      */
     public static void addConversionHandler(Class type, ConversionHandler handler) {
         CONVERTERS.put(type, handler);
