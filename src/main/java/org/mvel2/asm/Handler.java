@@ -31,7 +31,7 @@ package org.mvel2.asm;
 
 /**
  * Information about an exception handler block.
- *
+ * 
  * @author Eric Bruneton
  */
 class Handler {
@@ -71,14 +71,17 @@ class Handler {
     /**
      * Removes the range between start and end from the given exception
      * handlers.
-     *
-     * @param h     an exception handler list.
-     * @param start the start of the range to be removed.
-     * @param end   the end of the range to be removed. Maybe null.
+     * 
+     * @param h
+     *            an exception handler list.
+     * @param start
+     *            the start of the range to be removed.
+     * @param end
+     *            the end of the range to be removed. Maybe null.
      * @return the exception handler list with the start-end range removed.
      */
     static Handler remove(Handler h, Label start, Label end) {
-        if(h == null) {
+        if (h == null) {
             return null;
         } else {
             h.next = remove(h.next, start, end);
@@ -88,16 +91,16 @@ class Handler {
         int s = start.position;
         int e = end == null ? Integer.MAX_VALUE : end.position;
         // if [hstart,hend[ and [s,e[ intervals intersect...
-        if(s < hend && e > hstart) {
-            if(s <= hstart) {
-                if(e >= hend) {
+        if (s < hend && e > hstart) {
+            if (s <= hstart) {
+                if (e >= hend) {
                     // [hstart,hend[ fully included in [s,e[, h removed
                     h = h.next;
                 } else {
                     // [hstart,hend[ minus [s,e[ = [e,hend[
                     h.start = end;
                 }
-            } else if(e >= hend) {
+            } else if (e >= hend) {
                 // [hstart,hend[ minus [s,e[ = [hstart,s[
                 h.end = start;
             } else {

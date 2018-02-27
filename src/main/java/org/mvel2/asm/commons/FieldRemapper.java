@@ -1,5 +1,4 @@
-<html>
-<!--
+/***
  * ASM: a very small and fast Java bytecode manipulation framework
  * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
@@ -27,22 +26,46 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
--->
-<body>
-Provides some useful class and method adapters. <i>The preferred way of using
-these adapters is by chaining them together and to custom adapters (instead of
-inheriting from them)</i>. Indeed this approach provides more combination
-possibilities than inheritance. For instance, suppose you want to implement an
-adapter MyAdapter than needs sorted local variables and intermediate stack map
-frame values taking into account the local variables sort. By using inheritance,
-this would require MyAdapter to extend AnalyzerAdapter, itself extending
-LocalVariablesSorter. But AnalyzerAdapter is not a subclass of
-LocalVariablesSorter, so this is not possible. On the contrary, by using
-delegation, you can make LocalVariablesSorter delegate to AnalyzerAdapter,
-itself delegating to MyAdapter. In this case AnalyzerAdapter computes
-intermediate frames based on the output of LocalVariablesSorter, and MyAdapter
-can add new locals by calling the newLocal method on LocalVariablesSorter, and
-can get the stack map frame state before each instruction by reading the locals
-and stack fields in AnalyzerAdapter (this requires references from MyAdapter
-back to LocalVariablesSorter and AnalyzerAdapter).
-</body>
+ */
+
+package org.mvel2.asm.commons;
+
+import org.mvel2.asm.AnnotationVisitor;
+import org.mvel2.asm.FieldVisitor;
+import org.mvel2.asm.Opcodes;
+import org.mvel2.asm.TypePath;
+
+/**
+ * A {@link FieldVisitor} adapter for type remapping.
+ * 
+ * @author Eugene Kuleshov
+ */
+public class FieldRemapper extends FieldVisitor {
+
+    private final Remapper remapper;
+
+    public FieldRemapper(final FieldVisitor fv, final Remapper remapper) {
+        this(Opcodes.ASM6, fv, remapper);
+    }
+
+    protected FieldRemapper(final int api, final FieldVisitor fv,
+            final Remapper remapper) {
+        super(api, fv);
+        this.remapper = remapper;
+    }
+
+    @Override
+    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+        AnnotationVisitor av = fv.visitAnnotation(remapper.mapDesc(desc),
+                visible);
+        return av == null ? null : new AnnotationRemapper(av, remapper);
+    }
+
+    @Override
+    public AnnotationVisitor visitTypeAnnotation(int typeRef,
+                                                 TypePath typePath, String desc, boolean visible) {
+        AnnotationVisitor av = super.visitTypeAnnotation(typeRef, typePath,
+                remapper.mapDesc(desc), visible);
+        return av == null ? null : new AnnotationRemapper(av, remapper);
+    }
+}

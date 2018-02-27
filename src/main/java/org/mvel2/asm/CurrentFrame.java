@@ -1,5 +1,4 @@
-<html>
-<!--
+/***
  * ASM: a very small and fast Java bytecode manipulation framework
  * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
@@ -27,22 +26,31 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
--->
-<body>
-Provides some useful class and method adapters. <i>The preferred way of using
-these adapters is by chaining them together and to custom adapters (instead of
-inheriting from them)</i>. Indeed this approach provides more combination
-possibilities than inheritance. For instance, suppose you want to implement an
-adapter MyAdapter than needs sorted local variables and intermediate stack map
-frame values taking into account the local variables sort. By using inheritance,
-this would require MyAdapter to extend AnalyzerAdapter, itself extending
-LocalVariablesSorter. But AnalyzerAdapter is not a subclass of
-LocalVariablesSorter, so this is not possible. On the contrary, by using
-delegation, you can make LocalVariablesSorter delegate to AnalyzerAdapter,
-itself delegating to MyAdapter. In this case AnalyzerAdapter computes
-intermediate frames based on the output of LocalVariablesSorter, and MyAdapter
-can add new locals by calling the newLocal method on LocalVariablesSorter, and
-can get the stack map frame state before each instruction by reading the locals
-and stack fields in AnalyzerAdapter (this requires references from MyAdapter
-back to LocalVariablesSorter and AnalyzerAdapter).
-</body>
+ */
+
+package org.mvel2.asm;
+
+/**
+ * Information about the input stack map frame at the "current" instruction of a
+ * method. This is implemented as a Frame subclass for a "basic block"
+ * containing only one instruction.
+ * 
+ * @author Eric Bruneton
+ */
+class CurrentFrame extends Frame {
+ 
+    /**
+     * Sets this CurrentFrame to the input stack map frame of the next "current"
+     * instruction, i.e. the instruction just after the given one. It is assumed
+     * that the value of this object when this method is called is the stack map
+     * frame status just before the given instruction is executed.
+     */
+    @Override
+    void execute(int opcode, int arg, ClassWriter cw, Item item) {
+        super.execute(opcode, arg, cw, item);
+        Frame successor = new Frame();
+        merge(cw, successor, 0);
+        set(successor);
+        owner.inputStackTop = 0;
+    }
+}

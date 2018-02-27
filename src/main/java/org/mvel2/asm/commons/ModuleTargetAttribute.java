@@ -1,5 +1,4 @@
-<html>
-<!--
+/***
  * ASM: a very small and fast Java bytecode manipulation framework
  * Copyright (c) 2000-2011 INRIA, France Telecom
  * All rights reserved.
@@ -27,22 +26,52 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
--->
-<body>
-Provides some useful class and method adapters. <i>The preferred way of using
-these adapters is by chaining them together and to custom adapters (instead of
-inheriting from them)</i>. Indeed this approach provides more combination
-possibilities than inheritance. For instance, suppose you want to implement an
-adapter MyAdapter than needs sorted local variables and intermediate stack map
-frame values taking into account the local variables sort. By using inheritance,
-this would require MyAdapter to extend AnalyzerAdapter, itself extending
-LocalVariablesSorter. But AnalyzerAdapter is not a subclass of
-LocalVariablesSorter, so this is not possible. On the contrary, by using
-delegation, you can make LocalVariablesSorter delegate to AnalyzerAdapter,
-itself delegating to MyAdapter. In this case AnalyzerAdapter computes
-intermediate frames based on the output of LocalVariablesSorter, and MyAdapter
-can add new locals by calling the newLocal method on LocalVariablesSorter, and
-can get the stack map frame state before each instruction by reading the locals
-and stack fields in AnalyzerAdapter (this requires references from MyAdapter
-back to LocalVariablesSorter and AnalyzerAdapter).
-</body>
+ */
+
+package org.mvel2.asm.commons;
+
+import org.mvel2.asm.*;
+
+/**
+ * ModuleTarget attribute.
+ * This attribute is specific to the OpenJDK and may change in the future.
+ * 
+ * @author Remi Forax
+ */
+public final class ModuleTargetAttribute extends Attribute {
+    public String platform;
+    
+    /**
+     * Creates an attribute with a platform name.
+     * @param platform the platform name on which the module can run.
+     */
+    public ModuleTargetAttribute(final String platform) {
+        super("ModuleTarget");
+        this.platform = platform;
+    }
+    
+    /**
+     * Creates an empty attribute that can be used as prototype
+     * to be passed as argument of the method
+     * {@link ClassReader#accept(ClassVisitor, Attribute[], int)}.
+     */
+    public ModuleTargetAttribute() {
+        this(null);
+    }
+    
+    @Override
+    protected Attribute read(ClassReader cr, int off, int len, char[] buf,
+                             int codeOff, Label[] labels) {
+        String platform = cr.readUTF8(off, buf);
+        return new ModuleTargetAttribute(platform);
+    }
+    
+    @Override
+    protected ByteVector write(ClassWriter cw, byte[] code, int len,
+                               int maxStack, int maxLocals) {
+        ByteVector v = new ByteVector();
+        int index = (platform == null)? 0: cw.newUTF8(platform);
+        v.putShort(index);
+        return v;
+    }
+}

@@ -292,7 +292,9 @@ public class MVEL {
         try{
             return ((ExecutableStatement) compiledExpression).getValue(ctx, factory);
         } finally {
-            if(factory != null) factory.externalize();
+            if(factory != null) {
+                factory.externalize();
+            }
         }
     }
 
@@ -430,7 +432,9 @@ public class MVEL {
 
     /** 使用上下文+变量工厂执行多个编译表达式，并将每个编译表达式的结果进行组合返回 */
     public static Object[] executeAllExpression(Serializable[] compiledExpressions, Object ctx, VariableResolverFactory vars) {
-        if(compiledExpressions == null) return GetterAccessor.EMPTY;
+        if(compiledExpressions == null) {
+            return GetterAccessor.EMPTY;
+        }
         Object[] o = new Object[compiledExpressions.length];
         for(int i = 0; i < compiledExpressions.length; i++) {
             o[i] = executeExpression(compiledExpressions[i], ctx, vars);
@@ -476,8 +480,9 @@ public class MVEL {
     public static Method getStaticMethod(Class cls, String methodName, Class[] signature) {
         try{
             Method m = cls.getMethod(methodName, signature);
-            if((m.getModifiers() & Modifier.STATIC) == 0)
+            if((m.getModifiers() & Modifier.STATIC) == 0) {
                 throw new RuntimeException("method not a static method: " + methodName);
+            }
             return m;
         } catch(NoSuchMethodException e) {
             throw new RuntimeException("no such method: " + methodName);

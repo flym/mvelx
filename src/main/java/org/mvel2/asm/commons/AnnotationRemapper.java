@@ -27,71 +27,53 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package org.mvel2.asm.commons;
 
-import org.mvel2.asm.ClassVisitor;
-import org.mvel2.asm.MethodVisitor;
+import org.mvel2.asm.AnnotationVisitor;
 import org.mvel2.asm.Opcodes;
 
 /**
- * A {@link ClassVisitor} that merges clinit methods into a single one.
+ * An {@link org.mvel2.asm.AnnotationVisitor} adapter for type remapping.
  * 
- * @author Eric Bruneton
+ * @author Eugene Kuleshov
  */
-public class StaticInitMerger extends ClassVisitor {
+public class AnnotationRemapper extends AnnotationVisitor {
 
-    private String name;
+    protected final Remapper remapper;
 
-    private MethodVisitor clinit;
-
-    private final String prefix;
-
-    private int counter;
-
-    public StaticInitMerger(final String prefix, final ClassVisitor cv) {
-        this(Opcodes.ASM6, prefix, cv);
+    public AnnotationRemapper(final AnnotationVisitor av,
+            final Remapper remapper) {
+        this(Opcodes.ASM6, av, remapper);
     }
 
-    protected StaticInitMerger(final int api, final String prefix,
-            final ClassVisitor cv) {
-        super(api, cv);
-        this.prefix = prefix;
+    protected AnnotationRemapper(final int api, final AnnotationVisitor av,
+            final Remapper remapper) {
+        super(api, av);
+        this.remapper = remapper;
     }
 
     @Override
-    public void visit(final int version, final int access, final String name,
-            final String signature, final String superName,
-            final String[] interfaces) {
-        cv.visit(version, access, name, signature, superName, interfaces);
-        this.name = name;
+    public void visit(String name, Object value) {
+        av.visit(name, remapper.mapValue(value));
     }
 
     @Override
-    public MethodVisitor visitMethod(final int access, final String name,
-            final String desc, final String signature, final String[] exceptions) {
-        MethodVisitor mv;
-        if ("<clinit>".equals(name)) {
-            int a = Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC;
-            String n = prefix + counter++;
-            mv = cv.visitMethod(a, n, desc, signature, exceptions);
-
-            if (clinit == null) {
-                clinit = cv.visitMethod(a, name, desc, null, null);
-            }
-            clinit.visitMethodInsn(Opcodes.INVOKESTATIC, this.name, n, desc,
-                    false);
-        } else {
-            mv = cv.visitMethod(access, name, desc, signature, exceptions);
-        }
-        return mv;
+    public void visitEnum(String name, String desc, String value) {
+        av.visitEnum(name, remapper.mapDesc(desc), value);
     }
 
     @Override
-    public void visitEnd() {
-        if (clinit != null) {
-            clinit.visitInsn(Opcodes.RETURN);
-            clinit.visitMaxs(0, 0);
-        }
-        cv.visitEnd();
+    public AnnotationVisitor visitAnnotation(String name, String desc) {
+        AnnotationVisitor v = av.visitAnnotation(name, remapper.mapDesc(desc));
+        return v == null ? null : (v == av ? this : new AnnotationRemapper(v,
+                remapper));
+    }
+
+    @Override
+    public AnnotationVisitor visitArray(String name) {
+        AnnotationVisitor v = av.visitArray(name);
+        return v == null ? null : (v == av ? this : new AnnotationRemapper(v,
+                remapper));
     }
 }

@@ -29,12 +29,7 @@
  */
 package org.mvel2.asm.commons;
 
-import org.mvel2.asm.AnnotationVisitor;
-import org.mvel2.asm.Label;
-import org.mvel2.asm.MethodVisitor;
-import org.mvel2.asm.Opcodes;
-import org.mvel2.asm.Type;
-import org.mvel2.asm.TypePath;
+import org.mvel2.asm.*;
 
 /**
  * A {@link MethodVisitor} that renumbers local variables in their order of
@@ -43,7 +38,7 @@ import org.mvel2.asm.TypePath;
  * of using it is via delegation: the next visitor in the chain can indeed add
  * new locals when needed by calling {@link #newLocal} on this adapter (this
  * requires a reference back to this {@link LocalVariablesSorter}).
- *
+ * 
  * @author Chris Nokleberg
  * @author Eugene Kuleshov
  * @author Eric Bruneton
@@ -76,43 +71,46 @@ public class LocalVariablesSorter extends MethodVisitor {
     protected int nextLocal;
 
     /**
-     * Indicates if at least one local variable has moved due to remapping.
-     */
-    private boolean changed;
-
-    /**
      * Creates a new {@link LocalVariablesSorter}. <i>Subclasses must not use
      * this constructor</i>. Instead, they must use the
      * {@link #LocalVariablesSorter(int, int, String, MethodVisitor)} version.
-     *
-     * @param access access flags of the adapted method.
-     * @param desc   the method's descriptor (see {@link Type Type}).
-     * @param mv     the method visitor to which this adapter delegates calls.
-     * @throws IllegalStateException If a subclass calls this constructor.
+     * 
+     * @param access
+     *            access flags of the adapted method.
+     * @param desc
+     *            the method's descriptor (see {@link Type Type}).
+     * @param mv
+     *            the method visitor to which this adapter delegates calls.
+     * @throws IllegalStateException
+     *             If a subclass calls this constructor.
      */
     public LocalVariablesSorter(final int access, final String desc,
-                                final MethodVisitor mv) {
-        this(Opcodes.ASM5, access, desc, mv);
-        if(getClass() != LocalVariablesSorter.class) {
+            final MethodVisitor mv) {
+        this(Opcodes.ASM6, access, desc, mv);
+        if (getClass() != LocalVariablesSorter.class) {
             throw new IllegalStateException();
         }
     }
 
     /**
      * Creates a new {@link LocalVariablesSorter}.
-     *
-     * @param api    the ASM API version implemented by this visitor. Must be one
-     *               of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
-     * @param access access flags of the adapted method.
-     * @param desc   the method's descriptor (see {@link Type Type}).
-     * @param mv     the method visitor to which this adapter delegates calls.
+     * 
+     * @param api
+     *            the ASM API version implemented by this visitor. Must be one
+     *            of {@link Opcodes#ASM4}, {@link Opcodes#ASM5} or {@link Opcodes#ASM6}.
+     * @param access
+     *            access flags of the adapted method.
+     * @param desc
+     *            the method's descriptor (see {@link Type Type}).
+     * @param mv
+     *            the method visitor to which this adapter delegates calls.
      */
     protected LocalVariablesSorter(final int api, final int access,
-                                   final String desc, final MethodVisitor mv) {
+            final String desc, final MethodVisitor mv) {
         super(api, mv);
         Type[] args = Type.getArgumentTypes(desc);
         nextLocal = (Opcodes.ACC_STATIC & access) == 0 ? 1 : 0;
-        for(int i = 0; i < args.length; i++) {
+        for (int i = 0; i < args.length; i++) {
             nextLocal += args[i].getSize();
         }
         firstLocal = nextLocal;
@@ -121,33 +119,33 @@ public class LocalVariablesSorter extends MethodVisitor {
     @Override
     public void visitVarInsn(final int opcode, final int var) {
         Type type;
-        switch(opcode) {
-            case Opcodes.LLOAD:
-            case Opcodes.LSTORE:
-                type = Type.LONG_TYPE;
-                break;
+        switch (opcode) {
+        case Opcodes.LLOAD:
+        case Opcodes.LSTORE:
+            type = Type.LONG_TYPE;
+            break;
 
-            case Opcodes.DLOAD:
-            case Opcodes.DSTORE:
-                type = Type.DOUBLE_TYPE;
-                break;
+        case Opcodes.DLOAD:
+        case Opcodes.DSTORE:
+            type = Type.DOUBLE_TYPE;
+            break;
 
-            case Opcodes.FLOAD:
-            case Opcodes.FSTORE:
-                type = Type.FLOAT_TYPE;
-                break;
+        case Opcodes.FLOAD:
+        case Opcodes.FSTORE:
+            type = Type.FLOAT_TYPE;
+            break;
 
-            case Opcodes.ILOAD:
-            case Opcodes.ISTORE:
-                type = Type.INT_TYPE;
-                break;
+        case Opcodes.ILOAD:
+        case Opcodes.ISTORE:
+            type = Type.INT_TYPE;
+            break;
 
-            default:
-                // case Opcodes.ALOAD:
-                // case Opcodes.ASTORE:
-                // case RET:
-                type = OBJECT_TYPE;
-                break;
+        default:
+            // case Opcodes.ALOAD:
+            // case Opcodes.ASTORE:
+            // case RET:
+            type = OBJECT_TYPE;
+            break;
         }
         mv.visitVarInsn(opcode, remap(var, type));
     }
@@ -176,7 +174,7 @@ public class LocalVariablesSorter extends MethodVisitor {
                                                           String desc, boolean visible) {
         Type t = Type.getType(desc);
         int[] newIndex = new int[index.length];
-        for(int i = 0; i < newIndex.length; ++i) {
+        for (int i = 0; i < newIndex.length; ++i) {
             newIndex[i] = remap(index[i], t);
         }
         return mv.visitLocalVariableAnnotation(typeRef, typePath, start, end,
@@ -185,15 +183,10 @@ public class LocalVariablesSorter extends MethodVisitor {
 
     @Override
     public void visitFrame(final int type, final int nLocal,
-                           final Object[] local, final int nStack, final Object[] stack) {
-        if(type != Opcodes.F_NEW) { // uncompressed frame
+            final Object[] local, final int nStack, final Object[] stack) {
+        if (type != Opcodes.F_NEW) { // uncompressed frame
             throw new IllegalStateException(
                     "ClassReader.accept() should be called with EXPAND_FRAMES flag");
-        }
-
-        if(!changed) { // optimization for the case where mapping = identity
-            mv.visitFrame(type, nLocal, local, nStack, stack);
-            return;
         }
 
         // creates a copy of newLocals
@@ -207,20 +200,20 @@ public class LocalVariablesSorter extends MethodVisitor {
 
         int index = 0; // old local variable index
         int number = 0; // old local variable number
-        for(; number < nLocal; ++number) {
+        for (; number < nLocal; ++number) {
             Object t = local[number];
             int size = t == Opcodes.LONG || t == Opcodes.DOUBLE ? 2 : 1;
-            if(t != Opcodes.TOP) {
+            if (t != Opcodes.TOP) {
                 Type typ = OBJECT_TYPE;
-                if(t == Opcodes.INTEGER) {
+                if (t == Opcodes.INTEGER) {
                     typ = Type.INT_TYPE;
-                } else if(t == Opcodes.FLOAT) {
+                } else if (t == Opcodes.FLOAT) {
                     typ = Type.FLOAT_TYPE;
-                } else if(t == Opcodes.LONG) {
+                } else if (t == Opcodes.LONG) {
                     typ = Type.LONG_TYPE;
-                } else if(t == Opcodes.DOUBLE) {
+                } else if (t == Opcodes.DOUBLE) {
                     typ = Type.DOUBLE_TYPE;
-                } else if(t instanceof String) {
+                } else if (t instanceof String) {
                     typ = Type.getObjectType((String) t);
                 }
                 setFrameLocal(remap(index, typ), t);
@@ -232,12 +225,12 @@ public class LocalVariablesSorter extends MethodVisitor {
 
         index = 0;
         number = 0;
-        for(int i = 0; index < newLocals.length; ++i) {
+        for (int i = 0; index < newLocals.length; ++i) {
             Object t = newLocals[index++];
-            if(t != null && t != Opcodes.TOP) {
+            if (t != null && t != Opcodes.TOP) {
                 newLocals[i] = t;
                 number = i + 1;
-                if(t == Opcodes.LONG || t == Opcodes.DOUBLE) {
+                if (t == Opcodes.LONG || t == Opcodes.DOUBLE) {
                     index += 1;
                 }
             } else {
@@ -256,41 +249,41 @@ public class LocalVariablesSorter extends MethodVisitor {
 
     /**
      * Creates a new local variable of the given type.
-     *
-     * @param type the type of the local variable to be created.
+     * 
+     * @param type
+     *            the type of the local variable to be created.
      * @return the identifier of the newly created local variable.
      */
     public int newLocal(final Type type) {
         Object t;
-        switch(type.getSort()) {
-            case Type.BOOLEAN:
-            case Type.CHAR:
-            case Type.BYTE:
-            case Type.SHORT:
-            case Type.INT:
-                t = Opcodes.INTEGER;
-                break;
-            case Type.FLOAT:
-                t = Opcodes.FLOAT;
-                break;
-            case Type.LONG:
-                t = Opcodes.LONG;
-                break;
-            case Type.DOUBLE:
-                t = Opcodes.DOUBLE;
-                break;
-            case Type.ARRAY:
-                t = type.getDescriptor();
-                break;
-            // case Type.OBJECT:
-            default:
-                t = type.getInternalName();
-                break;
+        switch (type.getSort()) {
+        case Type.BOOLEAN:
+        case Type.CHAR:
+        case Type.BYTE:
+        case Type.SHORT:
+        case Type.INT:
+            t = Opcodes.INTEGER;
+            break;
+        case Type.FLOAT:
+            t = Opcodes.FLOAT;
+            break;
+        case Type.LONG:
+            t = Opcodes.LONG;
+            break;
+        case Type.DOUBLE:
+            t = Opcodes.DOUBLE;
+            break;
+        case Type.ARRAY:
+            t = type.getDescriptor();
+            break;
+        // case Type.OBJECT:
+        default:
+            t = type.getInternalName();
+            break;
         }
         int local = newLocalMapping(type);
         setLocalType(local, type);
         setFrameLocal(local, t);
-        changed = true;
         return local;
     }
 
@@ -304,31 +297,34 @@ public class LocalVariablesSorter extends MethodVisitor {
      * But this behavior is not always the desired one, for instance if a local
      * variable is added in the middle of a try/catch block: the frame for the
      * exception handler should have a TOP type for this new local.
-     *
-     * @param newLocals the stack map frame types corresponding to the local variables
-     *                  added with {@link #newLocal} (and null for the others). The
-     *                  format of this array is the same as in
-     *                  {@link MethodVisitor#visitFrame}, except that long and double
-     *                  types use two slots. The types for the current stack map frame
-     *                  must be updated in place in this array.
+     * 
+     * @param newLocals
+     *            the stack map frame types corresponding to the local variables
+     *            added with {@link #newLocal} (and null for the others). The
+     *            format of this array is the same as in
+     *            {@link MethodVisitor#visitFrame}, except that long and double
+     *            types use two slots. The types for the current stack map frame
+     *            must be updated in place in this array.
      */
     protected void updateNewLocals(Object[] newLocals) {
     }
-
+    
     /**
      * Notifies subclasses that a local variable has been added or remapped. The
      * default implementation of this method does nothing.
-     *
-     * @param local a local variable identifier, as returned by {@link #newLocal
-     *              newLocal()}.
-     * @param type  the type of the value being stored in the local variable.
+     * 
+     * @param local
+     *            a local variable identifier, as returned by {@link #newLocal
+     *            newLocal()}.
+     * @param type
+     *            the type of the value being stored in the local variable.
      */
     protected void setLocalType(final int local, final Type type) {
     }
 
     private void setFrameLocal(final int local, final Object type) {
         int l = newLocals.length;
-        if(local >= l) {
+        if (local >= l) {
             Object[] a = new Object[Math.max(2 * l, local + 1)];
             System.arraycopy(newLocals, 0, a, 0, l);
             newLocals = a;
@@ -337,26 +333,23 @@ public class LocalVariablesSorter extends MethodVisitor {
     }
 
     private int remap(final int var, final Type type) {
-        if(var + type.getSize() <= firstLocal) {
+        if (var + type.getSize() <= firstLocal) {
             return var;
         }
         int key = 2 * var + type.getSize() - 1;
         int size = mapping.length;
-        if(key >= size) {
+        if (key >= size) {
             int[] newMapping = new int[Math.max(2 * size, key + 1)];
             System.arraycopy(mapping, 0, newMapping, 0, size);
             mapping = newMapping;
         }
         int value = mapping[key];
-        if(value == 0) {
+        if (value == 0) {
             value = newLocalMapping(type);
             setLocalType(value, type);
             mapping[key] = value + 1;
         } else {
             value--;
-        }
-        if(value != var) {
-            changed = true;
         }
         return value;
     }
