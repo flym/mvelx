@@ -146,17 +146,4 @@
         </plugins>
     </build>
 
-    <distributionManagement>
-        <repository>
-            <id>shuyun</id>
-            <name>shuyun</name>
-            <url>http://ci.yunat.com:8091/nexus/content/repositories/release_scs</url>
-        </repository>
-        <snapshotRepository>
-            <id>shuyun</id>
-            <name>shuyun</name>
-            <url>http://ci.yunat.com:8091/nexus/content/repositories/snapshots_scs</url>
-        </snapshotRepository>
-    </distributionManagement>
-
 </project>
