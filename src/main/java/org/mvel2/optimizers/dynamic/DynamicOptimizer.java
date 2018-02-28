@@ -7,6 +7,7 @@ import org.mvel2.integration.VariableResolverFactory;
 import org.mvel2.optimizers.AbstractOptimizer;
 import org.mvel2.optimizers.AccessorOptimizeType;
 import org.mvel2.optimizers.AccessorOptimizer;
+import org.mvel2.optimizers.impl.asm.AsmAccessorOptimizer;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -15,7 +16,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import static java.lang.Thread.currentThread;
 import static org.mvel2.optimizers.OptimizerFactory.SAFE_REFLECTIVE;
 import static org.mvel2.optimizers.OptimizerFactory.getAccessorCompiler;
-import static org.mvel2.optimizers.impl.asm.ASMAccessorOptimizer.setMVELClassLoader;
 
 /**
  * 用于描述一个可以动态切换访问方式的优化器
@@ -53,7 +53,7 @@ public class DynamicOptimizer extends AbstractOptimizer implements AccessorOptim
 
     /** 设置相应的加载器 */
     private static void _init() {
-        setMVELClassLoader(classLoader = new DynamicClassLoader(currentThread().getContextClassLoader(), maximumTenure));
+        AsmAccessorOptimizer.setMVELClassLoader(classLoader = new DynamicClassLoader(currentThread().getContextClassLoader(), maximumTenure));
     }
 
     /**

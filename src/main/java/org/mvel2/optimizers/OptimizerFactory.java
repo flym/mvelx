@@ -1,7 +1,7 @@
 package org.mvel2.optimizers;
 
 import org.mvel2.optimizers.dynamic.DynamicOptimizer;
-import org.mvel2.optimizers.impl.asm.ASMAccessorOptimizer;
+import org.mvel2.optimizers.impl.asm.AsmAccessorOptimizer;
 import org.mvel2.optimizers.impl.refl.ReflectiveAccessorOptimizer;
 
 import java.util.HashMap;
@@ -30,7 +30,7 @@ public class OptimizerFactory {
     static {
         accessorCompilers.put(SAFE_REFLECTIVE, new ReflectiveAccessorOptimizer());
         accessorCompilers.put(DYNAMIC, new DynamicOptimizer());
-        accessorCompilers.put(ASM, new ASMAccessorOptimizer());
+        accessorCompilers.put(ASM, new AsmAccessorOptimizer());
 
         //因为已经内置了asm处理，因此除非显示的禁用jit，一定会采用dynamic优化器处理
         if(Boolean.getBoolean("mvel2.disable.jit"))

@@ -18,7 +18,7 @@
 
 package org.mvel2.optimizers.dynamic;
 
-import org.mvel2.util.MVELClassLoader;
+import org.mvel2.util.MvelClassLoader;
 
 import java.util.LinkedList;
 
@@ -27,7 +27,7 @@ import java.util.LinkedList;
  * 用于控制在整个mvel中生成优化访问器的数量，以及承担类加载器的职能，
  * 避免将所有类都绑定在基础类加载器上
  */
-public class DynamicClassLoader extends ClassLoader implements MVELClassLoader {
+public class DynamicClassLoader extends ClassLoader implements MvelClassLoader {
     /** 当前经过优化的类上限 */
     private int totalClasses;
     /** 优化限制上限值 */

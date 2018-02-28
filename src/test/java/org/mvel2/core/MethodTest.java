@@ -14,7 +14,7 @@ import java.util.Map;
  *
  * @author flym
  */
-public class MethodTest {
+public class MethodTest extends BaseTest {
 
     private Object createCtx() {
         return new Base();
