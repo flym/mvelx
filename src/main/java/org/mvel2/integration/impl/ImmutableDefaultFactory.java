@@ -82,7 +82,7 @@ public class ImmutableDefaultFactory implements VariableResolverFactory {
         return false;
     }
 
-    public boolean isResolveable(String name) {
+    public boolean isResolvable(String name) {
         return false;
     }
 

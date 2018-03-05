@@ -61,8 +61,8 @@ public class StackDemarcResolverFactory implements VariableResolverFactory {
         return delegate.isTarget(name);
     }
 
-    public boolean isResolveable(String name) {
-        return delegate.isResolveable(name);
+    public boolean isResolvable(String name) {
+        return delegate.isResolvable(name);
     }
 
     public Set<String> getKnownVariables() {

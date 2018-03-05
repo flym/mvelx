@@ -51,7 +51,7 @@ public class DeclTypedVarNode extends ASTNode implements Assignment {
 
     public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
         //直接定义此变量
-        if(!factory.isResolveable(name)) factory.createVariable(name, null, egressType);
+        if(!factory.isResolvable(name)) factory.createVariable(name, null, egressType);
         else throw new CompileException("variable defined within scope: " + name, expr, start);
         return null;
     }

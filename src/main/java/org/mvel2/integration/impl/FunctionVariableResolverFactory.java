@@ -53,8 +53,8 @@ public class FunctionVariableResolverFactory extends BaseVariableResolverFactory
         }
     }
 
-    public boolean isResolveable(String name) {
-        return variableResolvers.containsKey(name) || (nextFactory != null && nextFactory.isResolveable(name));
+    public boolean isResolvable(String name) {
+        return variableResolvers.containsKey(name) || (nextFactory != null && nextFactory.isResolvable(name));
     }
 
     /** 修改变量值信息(如果有)，否则创建新的变量解析器 */

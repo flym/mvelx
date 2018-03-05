@@ -119,10 +119,10 @@ public class MapVariableResolverFactory extends BaseVariableResolverFactory {
 
 
     /** 通过解析器map+变量名map+next共同判定是否能解析相应的name */
-    public boolean isResolveable(String name) {
+    public boolean isResolvable(String name) {
         return (variableResolvers.containsKey(name))
                 || (variables != null && variables.containsKey(name))
-                || (nextFactory != null && nextFactory.isResolveable(name));
+                || (nextFactory != null && nextFactory.isResolvable(name));
     }
 
     protected VariableResolver addResolver(String name, VariableResolver vr) {

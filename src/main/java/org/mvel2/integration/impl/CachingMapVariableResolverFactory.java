@@ -20,7 +20,6 @@ package org.mvel2.integration.impl;
 
 import org.mvel2.UnresolveablePropertyException;
 import org.mvel2.integration.VariableResolver;
-import org.mvel2.integration.VariableResolverFactory;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -90,10 +89,10 @@ public class CachingMapVariableResolverFactory extends BaseVariableResolverFacto
 
 
     /** 从当前解析器存储+外部map+委托中共同判定是否可解析 */
-    public boolean isResolveable(String name) {
+    public boolean isResolvable(String name) {
         return (variableResolvers.containsKey(name))
                 || (variables != null && variables.containsKey(name))
-                || (nextFactory != null && nextFactory.isResolveable(name));
+                || (nextFactory != null && nextFactory.isResolvable(name));
     }
 
     protected VariableResolver addResolver(String name, VariableResolver vr) {

@@ -58,7 +58,7 @@ public abstract class BaseVariableResolverFactory implements VariableResolverFac
     }
 
     public VariableResolver getVariableResolver(String name) {
-        if(isResolveable(name)) {
+        if(isResolvable(name)) {
             //如果当前能处理,则从当前作用域中获取
             if(variableResolvers.containsKey(name)) {
                 return variableResolvers.get(name);
@@ -74,7 +74,7 @@ public abstract class BaseVariableResolverFactory implements VariableResolverFac
 
     /** 委托解析器工厂能够解析此变量名 */
     public boolean isNextResolveable(String name) {
-        return nextFactory != null && nextFactory.isResolveable(name);
+        return nextFactory != null && nextFactory.isResolvable(name);
     }
 
     public Set<String> getKnownVariables() {

@@ -62,8 +62,8 @@ public class ItemResolverFactory extends BaseVariableResolverFactory {
     }
 
     /** 通过当前单值的变量名和委托解析来判定是否可解析参数名 */
-    public boolean isResolveable(String name) {
-        return resolver.getName().equals(name) || (nextFactory != null && nextFactory.isResolveable(name));
+    public boolean isResolvable(String name) {
+        return resolver.getName().equals(name) || (nextFactory != null && nextFactory.isResolvable(name));
     }
 
     /** 通过变量名+值+类型来进行变量解析的解析器 */

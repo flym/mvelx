@@ -53,7 +53,7 @@ public class DynamicOptimizer extends AbstractOptimizer implements AccessorOptim
 
     /** 设置相应的加载器 */
     private static void _init() {
-        AsmAccessorOptimizer.setMVELClassLoader(classLoader = new DynamicClassLoader(currentThread().getContextClassLoader(), maximumTenure));
+        AsmAccessorOptimizer.setMvelClassLoader(classLoader = new DynamicClassLoader(currentThread().getContextClassLoader(), maximumTenure));
     }
 
     /**

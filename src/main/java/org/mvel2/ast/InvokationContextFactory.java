@@ -24,7 +24,7 @@ public class InvokationContextFactory extends MapVariableResolverFactory {
     public VariableResolver createVariable(String name, Object value) {
         //处理变量时,需要根据2者,看哪个能解析,如果外部不能解析,则退回到定义作用域来处理
         //即在处理时,首先判断是否已之前定义过的,如果确定是之前定义过的,则跳回到之前的逻辑当中
-        if(isResolveable(name) && !protoContext.isResolveable(name)) {
+        if(isResolvable(name) && !protoContext.isResolvable(name)) {
             return nextFactory.createVariable(name, value);
         } else {
             return protoContext.createVariable(name, value);
@@ -33,7 +33,7 @@ public class InvokationContextFactory extends MapVariableResolverFactory {
 
     @Override
     public VariableResolver createVariable(String name, Object value, Class<?> type) {
-        if(isResolveable(name) && !protoContext.isResolveable(name)) {
+        if(isResolvable(name) && !protoContext.isResolvable(name)) {
             return nextFactory.createVariable(name, value, type);
         } else {
             return protoContext.createVariable(name, value, type);
@@ -43,7 +43,7 @@ public class InvokationContextFactory extends MapVariableResolverFactory {
     @Override
     public VariableResolver getVariableResolver(String name) {
         //获取相应的值信息时也是采用双重处理,先外部后内部
-        if(isResolveable(name) && !protoContext.isResolveable(name)) {
+        if(isResolvable(name) && !protoContext.isResolvable(name)) {
             return nextFactory.getVariableResolver(name);
         } else {
             return protoContext.getVariableResolver(name);
@@ -56,8 +56,8 @@ public class InvokationContextFactory extends MapVariableResolverFactory {
     }
 
     @Override
-    public boolean isResolveable(String name) {
-        return protoContext.isResolveable(name) || nextFactory.isResolveable(name);
+    public boolean isResolvable(String name) {
+        return protoContext.isResolvable(name) || nextFactory.isResolvable(name);
     }
 
     @Override

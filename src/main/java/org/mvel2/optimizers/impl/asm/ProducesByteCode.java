@@ -27,7 +27,7 @@ import org.mvel2.integration.VariableResolverFactory;
  * <br/>
  * 参考代码如下所示:<br/>
  * <pre><code>
- *   public void produceBytecodeGet(MethodVisitor mv, String propertyName, VariableResolverFactory variableResolverFactory) {
+ *   public void produceByteCodeGet(MethodVisitor mv, String propertyName, VariableResolverFactory variableResolverFactory) {
  * mv.visitTypeInsn(CHECKCAST, "org/mvel/tests/main/res/SampleBean");
  * mv.visitLdcInsn(propertyName);
  * mv.visitMethodInsn(INVOKEVIRTUAL, "org/mvel/tests/main/res/SampleBean", "getProperty", "(Ljava/lang/String;)Ljava/lang/Object;");
@@ -35,10 +35,10 @@ import org.mvel2.integration.VariableResolverFactory;
  * </code></pre><br/>
  * 这个示例代码即在调用get时进行相应的对象检查，如果当前对象是一个sampleBean，则执行相应的方法
  */
-public interface ProducesBytecode {
+public interface ProducesByteCode {
     /** 在进行get调用时产生相应的字节码 */
-    void produceBytecodeGet(MethodVisitor mv, String propertyName, VariableResolverFactory factory);
+    void produceByteCodeGet(MethodVisitor mv, String propertyName, VariableResolverFactory factory);
 
     /** 在进行set调用时产生相应的字节码 */
-    void produceBytecodePut(MethodVisitor mv, String propertyName, VariableResolverFactory factory);
+    void produceByteCodeSut(MethodVisitor mv, String propertyName, VariableResolverFactory factory);
 }

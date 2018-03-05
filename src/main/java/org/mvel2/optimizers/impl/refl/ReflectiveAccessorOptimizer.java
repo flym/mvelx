@@ -357,9 +357,7 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
             }
             //如果变量解析器能够解析此变量，则使用变量解析器，变量解析器敢只有在first时才能解析，
             //如a.b中，只有a才可能在变量工厂中使用,b是不能使用的
-            else if(variableFactory != null && variableFactory.isResolveable(property)) {
-
-
+            else if(variableFactory != null && variableFactory.isResolvable(property)) {
                 //2种处理方式，一种是基于下标处理，另一种是基于属性直接映射处理
                 if(variableFactory.isIndexedFactory() && variableFactory.isTarget(property)) {
                     int idx;
@@ -763,7 +761,7 @@ public class ReflectiveAccessorOptimizer extends AbstractOptimizer implements Ac
     @SuppressWarnings({"unchecked"})
     private Object getMethod(Object ctx, String name, Object[] args, Class[] argTypes, ExecutableStatement[] es) throws Exception {
         //如果是起始调用，并且变量能够解析，则表示此变量是一个方法句柄类信息，则通过此方法句柄进行调用
-        if(first && variableFactory != null && variableFactory.isResolveable(name)) {
+        if(first && variableFactory != null && variableFactory.isResolvable(name)) {
             Object ptr = variableFactory.getVariableResolver(name).getValue();
             //变量为一个方法
             if(ptr instanceof Method) {

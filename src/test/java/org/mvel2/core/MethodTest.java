@@ -16,7 +16,7 @@ import java.util.Map;
  */
 public class MethodTest extends BaseTest {
 
-    private Object createCtx() {
+    private Base createCtx() {
         return new Base();
     }
 

@@ -37,7 +37,7 @@ public class IsDef extends ASTNode {
     public Object getReducedValueAccelerated(Object ctx, Object thisValue, VariableResolverFactory factory) {
         //先判断此变量名是否在解析上下文中是否存在.
         //否则判断当前类中是否有此字段或方法,即形成一个简单的当前对象方法或字段引用
-        return factory.isResolveable(nameCache) || (thisValue != null && getFieldOrAccessor(thisValue.getClass(), nameCache) != null);
+        return factory.isResolvable(nameCache) || (thisValue != null && getFieldOrAccessor(thisValue.getClass(), nameCache) != null);
     }
 
     /** isDef 返回类型为boolean */

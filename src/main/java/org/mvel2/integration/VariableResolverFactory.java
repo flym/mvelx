@@ -125,7 +125,7 @@ public interface VariableResolverFactory extends Serializable {
      * @param name - variable name
      * @return - boolean
      */
-    boolean isResolveable(String name);
+    boolean isResolvable(String name);
 
 
     /**

@@ -248,7 +248,7 @@ public class AbstractOptimizer extends AbstractParser {
 
     /** 当前捕获的属性名(字符串),即在刚才的处理过程中处理的字符串 */
     protected String capture() {
-        /**
+        /*
          * Trim off any whitespace.
          */
         return new String(expr, tkStart = trimRight(tkStart), trimLeft(cursor) - tkStart);

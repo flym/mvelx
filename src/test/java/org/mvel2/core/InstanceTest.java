@@ -42,5 +42,4 @@ public class InstanceTest {
     public void testMultiCreate() {
         MvelUtils.test("new java.text.SimpleDateFormat('yyyy').format(new java.util.Date(System.currentTimeMillis()))", null);
     }
-
 }

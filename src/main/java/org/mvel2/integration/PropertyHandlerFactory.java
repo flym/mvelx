@@ -45,7 +45,9 @@ public class PropertyHandlerFactory {
      * 此方法每次会级联查找，因此认为是有副作用的
      */
     public static boolean hasPropertyHandler(Class clazz) {
-        if(clazz == null) return false;
+        if(clazz == null) {
+            return false;
+        }
         if(!propertyHandlerClass.containsKey(clazz)) {
             Class clazzWalk = clazz;
             do{

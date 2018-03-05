@@ -18,12 +18,14 @@
 
 package org.mvel2.integration;
 
+import org.mvel2.optimizers.impl.asm.ProducesByteCode;
+
 /**
  * 用于描述在某些场景下，使用特定的属性处理器来处理set和get调用，而不是使用原生的处理方式
  * 比如在正常的调用中返回null或出错的情况下，就再通过相应的配置进行委托调用
  * This interface allows an external property handler to resolve a property against the provided context.
  *
- * @see org.mvel2.optimizers.impl.asm.ProducesBytecode
+ * @see ProducesByteCode
  */
 public interface PropertyHandler {
     /**

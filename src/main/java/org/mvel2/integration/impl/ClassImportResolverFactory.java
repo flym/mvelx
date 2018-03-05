@@ -90,7 +90,7 @@ public class ClassImportResolverFactory extends BaseVariableResolverFactory {
     }
 
     /** 通过import,类名引用，以及包引用来判定指定的变量名是否能被成功解析 */
-    public boolean isResolveable(String name) {
+    public boolean isResolvable(String name) {
         if(name == null) return false;
         if((imports != null && imports.containsKey(name)) || (dynImports != null && dynImports.containsKey(name))
                 || isNextResolveable(name)) {
@@ -113,7 +113,7 @@ public class ClassImportResolverFactory extends BaseVariableResolverFactory {
     @Override
     public VariableResolver getVariableResolver(String name) {
         //由3部分构建,静态引用,动态引用,以及委托工厂
-        if(isResolveable(name)) {
+        if(isResolvable(name)) {
             if(imports != null && imports.containsKey(name)) {
                 return new SimpleValueResolver(imports.get(name));
             } else if(dynImports != null && dynImports.containsKey(name)) {

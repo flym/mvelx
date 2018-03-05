@@ -152,7 +152,7 @@ public class Function extends ASTNode implements Safe {
         //执行即创建起整个函数,如果有name就加入到变量作用域中,同时返回其处理,以方便在后续处理
         PrototypalFunctionInstance instance = new PrototypalFunctionInstance(this, new MapVariableResolverFactory());
         if(name != null) {
-            if(!factory.isIndexedFactory() && factory.isResolveable(name))
+            if(!factory.isIndexedFactory() && factory.isResolvable(name))
                 throw new CompileException("duplicate function: " + name, expr, start);
 
             factory.createVariable(name, instance);

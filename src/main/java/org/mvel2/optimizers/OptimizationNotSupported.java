@@ -26,4 +26,8 @@ public class OptimizationNotSupported extends RuntimeException {
     public OptimizationNotSupported() {
         super();
     }
+
+    public OptimizationNotSupported(String message) {
+        super(message);
+    }
 }

@@ -35,16 +35,16 @@ public class ParseTools {
     public static final Class[] EMPTY_CLS_ARR = new Class[0];
 
     /** 处理构造函数或方法的参数信息 */
-    public static List<char[]> parseMethodOrConstructor(char[] parm) {
+    public static List<char[]> parseMethodOrConstructor(char[] param) {
         int start = -1;
-        for(int i = 0; i < parm.length; i++) {
-            if(parm[i] == '(') {
+        for(int i = 0; i < param.length; i++) {
+            if(param[i] == '(') {
                 start = ++i;
                 break;
             }
         }
         if(start != -1) {
-            return parseParameterList(parm, --start + 1, balancedCapture(parm, start, '(') - start - 1);
+            return parseParameterList(param, --start + 1, balancedCapture(param, start, '(') - start - 1);
         }
 
         return Collections.emptyList();
@@ -886,7 +886,7 @@ public class ParseTools {
                 return (Class) LITERALS.get(name);
             }
             //变量工厂可以处理的
-            else if(factory != null && factory.isResolveable(name)) {
+            else if(factory != null && factory.isResolvable(name)) {
                 return (Class) factory.getVariableResolver(name).getValue();
             }
             //上下文中引用的
@@ -1067,9 +1067,9 @@ public class ParseTools {
      * Follow our way up the class heirarchy until we find the physical target method.
      */
         for(Class cls : clazz.getInterfaces()) {
-            for(Method meth : cls.getMethods()) {
-                if(meth.getParameterTypes().length == 0 && name.equals(meth.getName())) {
-                    return meth;
+            for(Method m : cls.getMethods()) {
+                if(m.getParameterTypes().length == 0 && name.equals(m.getName())) {
+                    return m;
                 }
             }
         }

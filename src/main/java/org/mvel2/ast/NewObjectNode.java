@@ -189,7 +189,7 @@ public class NewObjectNode extends ASTNode {
                  * we have to attempt runtime resolution.
                  */
 
-                if(factory != null && factory.isResolveable(typeDescr.getClassName())) {
+                if(factory != null && factory.isResolvable(typeDescr.getClassName())) {
                     try{
                         //这里强行获取相应的变量并认为是类信息,后续有classCast判定
                         egressType = (Class) factory.getVariableResolver(typeDescr.getClassName()).getValue();

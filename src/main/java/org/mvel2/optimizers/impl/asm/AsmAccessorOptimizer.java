@@ -1,5 +1,9 @@
 package org.mvel2.optimizers.impl.asm;
 
+import com.google.common.base.Strings;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.mvel2.*;
 import org.mvel2.asm.*;
@@ -8,9 +12,7 @@ import org.mvel2.asm.commons.GeneratorAdapter;
 import org.mvel2.ast.FunctionInstance;
 import org.mvel2.ast.TypeDescriptor;
 import org.mvel2.compiler.*;
-import org.mvel2.integration.GlobalListenerFactory;
-import org.mvel2.integration.PropertyHandler;
-import org.mvel2.integration.VariableResolverFactory;
+import org.mvel2.integration.*;
 import org.mvel2.optimizers.AbstractOptimizer;
 import org.mvel2.optimizers.AccessorOptimizer;
 import org.mvel2.optimizers.OptimizationNotSupported;
@@ -22,44 +24,21 @@ import java.lang.reflect.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
-import static java.lang.String.valueOf;
-import static java.lang.Thread.currentThread;
-import static java.lang.reflect.Array.getLength;
-import static java.lang.reflect.Modifier.FINAL;
-import static java.lang.reflect.Modifier.STATIC;
-import static org.mvel2.DataConversion.canConvert;
-import static org.mvel2.DataConversion.convert;
 import static org.mvel2.asm.Opcodes.*;
-import static org.mvel2.asm.Type.*;
-import static org.mvel2.ast.TypeDescriptor.getClassReference;
-import static org.mvel2.integration.GlobalListenerFactory.hasGetListeners;
-import static org.mvel2.integration.GlobalListenerFactory.notifyGetListeners;
-import static org.mvel2.integration.PropertyHandlerFactory.*;
-import static org.mvel2.util.ArrayTools.findFirst;
-import static org.mvel2.util.ParseTools.*;
-import static org.mvel2.util.PropertyTools.getFieldOrAccessor;
-import static org.mvel2.util.PropertyTools.getFieldOrWriteAccessor;
-import static org.mvel2.util.ReflectionUtil.toNonPrimitiveArray;
-import static org.mvel2.util.ReflectionUtil.toNonPrimitiveType;
-import static org.mvel2.util.Varargs.normalizeArgsForVarArgs;
-import static org.mvel2.util.Varargs.paramTypeVarArgsSafe;
 
 
 /**
  * 实现基于asm字节码处理的优化器，通过直接分析字节码来达到执行的目的
  */
 @SuppressWarnings({"TypeParameterExplicitlyExtendsObject", "unchecked", "UnusedDeclaration"})
+@NoArgsConstructor
+@Slf4j
 public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorOptimizer {
-    private static final String MAP_IMPL = "java/util/HashMap";
-
-    private static String LIST_IMPL;
-    private static String NAMESPACE;
+    private static final String NAMESPACE = "org/mvel2/";
     private static final int OPCODES_VERSION = Opcodes.V1_8;
 
     private static final org.mvel2.asm.commons.Method METHOD_GET_VALUE = org.mvel2.asm.commons.Method.getMethod("Object getValue(Object, Object, org.mvel2.integration.VariableResolverFactory)");
@@ -67,23 +46,15 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
     private static final org.mvel2.asm.commons.Method METHOD_GET_KNOWN_EGRESS_TYPE = org.mvel2.asm.commons.Method.getMethod("Class getKnownEgressType()");
     private static final org.mvel2.asm.commons.Method METHOD_TO_STRING = org.mvel2.asm.commons.Method.getMethod("String toString()");
 
-    static {
-        String defaultNameSpace = System.getProperty("mvel2.namespace");
-        if(defaultNameSpace == null) {
-            NAMESPACE = "org/mvel2/";
-        } else {
-            NAMESPACE = defaultNameSpace;
-        }
+    private static final int ACCESSOR_LOCAL_IDX_CTX = 1;
+    private static final int ACCESSOR_LOCAL_IDX_EL_CTX = 2;
+    private static final int ACCESSOR_LOCAL_IDX_VARIABLE_FACTORY = 3;
+    private static final int ACCESSOR_LOCAL_IDX_SET_VALUE = 4;
 
-        String jitListImpl = System.getProperty("mvel2.jit.list_impl");
-        if(jitListImpl == null) {
-            LIST_IMPL = NAMESPACE + "util/FastList";
-        } else {
-            LIST_IMPL = jitListImpl;
-        }
-    }
+    private static final AtomicLong CLASS_NAME_POSTFIX = new AtomicLong(System.currentTimeMillis());
 
     private Object ctx;
+    /** 当前执行过程中的this对象引用 */
     private Object thisRef;
 
     private VariableResolverFactory variableFactory;
@@ -91,14 +62,19 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
     private static final Object[] EMPTY_ARGS = new Object[0];
     private static final Class[] EMPTY_CLASSES = new Class[0];
 
+    /** 表示当前处理属性刚开始(即处理位置在首位) */
     private boolean first = true;
+
     /** 相应的jit是否还没有初始化 */
     private boolean notInit = false;
+
     private boolean deferFinish = false;
     private boolean literal = false;
 
-    private boolean propNull = false;
-    private boolean methNull = false;
+    /** 是否生成属性访问的null值引用字段，此字段用于引用 {@link PropertyHandler} 对象 */
+    private boolean propertyNullField = false;
+    /** 是否生成方法访问的null值引用字段, 此字段用于引用 {@link PropertyHandler} 对象 */
+    private boolean methodNullField = false;
 
     private String className;
     private ClassWriter cw;
@@ -116,39 +92,15 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
     private int compileDepth = 0;
 
-    @SuppressWarnings({"StringBufferField"})
-    private StringAppender buildLog = new StringAppender();
-
-    public AsmAccessorOptimizer() {
-        //自动计算最大栈深和最大本地变量数
-        new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-    }
-
-    private AsmAccessorOptimizer(ClassWriter cw, MethodVisitor mv,
-                                 ArrayList<ExecutableStatement> compiledInputs, String className,
-                                 StringAppender buildLog, int compileDepth) {
-        this.cw = cw;
-//        this.mv = mv;
-        this.compiledInputs = compiledInputs;
-        this.className = className;
-        this.buildLog = buildLog;
-        this.compileDepth = compileDepth + 1;
-
-        notInit = true;
-        deferFinish = true;
-    }
+    @Setter
+    private StringAppender buildLog;
 
     /** jit初始化样板代码，即初始化类以及相应方法 */
     private void _initJit4GetValue() {
-        cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-
-        synchronized(Runtime.getRuntime()) {
-            cw.visit(OPCODES_VERSION, Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER, className = "ASMAccessorImpl_"
-                            + valueOf(cw.hashCode()).replaceAll("-", "_") + (System.currentTimeMillis() / 10) +
-                            ((int) (Math.random() * 100)),
-                    null, "java/lang/Object", new String[]{NAMESPACE + "compiler/Accessor"});
-        }
-
+        //新类名
+        className = generateNewAccessorClassName();
+        //新classWriter
+        cw = createNewAccessorClassWriter(className);
         //构造方法
         generateDefaultConstructor(cw);
 
@@ -158,14 +110,11 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
     }
 
     private void _initJit4SetValue() {
-        cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+        //新类名
+        className = generateNewAccessorClassName();
 
-        synchronized(Runtime.getRuntime()) {
-            cw.visit(OPCODES_VERSION, Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER, className = "ASMAccessorImpl_"
-                            + valueOf(cw.hashCode()).replaceAll("-", "_") + (System.currentTimeMillis() / 10) +
-                            ((int) (Math.random() * 100)),
-                    null, "java/lang/Object", new String[]{NAMESPACE + "compiler/Accessor"});
-        }
+        //新classWriter
+        cw = createNewAccessorClassWriter(className);
 
         //构造方法
         generateDefaultConstructor(cw);
@@ -203,6 +152,7 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         return compileAccessor();
     }
 
+    /** 进行相应的设置值访问器创建 */
     public AccessorNode optimizeSetAccessor(ParserContext pCtx, char[] property, int start, int offset, Object ctx,
                                             Object thisRef, VariableResolverFactory factory, boolean rootThisRef,
                                             Object value, Class ingressType) {
@@ -228,13 +178,14 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         int split = findLastUnion();
 
         if(split != -1) {
-            root = subset(property, 0, split);
+            root = ParseTools.subset(property, 0, split);
         }
 
         AccessorNode rootAccessor = null;
 
         _initJit4SetValue();
 
+        //有前半部分，则先处理前半部分，即前半部分可以理解为是一个 get操作
         if(root != null) {
             int _length = this.length;
             int _end = this.end;
@@ -242,7 +193,7 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
             this.length = end = (this.expr = root).length;
 
-            // run the compiler but don't finish building.
+            //设置标记，以避免提前处理结束
             deferFinish = true;
             notInit = true;
 
@@ -253,15 +204,17 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
             this.cursor = start + root.length + 1;
             this.length = _length - root.length - 1;
             this.end = this.cursor + this.length;
-        } else {
+        }
+        //无前半部分，则直接使用ctx对象
+        else {
             debug("ALOAD 1");
-            mv.visitVarInsn(ALOAD, 1);
+            mv.loadLocal(ACCESSOR_LOCAL_IDX_CTX);
         }
 
         try{
-
             skipWhitespace();
 
+            //集合类操作
             if(collection) {
                 int st = cursor;
                 whiteSpaceSkip();
@@ -276,85 +229,102 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
                 String ex = new String(expr, st, cursor - st).trim();
 
-                debug("CHECKCAST " + ctx.getClass().getName());
-                mv.visitTypeInsn(CHECKCAST, getInternalName(ctx.getClass()));
+                checkCast(ctx.getClass());
 
-
+                //map类调用
                 if(ctx instanceof Map) {
+                    //以下主要生成 map.put(k,v),map已经在栈中
                     //noinspection unchecked
-                    Object key = ((ExecutableStatement) ParseTools.subCompileExpression(ex.toCharArray(), pCtx)).getValue(ctx, variableFactory);
-                    ((Map) ctx).put(key, convert(value, returnType = verifier.analyze()));
+                    ExecutableStatement keyEs = (ExecutableStatement) ParseTools.subCompileExpression(ex.toCharArray(), pCtx);
+                    Object key = keyEs.getValue(ctx, variableFactory);
+                    ((Map) ctx).put(key, DataConversion.convert(value, returnType = verifier.analyze()));
 
-                    writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx));
-
+                    //key
+                    generateLiteralOrExecuteStatement(keyEs, null, null);
+                    //value
                     debug("ALOAD 4");
-                    mv.visitVarInsn(ALOAD, 4);
-
+                    mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
+                    //可能的值类型转换
                     if(value != null && returnType != value.getClass()) {
-                        dataConversion(returnType);
+                        generateDataConversionCode(returnType);
                         checkCast(returnType);
                     }
-
+                    //op map.put
                     debug("INVOKEINTERFACE Map.put");
-                    mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "put",
-                            "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true);
-
+                    mv.invokeInterface(Type.getType(Map.class), org.mvel2.asm.commons.Method.getMethod("Object put(Object,Object)"));
+                    //删除返回值
                     debug("POP");
-                    mv.visitInsn(POP);
+                    mv.pop();
 
+                    //返回参数值 与 org.mvel2.optimizers.impl.refl.nodes.MapAccessor 相一致
                     debug("ALOAD 4");
-                    mv.visitVarInsn(ALOAD, 4);
-                } else if(ctx instanceof List) {
+                    mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
+                }
+                //list类调用
+                else if(ctx instanceof List) {
+                    //以下主要生成 list.set(int,value),list已经在栈中
                     //noinspection unchecked
-                    Integer idx = (Integer) ((ExecutableStatement) ParseTools.subCompileExpression(ex.toCharArray(), pCtx)).getValue(ctx, variableFactory);
-                    ((List) ctx).set(idx, convert(value, returnType = verifier.analyze()));
+                    ExecutableStatement idxEs = (ExecutableStatement) ParseTools.subCompileExpression(ex.toCharArray(), pCtx);
+                    Integer idx = (Integer) idxEs.getValue(ctx, variableFactory);
+                    ((List) ctx).set(idx, DataConversion.convert(value, returnType = verifier.analyze()));
 
-                    writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx));
+                    //idx
+                    generateLiteralOrExecuteStatement(ParseTools.subCompileExpression(ex.toCharArray(), pCtx), null, null);
                     unwrapPrimitive(int.class);
-
+                    //value
                     debug("ALOAD 4");
-                    mv.visitVarInsn(ALOAD, 4);
-
+                    mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
+                    //可能的值类型转换
                     if(value != null && !value.getClass().isAssignableFrom(returnType)) {
-                        dataConversion(returnType);
+                        generateDataConversionCode(returnType);
                         checkCast(returnType);
                     }
-
+                    //op list.set
                     debug("INVOKEINTERFACE List.set");
-                    mv.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "set", "(ILjava/lang/Object;)Ljava/lang/Object;", true);
+                    mv.invokeInterface(Type.getType(List.class), org.mvel2.asm.commons.Method.getMethod("Object set(int,Object)"));
 
+                    //返回 set value
                     debug("ALOAD 4");
-                    mv.visitVarInsn(ALOAD, 4);
-                } else if(hasPropertyHandler(ctx.getClass())) {
-                    propHandlerByteCodePut(ex, ctx, ctx.getClass(), value);
-                } else if(ctx.getClass().isArray()) {
-                    Class type = getBaseComponentType(ctx.getClass());
+                    mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
+                }
+                //自定义属性类操作
+                else if(PropertyHandlerFactory.hasPropertyHandler(ctx.getClass())) {
+                    generatePhByteCode4Set(ex, ctx, ctx.getClass(), value);
+                }
+                //数组类操作
+                else if(ctx.getClass().isArray()) {
+                    //以下代码主要实现 arrays[i] = value arrays已经在栈中
+                    Class type = ParseTools.getBaseComponentType(ctx.getClass());
 
                     Object idx = ((ExecutableStatement) ParseTools.subCompileExpression(ex.toCharArray(), pCtx)).getValue(ctx, variableFactory);
 
-                    writeLiteralOrSubexpression(subCompileExpression(ex.toCharArray(), pCtx), int.class);
+                    //i
+                    generateLiteralOrExecuteStatement(ParseTools.subCompileExpression(ex.toCharArray(), pCtx), int.class, null);
+                    //非int类型，需要进行转换
                     if(!(idx instanceof Integer)) {
-                        dataConversion(Integer.class);
+                        generateDataConversionCode(Integer.class);
                         idx = DataConversion.convert(idx, Integer.class);
                         unwrapPrimitive(int.class);
                     }
 
+                    //value
                     debug("ALOAD 4");
-                    mv.visitVarInsn(ALOAD, 4);
-
+                    mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
+                    //value类型转换
                     if(type.isPrimitive()) {
                         unwrapPrimitive(type);
                     } else if(!type.equals(value.getClass())) {
-                        dataConversion(type);
+                        generateDataConversionCode(type);
                     }
-
+                    //op arrays[i] = value
                     arrayStore(type);
 
                     //noinspection unchecked
-                    Array.set(ctx, (Integer) idx, convert(value, type));
+                    Array.set(ctx, (Integer) idx, DataConversion.convert(value, type));
 
+                    //返回参数值
                     debug("ALOAD 4");
-                    mv.visitVarInsn(ALOAD, 4);
+                    mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
                 } else {
                     throw new PropertyAccessException("cannot bind to collection property: " + new String(expr)
                             + ": not a recognized collection type: " + ctx.getClass(), expr, start, pCtx);
@@ -373,178 +343,221 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
                 }
             }
 
-            String tk = new String(expr, this.cursor, this.length);
-            Member member = getFieldOrWriteAccessor(ctx.getClass(), tk, value == null ? null : ingressType);
+            //以下开始为属性类调用，即a.b=xx，这种调用方式
 
+            String tk = new String(expr, this.cursor, this.length);
+            Member member = PropertyTools.getFieldOrWriteAccessor(ctx.getClass(), tk, value == null ? null : ingressType);
+
+            //触发全局set/get监听器
             if(GlobalListenerFactory.hasSetListeners()) {
-                mv.visitVarInsn(ALOAD, 1);
-                mv.visitLdcInsn(tk);
-                mv.visitVarInsn(ALOAD, 3);
-                mv.visitVarInsn(ALOAD, 4);
-                mv.visitMethodInsn(INVOKESTATIC, NAMESPACE + "integration/GlobalListenerFactory",
-                        "notifySetListeners", "(Ljava/lang/Object;Ljava/lang/String;L" + NAMESPACE
-                                + "integration/VariableResolverFactory;Ljava/lang/Object;)V", false);
+                //调用 GlobalListenerFactory void notifySetListeners(Object target, String name, VariableResolverFactory variableFactory, Object value)
+                mv.loadLocal(ACCESSOR_LOCAL_IDX_CTX);
+                mv.push(tk);
+                mv.loadLocal(ACCESSOR_LOCAL_IDX_VARIABLE_FACTORY);
+                mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
+                mv.invokeStatic(Type.getType(GlobalListenerFactory.class), org.mvel2.asm.commons.Method.getMethod("void notifySetListeners(Object, String, org.mvel2.integration.VariableResolverFactory, Object)"));
 
                 GlobalListenerFactory.notifySetListeners(ctx, tk, variableFactory, value);
             }
 
+            //字段
             if(member instanceof Field) {
                 checkCast(ctx.getClass());
 
                 Field fld = (Field) member;
+                val fieldType = fld.getType();
 
-                Label jmp = null;
-                Label jmp2 = new Label();
+                //以下的主要代码为
+                /*
+                if(fieldType.isPrimitive()) {
+                    if(value == null)
+                        field = 0; //各种转换，可以
+                        return;
+                    else {
+                        field = value.unwrap();
+                    }
+                } else {
+                    value = convert(value,fieldType)
+                    field = value;
+                }
 
-                if(fld.getType().isPrimitive()) {
-                    debug("ASTORE 5");
-                    mv.visitVarInsn(ASTORE, 5);
+                */
+
+                Label primitiveAndNotNullLabel;
+                Label valueLoadLabel = new Label();
+
+                if(fieldType.isPrimitive()) {
+                    //current.field = value
 
                     debug("ALOAD 4");
-                    mv.visitVarInsn(ALOAD, 4);
+                    mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
 
+                    //以下逻辑实现
+                    /*
+                     if(value == null)
+                        value = 0
+                     else
+                        value = value.unwrap()
+                    */
+                    primitiveAndNotNullLabel = new Label();
+                    debug("IFNOTNULL jmp");
+                    mv.ifNonNull(primitiveAndNotNullLabel);
+
+                    //空值转0
+                    debug("ICONST_0");
+                    mv.push(0);
+                    debug("GOTO valueLoadLabel");
+                    mv.goTo(valueLoadLabel);
+
+                    debug("label:primitiveAndNotNull");
+                    mv.visitLabel(primitiveAndNotNullLabel);
+
+                    debug("ALOAD 4");
+                    mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
+                    //解包
+                    unwrapPrimitive(fld.getType());
+
+                    //以下为当前值处理
+
+                    //空值处理,避免设置时NPE
                     if(value == null) {
                         value = PropertyTools.getPrimitiveInitialValue(fld.getType());
                     }
-
-                    jmp = new Label();
-                    debug("IFNOTNULL jmp");
-                    mv.visitJumpInsn(IFNONNULL, jmp);
-
-                    debug("ALOAD 5");
-                    mv.visitVarInsn(ALOAD, 5);
-
-                    debug("ICONST_0");
-                    mv.visitInsn(ICONST_0);
-
-                    debug("PUTFIELD " + getInternalName(fld.getDeclaringClass()) + "." + tk);
-                    mv.visitFieldInsn(PUTFIELD, getInternalName(fld.getDeclaringClass()), tk, getDescriptor(fld.getType()));
-
-                    debug("GOTO jmp2");
-                    mv.visitJumpInsn(GOTO, jmp2);
-
-                    debug("jmp:");
-                    mv.visitLabel(jmp);
-
-                    debug("ALOAD 5");
-                    mv.visitVarInsn(ALOAD, 5);
-
-                    debug("ALOAD 4");
-                    mv.visitVarInsn(ALOAD, 4);
-
-                    unwrapPrimitive(fld.getType());
+                    //字段赋值
+                    fld.set(ctx, value);
                 } else {
                     debug("ALOAD 4");
-                    mv.visitVarInsn(ALOAD, 4);
+                    mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
+
+                    //潜在的类型转换
+                    if(value != null && !fld.getType().isAssignableFrom(value.getClass())) {
+                        if(!DataConversion.canConvert(fld.getType(), value.getClass())) {
+                            throw new CompileException("cannot convert type: "
+                                    + value.getClass() + ": to " + fld.getType(), expr, start);
+                        }
+
+                        generateDataConversionCode(fld.getType());
+                        //字段赋值
+                        fld.set(ctx, DataConversion.convert(value, fld.getType()));
+                    }
+
                     checkCast(fld.getType());
                 }
 
-                if(jmp == null && value != null && !fld.getType().isAssignableFrom(value.getClass())) {
-                    if(!canConvert(fld.getType(), value.getClass())) {
-                        throw new CompileException("cannot convert type: "
-                                + value.getClass() + ": to " + fld.getType(), expr, start);
-                    }
+                debug("label:valueLoadLabel:");
+                mv.visitLabel(valueLoadLabel);
 
-                    dataConversion(fld.getType());
-                    fld.set(ctx, convert(value, fld.getType()));
+                //op field = value
+                debug(() -> "PUTFIELD " + Type.getInternalName(fld.getDeclaringClass()) + "." + tk);
+                mv.putField(Type.getType(fld.getDeclaringClass()), tk, Type.getType(fld.getType()));
+
+                //返回参数值
+                debug("ALOAD 4");
+                mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
+            }
+            //方法
+            else if(member != null) {
+                checkCast(ctx.getClass());
+
+                Method method = (Method) member;
+
+                //以下主要逻辑为
+                /*
+                if(type not match) {
+                    value = convert(value)
+                    value = value.unwrap()
                 } else {
-                    fld.set(ctx, value);
+                    if(type is primitive) {
+                        if(value == null)
+                            value = 0
+                        else
+                            value = value.unwrap()
+                    }
                 }
 
-                debug("PUTFIELD " + getInternalName(fld.getDeclaringClass()) + "." + tk);
-                mv.visitFieldInsn(PUTFIELD, getInternalName(fld.getDeclaringClass()), tk, getDescriptor(fld.getType()));
-
-                debug("jmp2:");
-                mv.visitLabel(jmp2);
+                invokemethod(value)
+                 */
 
                 debug("ALOAD 4");
-                mv.visitVarInsn(ALOAD, 4);
+                mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
 
-            } else if(member != null) {
-                debug("CHECKCAST " + getInternalName(ctx.getClass()));
-                mv.visitTypeInsn(CHECKCAST, getInternalName(ctx.getClass()));
+                Class methodParamType = method.getParameterTypes()[0];
 
-                Method meth = (Method) member;
+                Label valueLoadLabel = new Label();
 
-                debug("ALOAD 4");
-                mv.visitVarInsn(ALOAD, 4);
-
-                Class targetType = meth.getParameterTypes()[0];
-
-                Label jmp;
-                Label jmp2 = new Label();
-                if(value != null && !targetType.isAssignableFrom(value.getClass())) {
-                    if(!canConvert(targetType, value.getClass())) {
+                if(value != null && !methodParamType.isAssignableFrom(value.getClass())) {
+                    if(!DataConversion.canConvert(methodParamType, value.getClass())) {
                         throw new CompileException("cannot convert type: "
-                                + value.getClass() + ": to " + meth.getParameterTypes()[0], expr, start);
+                                + value.getClass() + ": to " + method.getParameterTypes()[0], expr, start);
                     }
 
-                    dataConversion(toWrapperClass(targetType));
-                    if(targetType.isPrimitive()) {
-                        unwrapPrimitive(targetType);
+                    generateDataConversionCode(toWrapperClass(methodParamType));
+                    if(methodParamType.isPrimitive()) {
+                        unwrapPrimitive(methodParamType);
                     } else {
-                        checkCast(targetType);
+                        checkCast(methodParamType);
                     }
-                    meth.invoke(ctx, convert(value, meth.getParameterTypes()[0]));
+                    method.invoke(ctx, DataConversion.convert(value, method.getParameterTypes()[0]));
                 } else {
-                    if(targetType.isPrimitive()) {
-
+                    if(methodParamType.isPrimitive()) {
                         if(value == null) {
-                            value = PropertyTools.getPrimitiveInitialValue(targetType);
+                            value = PropertyTools.getPrimitiveInitialValue(methodParamType);
                         }
 
-                        jmp = new Label();
-                        debug("IFNOTNULL jmp");
-                        mv.visitJumpInsn(IFNONNULL, jmp);
-
+                        Label primitiveNotNullLabel = new Label();
+                        debug("IFNOTNULL primitiveNotNullLabel");
+                        mv.ifNonNull(primitiveNotNullLabel);
+                        //null转常量0
                         debug("ICONST_0");
-                        mv.visitInsn(ICONST_0);
+                        mv.push(0);
+                        debug("GOTO valueLoadLabel");
+                        mv.visitJumpInsn(GOTO, valueLoadLabel);
 
-                        debug("INVOKEVIRTUAL " + getInternalName(meth.getDeclaringClass()) + "." + meth.getName());
-                        mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(meth.getDeclaringClass()), meth.getName(),
-                                getMethodDescriptor(meth), false);
-
-                        debug("GOTO jmp2");
-                        mv.visitJumpInsn(GOTO, jmp2);
-
-                        debug("jmp:");
-                        mv.visitLabel(jmp);
-
+                        debug("label:primitiveNotNullLabel");
+                        mv.visitLabel(primitiveNotNullLabel);
+                        //加载参数值，并解馋
                         debug("ALOAD 4");
-                        mv.visitVarInsn(ALOAD, 4);
-
-                        unwrapPrimitive(targetType);
+                        mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
+                        unwrapPrimitive(methodParamType);
                     } else {
-                        checkCast(targetType);
+                        checkCast(methodParamType);
                     }
 
-                    meth.invoke(ctx, value);
+                    method.invoke(ctx, value);
                 }
 
-                debug("INVOKEVIRTUAL " + getInternalName(meth.getDeclaringClass()) + "." + meth.getName());
-                mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(meth.getDeclaringClass()), meth.getName(),
-                        getMethodDescriptor(meth), false);
+                debug("label:valueLoadLabel");
+                mv.visitLabel(valueLoadLabel);
 
-                debug("jmp2:");
-                mv.visitLabel(jmp2);
+                debug(() -> "INVOKEVIRTUAL " + Type.getInternalName(method.getDeclaringClass()) + "." + method.getName());
+                mv.invokeVirtual(Type.getType(method.getDeclaringClass()), org.mvel2.asm.commons.Method.getMethod(method));
 
+                //返回参数值
                 debug("ALOAD 4");
-                mv.visitVarInsn(ALOAD, 4);
-            } else if(ctx instanceof Map) {
-                debug("CHECKCAST " + getInternalName(ctx.getClass()));
-                mv.visitTypeInsn(CHECKCAST, getInternalName(ctx.getClass()));
+                mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
+            }
+            //支持map的.式调用，如map.a=b，这种调用方式
+            else if(ctx instanceof Map) {
+                checkCast(ctx.getClass());
 
+                //以下代码生成
+                // map.put("key",value) 其中map已在栈中，key为字符串
+
+                //key
                 debug("LDC '" + tk + "'");
-                mv.visitLdcInsn(tk);
-
+                mv.push(tk);
+                //value
                 debug("ALOAD 4");
-                mv.visitVarInsn(ALOAD, 4);
-
+                mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
+                //op put(k,v)
                 debug("INVOKEINTERFACE java/util/Map.put");
-                mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true);
+                mv.invokeInterface(Type.getType(Map.class), org.mvel2.asm.commons.Method.getMethod("Object put(Object,Object)"));
+                //丢弃返回值
+                mv.pop();
 
+                //返回参数值
                 debug("ALOAD 4");
-                mv.visitVarInsn(ALOAD, 4);
+                mv.loadLocal(ACCESSOR_LOCAL_IDX_SET_VALUE);
 
                 //noinspection unchecked
                 ((Map) ctx).put(tk, value);
@@ -556,6 +569,7 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
             throw new PropertyAccessException("could not access property", expr, start, e, pCtx);
         }
 
+        //最终结束
         try{
             deferFinish = false;
             notInit = false;
@@ -573,55 +587,62 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
             return;
         }
 
+        //因为accessor的返回类型统一为object，这里如果原返回类型为基本类型，这里进行包装处理
         if(returnType != null && returnType.isPrimitive()) {
-            //noinspection unchecked
             wrapPrimitive(returnType);
         }
 
+        //void返回类型
         if(returnType == void.class) {
             debug("ACONST_NULL");
-            mv.visitInsn(ACONST_NULL);
+            mv.visitInsn(Opcodes.ACONST_NULL);
         }
 
         debug("ARETURN");
-        mv.visitInsn(ARETURN);
+        mv.returnValue();
 
         debug("\n{METHOD STATS (maxstack=" + stacksize + ")}\n");
 
-
-        dumpAdvancedDebugging(); // dump advanced debugging if necessary
-
+        // 打印debug信息
+        dumpAdvancedDebugging();
 
         mv.visitMaxs(stacksize, maxlocals);
         mv.visitEnd();
+        //以上生成主要的set/getValue方法结束
+
+        //---生成 getKnownEgressType start
 
         mv = new GeneratorAdapter(ACC_PUBLIC, METHOD_GET_KNOWN_EGRESS_TYPE, cw.visitMethod(ACC_PUBLIC, METHOD_GET_KNOWN_EGRESS_TYPE.getName(), METHOD_GET_KNOWN_EGRESS_TYPE.getDescriptor(), null, null));
         mv.visitCode();
-        visitConstantClass(returnType);
+        pushClass(returnType == null ? Object.class : returnType);
         mv.visitInsn(ARETURN);
 
         mv.visitMaxs(1, 1);
         mv.visitEnd();
 
-        if(propNull) {
+        //---生成 getKnownEgressType end
+
+        //生成属性nullHandler
+        if(propertyNullField) {
             cw.visitField(ACC_PUBLIC, "nullPropertyHandler", "L" + NAMESPACE + "integration/PropertyHandler;", null, null).visitEnd();
         }
 
-        if(methNull) {
+        //生成方法nullHandler
+        if(methodNullField) {
             cw.visitField(ACC_PUBLIC, "nullMethodHandler", "L" + NAMESPACE + "integration/PropertyHandler;", null, null).visitEnd();
         }
 
-        buildInputs();
+        //带参构造器
+        generateInputsConstructor();
 
+        //在调试模式下将指令写入toString中
         if(buildLog != null && buildLog.length() != 0 && expr != null) {
             mv = new GeneratorAdapter(ACC_PUBLIC, METHOD_TO_STRING, cw.visitMethod(ACC_PUBLIC, METHOD_TO_STRING.getName(), METHOD_TO_STRING.getDescriptor(), null, null));
             mv.visitCode();
-            Label l0 = new Label();
-            mv.visitLabel(l0);
-            mv.visitLdcInsn(buildLog.toString() + "\n\n## { " + new String(expr) + " }");
-            mv.visitInsn(ARETURN);
-            Label l1 = new Label();
-            mv.visitLabel(l1);
+
+            mv.push(buildLog.toString() + "\n\n## { " + new String(expr) + " }");
+            mv.returnValue();
+
             mv.visitMaxs(1, 1);
             mv.visitEnd();
         }
@@ -629,15 +650,7 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         cw.visitEnd();
     }
 
-    /** 加载常量 class类型 */
-    private void visitConstantClass(Class<?> clazz) {
-        if(clazz == null) {
-            clazz = Object.class;
-        }
-
-        mv.push(Type.getType(clazz));
-    }
-
+    /** 实例化相应的访问器对象 */
     @SuppressWarnings("unchecked")
     private AccessorNode _initializeAccessor() throws Exception {
         if(deferFinish) {
@@ -652,22 +665,23 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         Object o;
 
         try{
+            //根据参数决定如何来实例化新对象
             if(compiledInputs.size() == 0) {
                 o = cls.newInstance();
             } else {
-                Class[] parms = new Class[compiledInputs.size()];
-                for(int i = 0; i < compiledInputs.size(); i++) {
-                    parms[i] = ExecutableStatement.class;
-                }
+                Class[] params = new Class[compiledInputs.size()];
+                Arrays.fill(params, ExecutableStatement.class);
+
                 ExecutableStatement[] executableStatements = compiledInputs.toArray(new ExecutableStatement[compiledInputs.size()]);
-                o = cls.getConstructor(parms).newInstance((Object[]) executableStatements);
+                o = cls.getConstructor(params).newInstance((Object[]) executableStatements);
             }
 
-            if(propNull) {
-                cls.getField("nullPropertyHandler").set(o, getNullPropertyHandler());
+            //填充相应的nullHandler
+            if(propertyNullField) {
+                cls.getField("nullPropertyHandler").set(o, PropertyHandlerFactory.getNullPropertyHandler());
             }
-            if(methNull) {
-                cls.getField("nullMethodHandler").set(o, getNullMethodHandler());
+            if(methodNullField) {
+                cls.getField("nullMethodHandler").set(o, PropertyHandlerFactory.getNullMethodHandler());
             }
 
         } catch(VerifyError e) {
@@ -690,18 +704,22 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         try{
             while(cursor < end) {
                 switch(nextSubToken()) {
+                    //属性访问
                     case BEAN:
                         curr = getBeanProperty(curr, capture());
                         break;
+                    //方法调用
                     case METH:
                         curr = getMethod(curr, capture());
                         break;
+                    //集合属性调用
                     case COL:
                         curr = getCollectionProperty(curr, capture());
                         break;
                 }
 
-                // check to see if a null safety is enabled on this property.
+                //在第一次解析整个表达式时，asm优化是不支持 nullSafe的，因为这种情况下调用提前返回，会导致后续的调用并没有生成相应的指令
+                //这里的异常信息会返回给astNode，从而转由reflect来重新解析并处理
                 if(fields == -1) {
                     if(curr == null) {
                         if(nullSafe) {
@@ -715,21 +733,21 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
                 first = false;
 
+                //这里当前对象并不为null，因此为支持nullSafe生成相应指令
                 if(nullSafe && cursor < end) {
-
                     debug("DUP");
-                    mv.visitInsn(DUP);
+                    mv.dup();
 
-                    Label j = new Label();
+                    Label endLabel = new Label();
 
                     debug("IFNONNULL : jump");
-                    mv.visitJumpInsn(IFNONNULL, j);
+                    mv.ifNonNull(endLabel);
 
                     debug("ARETURN");
-                    mv.visitInsn(ARETURN);
+                    mv.returnValue();
 
                     debug("LABEL:jump");
-                    mv.visitLabel(j);
+                    mv.visitLabel(endLabel);
                 }
             }
 
@@ -749,111 +767,111 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         }
     }
 
-    private Object getBeanPropertyAO(Object ctx, String property)
-            throws IllegalAccessException, InvocationTargetException {
-        if(ctx != null && hasPropertyHandler(ctx.getClass())) {
-            return propHandlerByteCode(property, ctx, ctx.getClass());
-        }
-        return getBeanProperty(ctx, property);
-    }
-
-    private Object getBeanProperty(Object ctx, String property)
-            throws IllegalAccessException, InvocationTargetException {
-
+    private Object getBeanProperty(Object ctx, String property) throws IllegalAccessException, InvocationTargetException {
         debug("\n  **  ENTER -> {bean: " + property + "; ctx=" + ctx + "}");
 
+        //如果当前类型为通用类型，或者相应的解析上下文并不是强类型的，则将当前类型设置为null，即非强类型处理
         if((pCtx == null ? currType : pCtx.getVarOrInputTypeOrNull(property)) == Object.class
                 && (pCtx != null && !pCtx.isStrongTyping())) {
             currType = null;
         }
 
+        //上一步返回的数据为基本类型，这里为获取相应的属性，因此将其转换为包装类型
         if(returnType != null && returnType.isPrimitive()) {
-            //noinspection unchecked
             wrapPrimitive(returnType);
         }
 
-
         boolean classRef = false;
 
-        Class<?> cls;
+        Class<?> currentCtxClass;
         if(ctx instanceof Class) {
-            if(MVEL.COMPILER_OPT_SUPPORT_JAVA_STYLE_CLASS_LITERALS
-                    && "class".equals(property)) {
+            //支持.class属性
+            if(MVEL.COMPILER_OPT_SUPPORT_JAVA_STYLE_CLASS_LITERALS && "class".equals(property)) {
                 pushClass((Class<?>) ctx);
 
                 return ctx;
             }
 
-            cls = (Class<?>) ctx;
+            currentCtxClass = (Class<?>) ctx;
             classRef = true;
         } else if(ctx != null) {
-            cls = ctx.getClass();
+            currentCtxClass = ctx.getClass();
         } else {
-            cls = null;
+            currentCtxClass = null;
         }
 
-        if(hasPropertyHandler(cls)) {
-            PropertyHandler prop = getPropertyHandler(cls);
-            if(prop instanceof ProducesBytecode) {
-                ((ProducesBytecode) prop).produceBytecodeGet(mv, property, variableFactory);
-                return prop.getProperty(property, ctx, variableFactory);
-            } else {
-                throw new RuntimeException("unable to compileShared: custom accessor does not support producing bytecode: "
-                        + prop.getClass().getName());
-            }
+        //支持自定义属性处理器
+        if(PropertyHandlerFactory.hasPropertyHandler(currentCtxClass)) {
+            return generatePhByteCode4Get(property, ctx, currentCtxClass);
         }
 
-        Member member = cls != null ? getFieldOrAccessor(cls, property) : null;
+        Member member = currentCtxClass != null ? PropertyTools.getFieldOrAccessor(currentCtxClass, property) : null;
 
+        //如果当前成员找到了，但当前处理对象为类类型，并且当前成员并不是静态成员，
+        //则表示找到的成员不能满足要求，则设置为null，避免错误处理
         if(member != null && classRef && (member.getModifiers() & Modifier.STATIC) == 0) {
             member = null;
         }
 
-        if(member != null && hasGetListeners()) {
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitLdcInsn(member.getName());
-            mv.visitVarInsn(ALOAD, 3);
-            mv.visitMethodInsn(INVOKESTATIC, NAMESPACE + "integration/GlobalListenerFactory", "notifyGetListeners",
-                    "(Ljava/lang/Object;Ljava/lang/String;L" + NAMESPACE + "integration/VariableResolverFactory;)V", false);
+        //支持全局监听器
+        if(member != null && GlobalListenerFactory.hasGetListeners()) {
+            //GlobalListenerFactory.notifyGetListeners(Object target, String name, VariableResolverFactory variableFactory)
+            mv.loadLocal(ACCESSOR_LOCAL_IDX_CTX);
+            mv.push(member.getName());
+            mv.loadLocal(ACCESSOR_LOCAL_IDX_VARIABLE_FACTORY);
 
-            notifyGetListeners(ctx, member.getName(), variableFactory);
+            mv.invokeStatic(Type.getType(GlobalListenerFactory.class), org.mvel2.asm.commons.Method.getMethod("void notifyGetListeners(Object, String, org.mvel2.integration.VariableResolverFactory)"));
+
+            GlobalListenerFactory.notifyGetListeners(ctx, member.getName(), variableFactory);
         }
 
         if(first) {
+            //支持首单词为this,即访问当前对象
             if("this".equals(property)) {
                 debug("ALOAD 2");
-                mv.visitVarInsn(ALOAD, 2);
+                mv.loadLocal(ACCESSOR_LOCAL_IDX_EL_CTX);
                 return thisRef;
-            } else if(variableFactory != null && variableFactory.isResolveable(property)) {
-
+            }
+            //如果变量解析器能够解析此变量，则使用变量解析器，变量解析器敢只有在first时才能解析，
+            //如a.b中，只有a才可能在变量工厂中使用,b是不能使用的
+            else if(variableFactory != null && variableFactory.isResolvable(property)) {
+                //2种处理方式，一种是基于下标处理，另一种是基于属性直接映射处理
                 if(variableFactory.isIndexedFactory() && variableFactory.isTarget(property)) {
                     int idx;
                     try{
-                        loadVariableByIndex(idx = variableFactory.variableIndexOf(property));
+                        generateLoadVariableByIdx(idx = variableFactory.variableIndexOf(property));
                     } catch(Exception e) {
                         throw new OptimizationFailure(property);
                     }
 
-
                     return variableFactory.getIndexedVariableResolver(idx).getValue();
-                } else {
+                }
+                //这里表示变量工厂能够直接解析此变量(并且不是基于下标处理的)，这里添加变量访问器，并直接访问此变量
+                else {
                     try{
-                        loadVariableByName(property);
+                        generateLoadVariableByName(property);
                     } catch(Exception e) {
                         throw new OptimizationFailure("critical error in JIT", e);
                     }
 
                     return variableFactory.getVariableResolver(property).getValue();
                 }
-            } else {
+            }
+            //其它情况下，因为要访问此属性，先把当前对象加入栈中
+            else {
                 debug("ALOAD 1");
-                mv.visitVarInsn(ALOAD, 1);
+                mv.loadLocal(ACCESSOR_LOCAL_IDX_CTX);
             }
         }
 
+        val thisMember = member;
+
+        //字段处理
         if(member instanceof Field) {
-            return optimizeFieldMethodProperty(ctx, property, cls, member);
-        } else if(member != null) {
+            return optimizeFieldProperty(ctx, property, currentCtxClass, member);
+        }
+        //这里即为相应的方法调用处理
+        else if(member != null) {
             Object o;
 
             if(first) {
@@ -862,34 +880,37 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
             }
 
             try{
+                //这里先调用相应的方法，如果这里失败，则直接跳到catch(IllegalAccessException)处，那么下面就不会生成错误的代码
                 o = ((Method) member).invoke(ctx, EMPTY_ARGS);
 
+                val memberClass = member.getDeclaringClass();
+
+                //上一步的结果对象强制类型检查
                 if(returnType != member.getDeclaringClass()) {
-                    debug("CHECKCAST " + getInternalName(member.getDeclaringClass()));
-                    mv.visitTypeInsn(CHECKCAST, getInternalName(member.getDeclaringClass()));
+                    checkCast(memberClass);
                 }
 
                 returnType = ((Method) member).getReturnType();
 
-                debug("INVOKEVIRTUAL " + member.getName() + ":" + returnType);
-                mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(member.getDeclaringClass()), member.getName(),
-                        getMethodDescriptor((Method) member), false);
+                //调用相应的方法 无参数
+                debug(() -> "INVOKEVIRTUAL " + thisMember.getName() + ":" + returnType);
+                mv.invokeVirtual(Type.getType(memberClass), org.mvel2.asm.commons.Method.getMethod((Method) member));
             } catch(IllegalAccessException e) {
-                Method iFaceMeth = determineActualTargetMethod((Method) member);
-                if(iFaceMeth == null) {
-                    throw new PropertyAccessException("could not access field: " + cls.getName() + "." + property, expr, st, e, pCtx);
+                //调用失败，说明方法查找出错，重新查找
+                Method interfaceMethod = ParseTools.determineActualTargetMethod((Method) member);
+                if(interfaceMethod == null) {
+                    throw new PropertyAccessException("could not access field: " + currentCtxClass.getName() + "." + property, expr, st, e, pCtx);
                 }
 
-                debug("CHECKCAST " + getInternalName(iFaceMeth.getDeclaringClass()));
-                mv.visitTypeInsn(CHECKCAST, getInternalName(iFaceMeth.getDeclaringClass()));
+                val interfaceMethodClass = interfaceMethod.getDeclaringClass();
+                checkCast(interfaceMethodClass);
 
-                returnType = iFaceMeth.getReturnType();
+                returnType = interfaceMethod.getReturnType();
 
-                debug("INVOKEINTERFACE " + member.getName() + ":" + returnType);
-                mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(iFaceMeth.getDeclaringClass()), member.getName(),
-                        getMethodDescriptor((Method) member), true);
+                debug(() -> "INVOKEINTERFACE " + thisMember.getName() + ":" + returnType);
+                mv.invokeInterface(Type.getType(interfaceMethodClass), org.mvel2.asm.commons.Method.getMethod(interfaceMethod));
 
-                o = iFaceMeth.invoke(ctx, EMPTY_ARGS);
+                o = interfaceMethod.invoke(ctx, EMPTY_ARGS);
             } catch(IllegalArgumentException e) {
                 if(member.getDeclaringClass().equals(ctx)) {
                     try{
@@ -904,39 +925,41 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
                 throw e;
             }
 
-            if(hasNullPropertyHandler()) {
+            //支持nullHandler
+            if(PropertyHandlerFactory.hasNullPropertyHandler()) {
                 if(o == null) {
-                    o = getNullPropertyHandler().getProperty(member.getName(), ctx, variableFactory);
+                    o = PropertyHandlerFactory.getNullPropertyHandler().getProperty(member.getName(), ctx, variableFactory);
                 }
-                writeOutNullHandler(member, 0);
+                generateNullPropertyHandler(member, NullPropertyHandlerType.FIELD);
             }
 
-            currType = toNonPrimitiveType(returnType);
+            currType = ReflectionUtil.toNonPrimitiveType(returnType);
             return o;
-        } else if(ctx instanceof Map && (((Map) ctx).containsKey(property) || nullSafe)) {
-            debug("CHECKCAST java/util/Map");
-            mv.visitTypeInsn(CHECKCAST, "java/util/Map");
+        }
+        //map属性获取的方式(前提是有此key或者是允许null安全),即如果map没有此属性，也仍然不能访问此值
+        else if(ctx instanceof Map && (((Map) ctx).containsKey(property) || nullSafe)) {
+            checkCast(Map.class);
 
             debug("LDC: \"" + property + "\"");
             mv.push(property);
 
             debug("INVOKEINTERFACE: get");
-            mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
-            return ((Map) ctx).get(property);
-        } else if(first && "this".equals(property)) {
-            debug("ALOAD 2");
-            mv.visitVarInsn(ALOAD, 2); // load the thisRef value.
+            mv.invokeInterface(Type.getType(Map.class), org.mvel2.asm.commons.Method.getMethod("Object get(Object)"));
 
-            return this.thisRef;
-        } else if("length".equals(property) && ctx != null && ctx.getClass().isArray()) {
+            return ((Map) ctx).get(property);
+        }
+        //读取数组长度的方式
+        else if("length".equals(property) && ctx != null && ctx.getClass().isArray()) {
             arrayCheckCast(ctx.getClass());
 
             debug("ARRAYLENGTH");
-            mv.visitInsn(ARRAYLENGTH);
+            mv.arrayLength();
 
             wrapPrimitive(int.class);
-            return getLength(ctx);
-        } else if(LITERALS.containsKey(property)) {
+            return Array.getLength(ctx);
+        }
+        //静态常量引用
+        else if(LITERALS.containsKey(property)) {
             Object lit = LITERALS.get(property);
 
             if(lit instanceof Class) {
@@ -945,24 +968,27 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
             return lit;
         } else {
+            //尝试获取静态方法引用，如果该属性即是一个静态方法，则直接返回此,即类.方法名的形式
             Object ts = tryStaticAccess();
 
             if(ts != null) {
+                //静态类
                 if(ts instanceof Class) {
                     pushClass((Class) ts);
                     return ts;
-                } else if(ts instanceof Method) {
+                }
+                //直接访问类的方法信息,因此生成相应的方法句柄
+                else if(ts instanceof Method) {
                     writeFunctionPointerStub(((Method) ts).getDeclaringClass(), (Method) ts);
                     return ts;
-                } else {
+                }
+                //直接访问类的字段
+                else {
                     Field f = (Field) ts;
-                    return optimizeFieldMethodProperty(ctx, property, cls, f);
+                    return optimizeFieldProperty(ctx, property, currentCtxClass, f);
                 }
             } else if(ctx instanceof Class) {
-                /*
-                 * This is our ugly support for function pointers.  This works but needs to be re-thought out at some
-                 * point.
-                 */
+                //这里与上面不同，上面是直接有类名，这里是只有方法名，如当前ctx为T 这里的属性名为 abc，则表示访问T.abc这个方法
                 Class c = (Class) ctx;
                 for(Method m : c.getMethods()) {
                     if(property.equals(m.getName())) {
@@ -971,14 +997,14 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
                     }
                 }
 
+                //这里最后认为是 T$abc这个内部类的引用，一般情况下这里不会到达，即这里只写一个abc，最后引用到T$abc这个内部类
                 try{
-                    Class subClass = findClass(variableFactory, c.getName() + "$" + property, pCtx);
+                    Class subClass = ParseTools.findClass(variableFactory, c.getName() + "$" + property, pCtx);
                     pushClass(subClass);
                     return subClass;
                 } catch(ClassNotFoundException cnfe) {
                     // fall through.
                 }
-
             }
 
             if(ctx == null) {
@@ -990,106 +1016,145 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         }
     }
 
-    private Object optimizeFieldMethodProperty(Object ctx, String property, Class<?> cls, Member member)
-            throws IllegalAccessException {
+    /** 针对字段的优化访问 */
+    private Object optimizeFieldProperty(Object ctx, String property, Class<?> cls, Member member) throws IllegalAccessException {
         Object o = ((Field) member).get(ctx);
 
-        if(((member.getModifiers() & STATIC) != 0)) {
-            // Check if the static field reference is a constant and a primitive.
-            if((member.getModifiers() & FINAL) != 0 && (o instanceof String || ((Field) member).getType().isPrimitive())) {
+        val fieldType = ((Field) member).getType();
+        returnType = fieldType;
+
+        //静态字段
+        if(Modifier.isStatic(member.getModifiers())) {
+            //静态常量优化，如果是常量，则直接使用const，避免反复调用
+            if(Modifier.isFinal(member.getModifiers()) && (o instanceof String || ((Field) member).getType().isPrimitive())) {
                 o = ((Field) member).get(null);
-                debug("LDC " + valueOf(o));
+                debug("LDC " + String.valueOf(o));
                 mv.visitLdcInsn(o);
+
+                //类型包装
                 if(o != null) {
                     wrapPrimitive(o.getClass());
                 }
 
-                if(hasNullPropertyHandler()) {
+                //支持null处理,这里为属性支持
+                if(PropertyHandlerFactory.hasNullPropertyHandler()) {
                     if(o == null) {
-                        o = getNullPropertyHandler().getProperty(member.getName(), ctx, variableFactory);
+                        o = PropertyHandlerFactory.getNullPropertyHandler().getProperty(member.getName(), ctx, variableFactory);
                     }
 
-                    writeOutNullHandler(member, 0);
+                    generateNullPropertyHandler(member, NullPropertyHandlerType.FIELD);
                 }
+
                 return o;
-            } else {
-                debug("GETSTATIC " + getDescriptor(member.getDeclaringClass()) + "."
-                        + member.getName() + "::" + getDescriptor(((Field) member).getType()));
-
-                mv.visitFieldInsn(GETSTATIC, getInternalName(member.getDeclaringClass()),
-                        member.getName(), getDescriptor(returnType = ((Field) member).getType()));
             }
-        } else {
-            debug("CHECKCAST " + getInternalName(cls));
-            mv.visitTypeInsn(CHECKCAST, getInternalName(cls));
+            //普通静态字段
+            else {
+                debug(() -> "GETSTATIC " + Type.getDescriptor(member.getDeclaringClass()) + "." + member.getName()
+                        + "::" + Type.getDescriptor(fieldType));
 
-            debug("GETFIELD " + property + ":" + getDescriptor(((Field) member).getType()));
-            mv.visitFieldInsn(GETFIELD, getInternalName(cls), property, getDescriptor(returnType = ((Field) member)
-                    .getType()));
+                mv.getStatic(Type.getType(member.getDeclaringClass()), member.getName(), Type.getType(fieldType));
+            }
+        }
+        //普通字段
+        else {
+            //当前对象强制类型检查
+            checkCast(cls);
+
+            debug(() -> "GETFIELD " + property + ":" + Type.getDescriptor(fieldType));
+            mv.getField(Type.getType(cls), property, Type.getType(fieldType));
         }
 
-        returnType = ((Field) member).getType();
-
-        if(hasNullPropertyHandler()) {
+        //支持null处理
+        if(PropertyHandlerFactory.hasNullPropertyHandler()) {
             if(o == null) {
-                o = getNullPropertyHandler().getProperty(member.getName(), ctx, variableFactory);
+                o = PropertyHandlerFactory.getNullPropertyHandler().getProperty(member.getName(), ctx, variableFactory);
             }
 
-            writeOutNullHandler(member, 0);
+            generateNullPropertyHandler(member, NullPropertyHandlerType.FIELD);
         }
 
-        currType = toNonPrimitiveType(returnType);
+        currType = ReflectionUtil.toNonPrimitiveType(returnType);
         return o;
     }
 
-
+    /** 生成获取指定方法的代码处理,即根据名字获取相应的方法 */
     private void writeFunctionPointerStub(Class c, Method m) {
+        val typeMethod = Type.getType(Method.class);
+        //以下的主要逻辑为
+        /*
+        Method[] methods = class.getMethods();
+        for(int i = 0; i < methods.length; i++) {
+            Method m = methods[i];
+            if(m.getName().equals(name)
+                return m;
+        }
+        return null;
+         */
+
+        //Method[] methods = class.getMethods(); 并存储在本地变量中
         pushClass(c);
+        mv.invokeVirtual(Type.getType(Class.class), org.mvel2.asm.commons.Method.getMethod("java.lang.reflect.Method[] getMethods()"));
+        int localIdxMethods = mv.newLocal(Type.getType(Method[].class));
+        mv.storeLocal(localIdxMethods);
 
-        mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getMethods", "()[Ljava/lang/reflect/Method;", false);
-        mv.visitVarInsn(ASTORE, 7);
-        mv.visitInsn(ICONST_0);
-        mv.visitVarInsn(ISTORE, 5);
-        mv.visitVarInsn(ALOAD, 7);
-        mv.visitInsn(ARRAYLENGTH);
-        mv.visitVarInsn(ISTORE, 6);
-        Label l1 = new Label();
-        mv.visitJumpInsn(GOTO, l1);
-        Label l2 = new Label();
-        mv.visitLabel(l2);
-        mv.visitVarInsn(ALOAD, 7);
-        mv.visitVarInsn(ILOAD, 5);
-        mv.visitInsn(AALOAD);
-        mv.visitVarInsn(ASTORE, 4);
-        Label l3 = new Label();
-        mv.visitLabel(l3);
-        mv.visitLdcInsn(m.getName());
+        //处理循环部分的判断变量声明部分 i, length 等
+        mv.push(0);
+        int localIdxI = mv.newLocal(Type.INT_TYPE);
+        mv.storeLocal(localIdxI);
+
+        mv.loadLocal(localIdxMethods);
+        mv.arrayLength();
+        int localIdxLength = mv.newLocal(Type.INT_TYPE);
+        mv.storeLocal(localIdxLength);
+
+        //处理循环判断部分，使用goto来完成循环处理
+
+        Label forStartLabel = new Label();
+        mv.visitJumpInsn(GOTO, forStartLabel);
+
+        //循环主体部分
+        Label bodyStartLabel = new Label();
+        mv.visitLabel(bodyStartLabel);
+
+        //Method m = methods[i];
+        mv.loadLocal(localIdxMethods);
+        mv.loadLocal(localIdxI);
+        mv.arrayLoad(typeMethod);
+        int localIdxMethod = mv.newLocal(typeMethod);
+        mv.storeLocal(localIdxMethod);
+
+        //name.equals(method.getName())
+        mv.push(m.getName());
+        mv.loadLocal(localIdxMethod);
+        mv.invokeVirtual(typeMethod, org.mvel2.asm.commons.Method.getMethod("String getName()"));
+        mv.invokeVirtual(Type.getType(String.class), org.mvel2.asm.commons.Method.getMethod("boolean equals(Object)"));
+
+
+        //if(false) 继续 else 返回
+        Label falseLabel = new Label();
+        mv.visitJumpInsn(IFEQ, falseLabel);
+
+        //返回数据
         mv.visitVarInsn(ALOAD, 4);
-        mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Method", "getName", "()Ljava/lang/String;", false);
-        mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
-        Label l4 = new Label();
-        mv.visitJumpInsn(IFEQ, l4);
-        Label l5 = new Label();
-        mv.visitLabel(l5);
-        mv.visitVarInsn(ALOAD, 4);
-        mv.visitInsn(ARETURN);
-        mv.visitLabel(l4);
-        mv.visitIincInsn(5, 1);
-        mv.visitLabel(l1);
-        mv.visitVarInsn(ILOAD, 5);
-        mv.visitVarInsn(ILOAD, 6);
-        mv.visitJumpInsn(IF_ICMPLT, l2);
-        Label l6 = new Label();
-        mv.visitLabel(l6);
+        mv.loadLocal(localIdxMethod);
+        mv.returnValue();
+
+        //i++, if(i < length) 就继续
+        mv.visitLabel(falseLabel);
+        mv.iinc(localIdxI, 1);
+        mv.visitLabel(forStartLabel);
+        mv.loadLocal(localIdxI);
+        mv.loadLocal(localIdxLength);
+        mv.ifICmp(GeneratorAdapter.LT, bodyStartLabel);
+
+        //退出循环，直接返回null
         mv.visitInsn(ACONST_NULL);
-        mv.visitInsn(ARETURN);
-
-        //   deferFinish = true;
+        mv.returnValue();
     }
 
-
-    private Object getCollectionProperty(Object ctx, String prop)
-            throws IllegalAccessException, InvocationTargetException {
+    /** 获取一个集合的值信息 */
+    private Object getCollectionProperty(Object ctx, String prop) throws IllegalAccessException, InvocationTargetException {
+        //集合前的属性信息，如 a.bc[2]，先拿到a.bc信息
         if(prop.trim().length() > 0) {
             ctx = getBeanProperty(ctx, prop);
             first = false;
@@ -1107,6 +1172,7 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
             throw new CompileException("unterminated '['", expr, st);
         }
 
+        //跳到相应的]结束符位置
         if(scanTo(']')) {
             throw new CompileException("unterminated '['", expr, st);
         }
@@ -1118,111 +1184,77 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         if(ctx == null) {
             return null;
         }
+
+        //如果是首解析，先加载当前对象至栈中，以便访问数据
         if(first) {
             debug("ALOAD 1");
-            mv.visitVarInsn(ALOAD, 1);
+            mv.loadLocal(ACCESSOR_LOCAL_IDX_CTX);
         }
 
-        ExecutableStatement compiled = (ExecutableStatement) subCompileExpression(tk.toCharArray(), pCtx);
+        ExecutableStatement compiled = (ExecutableStatement) ParseTools.subCompileExpression(tk.toCharArray(), pCtx);
         Object item = compiled.getValue(ctx, variableFactory);
 
         ++cursor;
 
+        //处理map访问的形式,如a[b]
         if(ctx instanceof Map) {
-            debug("CHECKCAST java/util/Map");
-            mv.visitTypeInsn(CHECKCAST, "java/util/Map");
+            //强制类型检查
+            checkCast(Map.class);
 
-            Class c = writeLiteralOrSubexpression(compiled);
+            //生成相应的执行单元代码
+            Class c = generateLiteralOrExecuteStatement(compiled, null, null);
             if(c != null && c.isPrimitive()) {
                 wrapPrimitive(c);
             }
 
             debug("INVOKEINTERFACE: get");
-            mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+            mv.invokeInterface(Type.getType(Map.class), org.mvel2.asm.commons.Method.getMethod("Object get(Object)"));
 
             return ((Map) ctx).get(item);
-        } else if(ctx instanceof List) {
-            debug("CHECKCAST java/util/List");
-            mv.visitTypeInsn(CHECKCAST, "java/util/List");
+        }
+        //处理list访问
+        else if(ctx instanceof List) {
+            checkCast(List.class);
 
-            writeLiteralOrSubexpression(compiled, int.class);
+            //预期的执行结果为int类型，因为是get(int)
+            generateLiteralOrExecuteStatement(compiled, int.class, null);
 
             debug("INVOKEINTERFACE: java/util/List.get");
-            mv.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "get", "(I)Ljava/lang/Object;", true);
+            mv.invokeInterface(Type.getType(List.class), org.mvel2.asm.commons.Method.getMethod("Object get(int)"));
 
-            return ((List) ctx).get(convert(item, Integer.class));
+            return ((List) ctx).get(DataConversion.convert(item, Integer.class));
+        }
+        //处理数组访问的形式
+        else if(ctx.getClass().isArray()) {
+            checkCast(ctx.getClass());
 
-        } else if(ctx.getClass().isArray()) {
-            debug("CHECKCAST " + getDescriptor(ctx.getClass()));
-            mv.visitTypeInsn(CHECKCAST, getDescriptor(ctx.getClass()));
+            generateLiteralOrExecuteStatement(compiled, int.class, item.getClass());
 
-            writeLiteralOrSubexpression(compiled, int.class, item.getClass());
+            Class cls = ParseTools.getBaseComponentType(ctx.getClass());
+            debug("XALOAD:" + cls);
+            mv.arrayLoad(Type.getType(cls));
 
-            Class cls = getBaseComponentType(ctx.getClass());
-            if(cls.isPrimitive()) {
-                if(cls == int.class) {
-                    debug("IALOAD");
-                    mv.visitInsn(IALOAD);
-                } else if(cls == char.class) {
-                    debug("CALOAD");
-                    mv.visitInsn(CALOAD);
-                } else if(cls == boolean.class) {
-                    debug("BALOAD");
-                    mv.visitInsn(BALOAD);
-                } else if(cls == double.class) {
-                    debug("DALOAD");
-                    mv.visitInsn(DALOAD);
-                } else if(cls == float.class) {
-                    debug("FALOAD");
-                    mv.visitInsn(FALOAD);
-                } else if(cls == short.class) {
-                    debug("SALOAD");
-                    mv.visitInsn(SALOAD);
-                } else if(cls == long.class) {
-                    debug("LALOAD");
-                    mv.visitInsn(LALOAD);
-                } else if(cls == byte.class) {
-                    debug("BALOAD");
-                    mv.visitInsn(BALOAD);
-                }
+            return Array.get(ctx, DataConversion.convert(item, Integer.class));
+        }
+        //处理字符串访问的形式
+        else if(ctx instanceof CharSequence) {
+            checkCast(CharSequence.class);
 
-                wrapPrimitive(cls);
-            } else {
-                debug("AALOAD");
-                mv.visitInsn(AALOAD);
-            }
+            generateLiteralOrExecuteStatement(compiled, int.class, null);
 
-            return Array.get(ctx, convert(item, Integer.class));
-        } else if(ctx instanceof CharSequence) {
-            debug("CHECKCAST java/lang/CharSequence");
-            mv.visitTypeInsn(CHECKCAST, "java/lang/CharSequence");
+            debug("INVOKEINTERFACE java/lang/CharSequence.charAt");
+            mv.invokeInterface(Type.getType(CharSequence.class), org.mvel2.asm.commons.Method.getMethod("char charAt(int)"));
 
-            if(item instanceof Integer) {
-                pushInt((Integer) item);
+            wrapPrimitive(char.class);
 
-                debug("INVOKEINTERFACE java/lang/CharSequence.charAt");
-                mv.visitMethodInsn(INVOKEINTERFACE, "java/lang/CharSequence", "charAt", "(I)C", true);
-
-                wrapPrimitive(char.class);
-
-                return ((CharSequence) ctx).charAt((Integer) item);
-            } else {
-                writeLiteralOrSubexpression(compiled, Integer.class);
-                unwrapPrimitive(int.class);
-
-                debug("INVOKEINTERFACE java/lang/CharSequence.charAt");
-                mv.visitMethodInsn(INVOKEINTERFACE, "java/lang/CharSequence", "charAt", "(I)C", true);
-
-                wrapPrimitive(char.class);
-
-                return ((CharSequence) ctx).charAt(convert(item, Integer.class));
-            }
-        } else {
+            return ((CharSequence) ctx).charAt(DataConversion.convert(item, Integer.class));
+        }
+        //最后认为是一个数组类型描述符,当前数组内的内容忽略
+        else {
             TypeDescriptor tDescr = new TypeDescriptor(expr, this.start, length, 0);
             if(tDescr.isArray()) {
                 try{
-                    Class cls = getClassReference((Class) ctx, tDescr, variableFactory, pCtx);
-                    //   rootNode = new StaticReferenceAccessor(cls);
+                    Class cls = TypeDescriptor.getClassReference((Class) ctx, tDescr, variableFactory, pCtx);
                     pushClass(cls);
                     return cls;
                 } catch(Exception e) {
@@ -1234,226 +1266,59 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         }
     }
 
-    private Object getCollectionPropertyAO(Object ctx, String prop)
-            throws IllegalAccessException, InvocationTargetException {
-        if(prop.length() > 0) {
-            ctx = getBeanProperty(ctx, prop);
-            first = false;
-        }
-
-        currType = null;
-
-        debug("\n  **  ENTER -> {collection:<<" + prop + ">>; ctx=" + ctx + "}");
-
-        int _start = ++cursor;
-
-        skipWhitespace();
-
-        if(cursor == end) {
-            throw new CompileException("unterminated '['", expr, st);
-        }
-
-        if(scanTo(']')) {
-            throw new CompileException("unterminated '['", expr, st);
-        }
-
-        String tk = new String(expr, _start, cursor - _start);
-
-        debug("{collection token:<<" + tk + ">>}");
-
-        if(ctx == null) {
-            return null;
-        }
-
-        ExecutableStatement compiled = (ExecutableStatement) subCompileExpression(tk.toCharArray());
-        Object item = compiled.getValue(ctx, variableFactory);
-
-        ++cursor;
-
-        if(ctx instanceof Map) {
-            if(hasPropertyHandler(Map.class)) {
-                return propHandlerByteCode(tk, ctx, Map.class);
-            } else {
-                if(first) {
-                    debug("ALOAD 1");
-                    mv.visitVarInsn(ALOAD, 1);
-                }
-
-                debug("CHECKCAST java/util/Map");
-                mv.visitTypeInsn(CHECKCAST, "java/util/Map");
-
-                Class c = writeLiteralOrSubexpression(compiled);
-                if(c != null && c.isPrimitive()) {
-                    wrapPrimitive(c);
-                }
-
-                debug("INVOKEINTERFACE: Map.get");
-                mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
-            }
-
-            return ((Map) ctx).get(item);
-        } else if(ctx instanceof List) {
-            if(hasPropertyHandler(List.class)) {
-                return propHandlerByteCode(tk, ctx, List.class);
-            } else {
-                if(first) {
-                    debug("ALOAD 1");
-                    mv.visitVarInsn(ALOAD, 1);
-                }
-
-                debug("CHECKCAST java/util/List");
-                mv.visitTypeInsn(CHECKCAST, "java/util/List");
-
-                writeLiteralOrSubexpression(compiled, int.class);
-
-                debug("INVOKEINTERFACE: java/util/List.get");
-                mv.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "get", "(I)Ljava/lang/Object;", true);
-
-                return ((List) ctx).get(convert(item, Integer.class));
-            }
-        } else if(ctx.getClass().isArray()) {
-            if(hasPropertyHandler(Array.class)) {
-                return propHandlerByteCode(tk, ctx, Array.class);
-            } else {
-                if(first) {
-                    debug("ALOAD 1");
-                    mv.visitVarInsn(ALOAD, 1);
-                }
-
-                debug("CHECKCAST " + getDescriptor(ctx.getClass()));
-                mv.visitTypeInsn(CHECKCAST, getDescriptor(ctx.getClass()));
-
-                writeLiteralOrSubexpression(compiled, int.class, item.getClass());
-
-                Class cls = getBaseComponentType(ctx.getClass());
-                if(cls.isPrimitive()) {
-                    if(cls == int.class) {
-                        debug("IALOAD");
-                        mv.visitInsn(IALOAD);
-                    } else if(cls == char.class) {
-                        debug("CALOAD");
-                        mv.visitInsn(CALOAD);
-                    } else if(cls == boolean.class) {
-                        debug("BALOAD");
-                        mv.visitInsn(BALOAD);
-                    } else if(cls == double.class) {
-                        debug("DALOAD");
-                        mv.visitInsn(DALOAD);
-                    } else if(cls == float.class) {
-                        debug("FALOAD");
-                        mv.visitInsn(FALOAD);
-                    } else if(cls == short.class) {
-                        debug("SALOAD");
-                        mv.visitInsn(SALOAD);
-                    } else if(cls == long.class) {
-                        debug("LALOAD");
-                        mv.visitInsn(LALOAD);
-                    } else if(cls == byte.class) {
-                        debug("BALOAD");
-                        mv.visitInsn(BALOAD);
-                    }
-
-                    wrapPrimitive(cls);
-                } else {
-                    debug("AALOAD");
-                    mv.visitInsn(AALOAD);
-                }
-
-                return Array.get(ctx, convert(item, Integer.class));
-            }
-        } else if(ctx instanceof CharSequence) {
-            if(hasPropertyHandler(CharSequence.class)) {
-                return propHandlerByteCode(tk, ctx, CharSequence.class);
-            } else {
-                if(first) {
-                    debug("ALOAD 1");
-                    mv.visitVarInsn(ALOAD, 1);
-                }
-
-                debug("CHECKCAST java/lang/CharSequence");
-                mv.visitTypeInsn(CHECKCAST, "java/lang/CharSequence");
-
-                if(item instanceof Integer) {
-                    pushInt((Integer) item);
-
-                    debug("INVOKEINTERFACE java/lang/CharSequence.charAt");
-                    mv.visitMethodInsn(INVOKEINTERFACE, "java/lang/CharSequence", "charAt", "(I)C", true);
-
-                    wrapPrimitive(char.class);
-
-                    return ((CharSequence) ctx).charAt((Integer) item);
-                } else {
-                    writeLiteralOrSubexpression(compiled, Integer.class);
-                    unwrapPrimitive(int.class);
-
-                    debug("INVOKEINTERFACE java/lang/CharSequence.charAt");
-                    mv.visitMethodInsn(INVOKEINTERFACE, "java/lang/CharSequence", "charAt", "(I)C", true);
-
-                    wrapPrimitive(char.class);
-
-                    return ((CharSequence) ctx).charAt(convert(item, Integer.class));
-                }
-            }
-        } else {
-            TypeDescriptor tDescr = new TypeDescriptor(expr, start, end - start, 0);
-            if(tDescr.isArray()) {
-                try{
-                    Class cls = getClassReference((Class) ctx, tDescr, variableFactory, pCtx);
-                    //   rootNode = new StaticReferenceAccessor(cls);
-                    pushClass(cls);
-                    return cls;
-                } catch(Exception e) {
-                    //fall through
-                }
-            }
-
-            throw new CompileException("illegal use of []: unknown type: " + ctx.getClass().getName(), expr, st);
-        }
-    }
-
-
+    /** 这里进行方法式访问和调用 */
     @SuppressWarnings({"unchecked"})
-    private Object getMethod(Object ctx, String name)
-            throws IllegalAccessException, InvocationTargetException {
+    private Object getMethod(Object ctx, String name) throws IllegalAccessException, InvocationTargetException {
         debug("\n  **  {method: " + name + "}");
 
         int st = cursor;
-        String tk = cursor != end && expr[cursor] == '(' && ((cursor = balancedCapture(expr, cursor, '(')) - st) > 1 ?
+        //tk表示捕获到()内的相应参数内容信息,如(a,b,c)就拿到a,b,c
+        String tk = cursor != end && expr[cursor] == '(' && ((cursor = ParseTools.balancedCapture(expr, cursor, '(')) - st) > 1 ?
                 new String(expr, st + 1, cursor - st - 1) : "";
         cursor++;
 
-        Object[] preConvArgs;
+        //已经根据调用方法的实际参数类型进行处理过的参数集(支持泛型处理)，主要用于处理常量值,以及用于生成指令
+        Object[] preConvertedArgs;
+        //当前实际调用时的参数信息(经过类型转换)
         Object[] args;
+        //参数类型
         Class[] argTypes;
-        ExecutableStatement[] es;
-        List<char[]> subtokens;
+        //分组的参数执行单元
+        ExecutableStatement[] subEss;
+        //分组的参数
+        List<char[]> subTokenList;
 
+        //空参数的情况
         if(tk.length() == 0) {
-            args = preConvArgs = ParseTools.EMPTY_OBJ_ARR;
+            args = preConvertedArgs = ParseTools.EMPTY_OBJ_ARR;
             argTypes = ParseTools.EMPTY_CLS_ARR;
-            es = null;
-            subtokens = null;
+            subEss = null;
+            subTokenList = null;
         } else {
-            subtokens = parseParameterList(tk.toCharArray(), 0, -1);
+            subTokenList = ParseTools.parseParameterList(tk.toCharArray(), 0, -1);
 
-            es = new ExecutableStatement[subtokens.size()];
-            args = new Object[subtokens.size()];
-            argTypes = new Class[subtokens.size()];
-            preConvArgs = new Object[es.length];
+            subEss = new ExecutableStatement[subTokenList.size()];
+            args = new Object[subTokenList.size()];
+            argTypes = new Class[subTokenList.size()];
+            preConvertedArgs = new Object[subTokenList.size()];
 
-            for(int i = 0; i < subtokens.size(); i++) {
-                debug("subtoken[" + i + "] { " + new String(subtokens.get(i)) + " }");
-                preConvArgs[i] = args[i] = (es[i] = (ExecutableStatement) subCompileExpression(subtokens.get(i), pCtx))
-                        .getValue(this.thisRef, this.thisRef, variableFactory);
+            //每个参数段分别编译并执行
+            for(int i = 0; i < subTokenList.size(); i++) {
+                debug("subtoken[" + i + "] { " + new String(subTokenList.get(i)) + " }");
+                subEss[i] = (ExecutableStatement) ParseTools.subCompileExpression(subTokenList.get(i), pCtx);
+                preConvertedArgs[i] = args[i] = subEss[i].getValue(this.thisRef, this.thisRef, variableFactory);
 
-                if(es[i].isExplicitCast()) {
-                    argTypes[i] = es[i].getKnownEgressType();
+                //如果这个参数是类似(Abc) xxx的调用，则使用转型之后的出参信息
+                if(subEss[i].isExplicitCast()) {
+                    argTypes[i] = subEss[i].getKnownEgressType();
                 }
             }
 
+            //设置参数类型信息
+            //这里为严格类型调用，因此准备相应的类型信息
             if(pCtx.isStrictTypeEnforcement()) {
                 for(int i = 0; i < args.length; i++) {
-                    argTypes[i] = es[i].getKnownEgressType();
+                    argTypes[i] = subEss[i].getKnownEgressType();
                 }
             } else {
                 for(int i = 0; i < args.length; i++) {
@@ -1461,93 +1326,94 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
                         continue;
                     }
 
-                    if(es[i].getKnownEgressType() == Object.class) {
+                    if(subEss[i].getKnownEgressType() == Object.class) {
                         argTypes[i] = args[i] == null ? null : args[i].getClass();
                     } else {
-                        argTypes[i] = es[i].getKnownEgressType();
+                        argTypes[i] = subEss[i].getKnownEgressType();
                     }
                 }
             }
         }
 
-        if(first && variableFactory != null && variableFactory.isResolveable(name)) {
+        //如果是起始调用，并且变量能够解析，则表示此变量是一个方法句柄类信息，则通过此方法句柄进行调用
+        if(first && variableFactory != null && variableFactory.isResolvable(name)) {
             Object ptr = variableFactory.getVariableResolver(name).getValue();
 
+            //变量为一个方法
             if(ptr instanceof Method) {
                 ctx = ((Method) ptr).getDeclaringClass();
                 name = ((Method) ptr).getName();
-            } else if(ptr instanceof MethodStub) {
+            }
+            //方法句柄
+            else if(ptr instanceof MethodStub) {
                 ctx = ((MethodStub) ptr).getClassReference();
                 name = ((MethodStub) ptr).getMethodName();
-            } else if(ptr instanceof FunctionInstance) {
+            }
+            //函数定义
+            else if(ptr instanceof FunctionInstance) {
 
-                if(es != null && es.length != 0) {
-                    compiledInputs.addAll(Arrays.asList(es));
+                //4 localIdxParams
+                int localIdxParams = mv.newLocal(Type.getType(Object[].class));
 
-                    pushInt(es.length);
+                //如果存在参数的情况，那么即会将这些参数在实例化对象 initAccessor时注入到字段中,并且按照参数顺序进行命名 p1,p2,p3这样
+                if(subEss != null && subEss.length != 0) {
+                    compiledInputs.addAll(Arrays.asList(subEss));
 
-                    debug("ANEWARRAY [" + es.length + "]");
-                    mv.visitTypeInsn(ANEWARRAY, "java/lang/Object");
+                    //准备为functionInstance中params设置值
 
+                    //Object[] params = new Object[length];
+                    pushInt(subEss.length);
+                    debug("ANEWARRAY [" + subEss.length + "]");
+                    mv.newArray(Type.getType(Object.class));
                     debug("ASTORE 4");
-                    mv.visitVarInsn(ASTORE, 4);
 
-                    for(int i = 0; i < es.length; i++) {
+                    mv.storeLocal(localIdxParams);
+
+                    //执行N次 params[i] = es.getValue(ctx,factory)
+                    for(int i = 0; i < subEss.length; i++) {
                         debug("ALOAD 4");
                         mv.visitVarInsn(ALOAD, 4);
                         pushInt(i);
-                        loadField(i);
 
-                        debug("ALOAD 1");
-                        mv.visitVarInsn(ALOAD, 1);
+                        //es.getValue(ctx,factory), 其中es使用位置字段代替
+                        generateEsGetValue(i);
 
-                        debug("ALOAD 3");
-                        mv.visitIntInsn(ALOAD, 3);
-
-                        debug("INVOKEINTERFACE ExecutableStatement.getValue");
-                        mv.visitMethodInsn(INVOKEINTERFACE, NAMESPACE + "compiler/ExecutableStatement", "getValue",
-                                "(Ljava/lang/Object;L" + NAMESPACE + "integration/VariableResolverFactory;)Ljava/lang/Object;", true);
-
-                        debug("AASTORE");
-                        mv.visitInsn(AASTORE);
+                        //params[i]=value
+                        arrayStore(Object.class);
                     }
-                } else {
+                }
+                //没有params参数值，则直接设置为null
+                else {
                     debug("ACONST_NULL");
                     mv.visitInsn(ACONST_NULL);
 
-                    debug("CHECKCAST java/lang/Object");
-                    mv.visitTypeInsn(CHECKCAST, "[Ljava/lang/Object;");
-
                     debug("ASTORE 4");
-                    mv.visitVarInsn(ASTORE, 4);
+                    mv.storeLocal(localIdxParams);
                 }
 
+                //生成相应的获取实际functionInstance的方法
                 if(variableFactory.isIndexedFactory() && variableFactory.isTarget(name)) {
-                    loadVariableByIndex(variableFactory.variableIndexOf(name));
+                    generateLoadVariableByIdx(variableFactory.variableIndexOf(name));
                 } else {
-                    loadVariableByName(name);
+                    generateLoadVariableByName(name);
                 }
 
                 checkCast(FunctionInstance.class);
 
+                //正式调用 functionInstance 的 public Object call(Object ctx, Object thisValue, VariableResolverFactory factory, Object[] parms)
+                //相应的functionInstance已经在栈中了,接下来准备相应的参数
+
                 debug("ALOAD 1");
-                mv.visitVarInsn(ALOAD, 1);
-
+                mv.loadLocal(ACCESSOR_LOCAL_IDX_CTX);
                 debug("ALOAD 2");
-                mv.visitVarInsn(ALOAD, 2);
-
+                mv.loadLocal(ACCESSOR_LOCAL_IDX_EL_CTX);
                 debug("ALOAD 3");
-                mv.visitVarInsn(ALOAD, 3);
-
+                mv.loadLocal(ACCESSOR_LOCAL_IDX_VARIABLE_FACTORY);
                 debug("ALOAD 4");
-                mv.visitVarInsn(ALOAD, 4);
+                mv.loadLocal(localIdxParams);
 
                 debug("INVOKEVIRTUAL Function.call");
-                mv.visitMethodInsn(INVOKEVIRTUAL,
-                        getInternalName(FunctionInstance.class),
-                        "call",
-                        "(Ljava/lang/Object;Ljava/lang/Object;L" + NAMESPACE
-                                + "integration/VariableResolverFactory;[Ljava/lang/Object;)Ljava/lang/Object;", false);
+                mv.invokeVirtual(Type.getType(FunctionInstance.class), org.mvel2.asm.commons.Method.getMethod("Object call(Object, Object, org.mvel2.integration.VariableResolverFactory, Object[])"));
 
                 return ((FunctionInstance) ptr).call(ctx, thisRef, variableFactory, args);
             } else {
@@ -1556,16 +1422,14 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
             }
 
             first = false;
-        } else if(returnType != null && returnType.isPrimitive()) {
+        }
+        //必要的包装处理
+        else if(returnType != null && returnType.isPrimitive()) {
             //noinspection unchecked
             wrapPrimitive(returnType);
         }
 
-        /*
-         * If the target object is an instance of java.lang.Class itself then do not
-         * adjust the Class scope target.
-         */
-
+        //当前上下文为静态类，即静态方法调用
         boolean classTarget = false;
         Class<?> cls = currType != null ? currType : ((classTarget = ctx instanceof Class) ? (Class<?>) ctx : ctx.getClass());
 
@@ -1574,67 +1438,74 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         Method m;
         Class[] parameterTypes = null;
 
-        /*
-         * Try to find an instance method from the class target.
-         */
-        if((m = getBestCandidate(argTypes, name, cls, cls.getMethods(), false, classTarget)) != null) {
+        //重新尝试获取最匹配的方法，并且重置相应的参数类型
+        if((m = ParseTools.getBestCandidate(argTypes, name, cls, cls.getMethods(), false, classTarget)) != null) {
             parameterTypes = m.getParameterTypes();
         }
 
+        //静态方法，并且还没找到方法，尝试查找Class类上的方法,如getClass等
         if(m == null && classTarget) {
-            /*
-             * If we didn't find anything, maybe we're looking for the actual java.lang.Class methods.
-             */
-            if((m = getBestCandidate(argTypes, name, cls, Class.class.getMethods(), false)) != null) {
+            if((m = ParseTools.getBestCandidate(argTypes, name, cls, Class.class.getMethods(), false)) != null) {
                 parameterTypes = m.getParameterTypes();
             }
         }
 
-        // If we didn't find anything and the declared class is different from the actual one try also with the actual one
+        //还没有找到，则从实际对象的类型上找，则不是从声明类型中查找
         if(m == null && cls != ctx.getClass() && !(ctx instanceof Class)) {
             cls = ctx.getClass();
-            if((m = getBestCandidate(argTypes, name, cls, cls.getMethods(), false, false)) != null) {
+            if((m = ParseTools.getBestCandidate(argTypes, name, cls, cls.getMethods(), false, false)) != null) {
                 parameterTypes = m.getParameterTypes();
             }
         }
 
-        if(es != null && m != null && m.isVarArgs() && (es.length != parameterTypes.length || !(es[es.length - 1] instanceof ExecutableAccessor))) {
+        //重新处理方法的参数信息，以支持泛型调用
+        if(subEss != null && m != null && m.isVarArgs() && (subEss.length != parameterTypes.length || !(subEss[subEss.length - 1] instanceof ExecutableAccessor))) {
             // normalize ExecutableStatement for varargs
+            //重置实际的各项数据
             ExecutableStatement[] varArgEs = new ExecutableStatement[parameterTypes.length];
             int varArgStart = parameterTypes.length - 1;
-            System.arraycopy(es, 0, varArgEs, 0, varArgStart);
+            System.arraycopy(subEss, 0, varArgEs, 0, varArgStart);
 
+            //将泛型参数的最后一个翻译为类似 new Object[]{a,b,c}这样的写法，然后，再重新进行编译为执行单元
             String varargsTypeName = parameterTypes[parameterTypes.length - 1].getComponentType().getName();
             String varArgExpr;
-            if("null".equals(tk)) { //if null is the token no need for wrapping
+            //优化为null的情况
+            if("null".equals(tk)) {
                 varArgExpr = tk;
             } else {
+                //生成new xx.X[]{a,b,c},这里跳过之前的参数位,如 a,b,c,d,e, 方法声明为(a,b,c,...d)，那么这里处理需要从下标3开始
                 StringBuilder sb = new StringBuilder("new ").append(varargsTypeName).append("[] {");
-                for(int i = varArgStart; i < subtokens.size(); i++) {
-                    sb.append(subtokens.get(i));
-                    if(i < subtokens.size() - 1) {
+                for(int i = varArgStart; i < subTokenList.size(); i++) {
+                    sb.append(subTokenList.get(i));
+                    if(i < subTokenList.size() - 1) {
                         sb.append(",");
                     }
                 }
                 varArgExpr = sb.append("}").toString();
             }
             char[] token = varArgExpr.toCharArray();
-            varArgEs[varArgStart] = ((ExecutableStatement) subCompileExpression(token, pCtx));
-            es = varArgEs;
+            varArgEs[varArgStart] = ((ExecutableStatement) ParseTools.subCompileExpression(token, pCtx));
+            //重新设定参数集
+            subEss = varArgEs;
 
-            if(preConvArgs.length == parameterTypes.length - 1) {
+            //处理声明为(a,...b)，但实际传入为(a)的情况，这种相当于没有传递泛型参数，这里进行补充上参数信息,补充为空数组
+            //上面处理的执行单元，这里处理的是实际的参数值信息
+            if(preConvertedArgs.length == parameterTypes.length - 1) {
                 // empty vararg
-                Object[] preConvArgsForVarArg = new Object[parameterTypes.length];
-                System.arraycopy(preConvArgs, 0, preConvArgsForVarArg, 0, preConvArgs.length);
-                preConvArgsForVarArg[parameterTypes.length - 1] = Array.newInstance(parameterTypes[parameterTypes.length - 1].getComponentType(), 0);
-                preConvArgs = preConvArgsForVarArg;
+                Object[] preConvertedArgsForVarArg = new Object[parameterTypes.length];
+                System.arraycopy(preConvertedArgs, 0, preConvertedArgsForVarArg, 0, preConvertedArgs.length);
+                preConvertedArgsForVarArg[parameterTypes.length - 1] = Array.newInstance(parameterTypes[parameterTypes.length - 1].getComponentType(), 0);
+                preConvertedArgs = preConvertedArgsForVarArg;
             }
         }
 
+        //相应的参数下标数从原字段起始位置开始，可以认为这里不会占用原有的某些字段下标位置
         int inputsOffset = compiledInputs.size();
 
-        if(es != null) {
-            for(ExecutableStatement e : es) {
+        if(subEss != null) {
+            for(ExecutableStatement e : subEss) {
+                //跳过常量，不会为常量生成相应的字段位,并且此部分在执行时是直接pushConstant，不会再调用语句
+                //如 a,3,b，会生成2个字段 p1,p2,p1对应a, p2对应b,然后，执行时为 getField(p1),const(3),getField(p2)
                 if(e instanceof ExecutableLiteral) {
                     continue;
                 }
@@ -1643,12 +1514,25 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
             }
         }
 
+        //首次调用，调用方法需要 实例对象，因此加载 实例
         if(first) {
             debug("ALOAD 1 (D) ");
-            mv.visitVarInsn(ALOAD, 1);
+            mv.loadLocal(ACCESSOR_LOCAL_IDX_CTX);
         }
 
         if(m == null) {
+            //支持特殊的size调用，如int[].size()这种写法
+            if("size".equals(name) && args.length == 0 && cls.isArray()) {
+                arrayCheckCast(cls);
+
+                debug("ARRAYLENGTH");
+                mv.arrayLength();
+
+                wrapPrimitive(int.class);
+                return Array.getLength(ctx);
+            }
+
+            //直接出错，throw异常
             StringAppender errorBuild = new StringAppender();
 
             if(parameterTypes != null) {
@@ -1660,30 +1544,21 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
                 }
             }
 
-            if("size".equals(name) && args.length == 0 && cls.isArray()) {
-                arrayCheckCast(cls);
-
-                debug("ARRAYLENGTH");
-                mv.visitInsn(ARRAYLENGTH);
-
-                wrapPrimitive(int.class);
-                return getLength(ctx);
-            }
-
             throw new CompileException("unable to resolve method: " + cls.getName() + "."
                     + name + "(" + errorBuild.toString() + ") [arglength=" + args.length + "]", expr, st);
         } else {
-            m = getWidenedTarget(m);
+            m = ParseTools.getWidenedTarget(m);
 
-            if(es != null) {
+            //当前调用参数类型转换处理
+            if(subEss != null) {
                 ExecutableStatement cExpr;
-                for(int i = 0; i < es.length; i++) {
-                    if((cExpr = es[i]).getKnownIngressType() == null) {
+                for(int i = 0; i < subEss.length; i++) {
+                    if((cExpr = subEss[i]).getKnownIngressType() == null) {
                         cExpr.setKnownIngressType(parameterTypes[i]);
                         cExpr.computeTypeConversionRule();
                     }
                     if(!cExpr.isConvertableIngressEgress() && i < args.length) {
-                        args[i] = convert(args[i], paramTypeVarArgsSafe(parameterTypes, i, m.isVarArgs()));
+                        args[i] = DataConversion.convert(args[i], Varargs.paramTypeVarArgsSafe(parameterTypes, i, m.isVarArgs()));
                     }
                 }
             } else {
@@ -1691,66 +1566,77 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
                  * Coerce any types if required.
                  */
                 for(int i = 0; i < args.length; i++) {
-                    args[i] = convert(args[i], paramTypeVarArgsSafe(parameterTypes, i, m.isVarArgs()));
+                    args[i] = DataConversion.convert(args[i], Varargs.paramTypeVarArgsSafe(parameterTypes, i, m.isVarArgs()));
                 }
             }
 
+            //准备生成相应的代码指令
+
+            //无参方法
             if(m.getParameterTypes().length == 0) {
-                if((m.getModifiers() & STATIC) != 0) {
+                val typeMethod = m.getDeclaringClass();
+                //静态方法
+                if(Modifier.isStatic(m.getModifiers())) {
                     debug("INVOKESTATIC " + m.getName());
-                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(m.getDeclaringClass()), m.getName(), getMethodDescriptor(m), false);
+                    mv.invokeStatic(Type.getType(typeMethod), org.mvel2.asm.commons.Method.getMethod(m));
                 } else {
-                    debug("CHECKCAST " + getInternalName(m.getDeclaringClass()));
-                    mv.visitTypeInsn(CHECKCAST, getInternalName(m.getDeclaringClass()));
+                    checkCast(typeMethod);
 
-                    if(m.getDeclaringClass().isInterface()) {
+                    if(typeMethod.isInterface()) {
                         debug("INVOKEINTERFACE " + m.getName());
-                        mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(m.getDeclaringClass()), m.getName(),
-                                getMethodDescriptor(m), true);
-
+                        mv.invokeInterface(Type.getType(typeMethod), org.mvel2.asm.commons.Method.getMethod(m));
                     } else {
                         debug("INVOKEVIRTUAL " + m.getName());
-                        mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(m.getDeclaringClass()), m.getName(),
-                                getMethodDescriptor(m), false);
+                        mv.invokeVirtual(Type.getType(typeMethod), org.mvel2.asm.commons.Method.getMethod(m));
                     }
                 }
 
                 returnType = m.getReturnType();
 
                 stacksize++;
-            } else {
-                if((m.getModifiers() & STATIC) == 0) {
-                    debug("CHECKCAST " + getInternalName(cls));
-                    mv.visitTypeInsn(CHECKCAST, getInternalName(cls));
+            }
+            //有参方法
+            else {
+                //强制类型检查
+                if(!Modifier.isStatic(m.getModifiers())) {
+                    checkCast(cls);
                 }
 
-                Class<?> aClass = m.getParameterTypes()[m.getParameterTypes().length - 1];
+                Class<?> lastParamClass = m.getParameterTypes()[m.getParameterTypes().length - 1];
+                //修正指令单元比参数长度少的问题，即泛型参数少1个的问题
                 if(m.isVarArgs()) {
-                    if(es == null || es.length == (m.getParameterTypes().length - 1)) {
+                    if(subEss == null || subEss.length == (m.getParameterTypes().length - 1)) {
                         ExecutableStatement[] executableStatements = new ExecutableStatement[m.getParameterTypes().length];
-                        if(es != null) {
-                            System.arraycopy(es, 0, executableStatements, 0, es.length);
+                        if(subEss != null) {
+                            System.arraycopy(subEss, 0, executableStatements, 0, subEss.length);
                         }
-                        executableStatements[executableStatements.length - 1] = new ExecutableLiteral(Array.newInstance(aClass, 0));
-                        es = executableStatements;
+                        executableStatements[executableStatements.length - 1] = new ExecutableLiteral(Array.newInstance(lastParamClass, 0));
+                        subEss = executableStatements;
                     }
                 }
 
-                for(int i = 0; es != null && i < es.length; i++) {
-                    if(es[i] instanceof ExecutableLiteral) {
-                        ExecutableLiteral literal = (ExecutableLiteral) es[i];
+                for(int i = 0; subEss != null && i < subEss.length; i++) {
+                    //处理常量,常量直接生成常量代码
+                    if(subEss[i] instanceof ExecutableLiteral) {
+                        ExecutableLiteral literal = (ExecutableLiteral) subEss[i];
 
                         if(literal.getLiteral() == null) {
                             debug("ICONST_NULL");
                             mv.visitInsn(ACONST_NULL);
                             continue;
-                        } else if(parameterTypes[i] == int.class && literal.intOptimized()) {
+                        }
+                        //整数
+                        else if(parameterTypes[i] == int.class && literal.intOptimized()) {
                             pushInt(literal.getInteger32());
                             continue;
-                        } else if(parameterTypes[i] == int.class && preConvArgs[i] instanceof Integer) {
-                            pushInt((Integer) preConvArgs[i]);
+                        }
+                        //整数包装类型
+                        else if(parameterTypes[i] == int.class && preConvertedArgs[i] instanceof Integer) {
+                            pushInt((Integer) preConvertedArgs[i]);
                             continue;
-                        } else if(parameterTypes[i] == boolean.class) {
+                        }
+                        //bool值处理
+                        else if(parameterTypes[i] == boolean.class) {
                             boolean bool = DataConversion.convert(literal.getLiteral(), Boolean.class);
                             debug(bool ? "ICONST_1" : "ICONST_0");
                             mv.visitInsn(bool ? ICONST_1 : ICONST_0);
@@ -1759,7 +1645,7 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
                             Object lit = literal.getLiteral();
 
                             if(parameterTypes[i] == Object.class) {
-                                if(isPrimitiveWrapper(lit.getClass())) {
+                                if(ParseTools.isPrimitiveWrapper(lit.getClass())) {
                                     if(lit.getClass() == Integer.class) {
                                         pushInt((Integer) lit);
                                     } else {
@@ -1771,18 +1657,22 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
                                 } else if(lit instanceof String) {
                                     mv.visitLdcInsn(lit);
                                     checkCast(Object.class);
+                                } else {
+                                    log.warn("不支持的常量类型，声明为object,但不能放入常量池。实际类型:{}", lit.getClass());
+                                    throw new OptimizationNotSupported();
                                 }
                                 continue;
-                            } else if(canConvert(parameterTypes[i], lit.getClass())) {
-                                Object c = convert(lit, parameterTypes[i]);
+                            }
+                            //声明不为object,进行类型转换处理
+                            else if(DataConversion.canConvert(parameterTypes[i], lit.getClass())) {
+                                Object c = DataConversion.convert(lit, parameterTypes[i]);
                                 if(c instanceof Class) {
                                     pushClass((Class) c);
                                 } else {
                                     debug("LDC " + lit + " (" + lit.getClass().getName() + ")");
 
-                                    mv.visitLdcInsn(convert(lit, parameterTypes[i]));
-
-                                    if(isPrimitiveWrapper(parameterTypes[i])) {
+                                    mv.visitLdcInsn(c);
+                                    if(ParseTools.isPrimitiveWrapper(parameterTypes[i])) {
                                         wrapPrimitive(lit.getClass());
                                     }
                                 }
@@ -1793,75 +1683,69 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
                         }
                     }
 
-                    debug("ALOAD 0");
-                    mv.visitVarInsn(ALOAD, 0);
+                    //以下进行非常量的参数调用及解析，生成相应的代码
 
-                    debug("GETFIELD p" + inputsOffset);
-                    mv.visitFieldInsn(GETFIELD, className, "p" + inputsOffset, "L" + NAMESPACE + "compiler/ExecutableStatement;");
+                    //以下生成相应的 ExecutableStatement Object getValue(Object staticContext, VariableResolverFactory factory);的调用代码
+                    //因为相应的参数单元已经被放到字段中，因此直接获取字段即可
+
+                    //获取 es
+                    generateEsGetValue(inputsOffset);
 
                     inputsOffset++;
 
-                    debug("ALOAD 2");
-                    mv.visitVarInsn(ALOAD, 2);
+                    //参数转换，已转换为正确的声明类型
 
-                    debug("ALOAD 3");
-                    mv.visitVarInsn(ALOAD, 3);
-
-                    debug("INVOKEINTERFACE ExecutableStatement.getValue");
-                    mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(ExecutableStatement.class), "getValue",
-                            "(Ljava/lang/Object;L" + NAMESPACE + "integration/VariableResolverFactory;)Ljava/lang/Object;", true);
-
+                    //参数转换为基本类型
                     if(parameterTypes[i].isPrimitive()) {
-                        if(preConvArgs[i] == null ||
-                                (parameterTypes[i] != String.class &&
-                                        !parameterTypes[i].isAssignableFrom(preConvArgs[i].getClass()))) {
-
-                            pushClass(toWrapperClass(parameterTypes[i]));
-
-                            debug("INVOKESTATIC DataConversion.convert");
-                            mv.visitMethodInsn(INVOKESTATIC, NAMESPACE + "DataConversion", "convert",
-                                    "(Ljava/lang/Object;Ljava/lang/Class;)Ljava/lang/Object;", false);
+                        //以下的代码，如果原值为null，以进行强转，以在运行时产生 NPE 异常
+                        //因为是基本类型，因为转换时要先转为包装类型，再解包
+                        if(preConvertedArgs[i] == null || !parameterTypes[i].isAssignableFrom(preConvertedArgs[i].getClass())) {
+                            generateDataConversionCode(toWrapperClass(parameterTypes[i]));
                         }
 
                         unwrapPrimitive(parameterTypes[i]);
-                    } else if(preConvArgs[i] == null ||
-                            (parameterTypes[i] != String.class &&
-                                    !parameterTypes[i].isAssignableFrom(preConvArgs[i].getClass()))) {
+                    }
+                    //非基本类型转换,非基本类型转换时，null直接转换成功
+                    else if(preConvertedArgs[i] == null ||
+                            (parameterTypes[i] != String.class && !parameterTypes[i].isAssignableFrom(preConvertedArgs[i].getClass()))) {
+                        generateDataConversionCode(parameterTypes[i]);
 
-                        pushClass(parameterTypes[i]);
-
-                        debug("INVOKESTATIC DataConversion.convert");
-                        mv.visitMethodInsn(INVOKESTATIC, NAMESPACE + "DataConversion", "convert",
-                                "(Ljava/lang/Object;Ljava/lang/Class;)Ljava/lang/Object;", false);
-
-                        debug("CHECKCAST " + getInternalName(parameterTypes[i]));
-                        mv.visitTypeInsn(CHECKCAST, getInternalName(parameterTypes[i]));
-                    } else if(parameterTypes[i] == String.class) {
+                        //转换之后，再强行类型检查
+                        checkCast(parameterTypes[i]);
+                    }
+                    //参数为字符串，则直接String.valueOf即可
+                    // 并且这里的当前参数不会为null，避免了 valueOf为 字符串 "null" 的问题
+                    else if(parameterTypes[i] == String.class) {
                         debug("<<<DYNAMIC TYPE OPTIMIZATION STRING>>");
-                        mv.visitMethodInsn(INVOKESTATIC, "java/lang/String", "valueOf",
-                                "(Ljava/lang/Object;)Ljava/lang/String;", false);
-                    } else {
+                        mv.invokeStatic(Type.getType(String.class), org.mvel2.asm.commons.Method.getMethod("String valueOf(Object)"));
+                    }
+                    //其它情况，强制cast,以在类型不正确时直接throw castException
+                    else {
                         debug("<<<DYNAMIC TYPING BYPASS>>>");
-                        debug("<<<OPT. JUSTIFICATION " + parameterTypes[i] + "=" + preConvArgs[i].getClass() + ">>>");
+                        debug("<<<OPT. JUSTIFICATION " + parameterTypes[i] + "=" + preConvertedArgs[i].getClass() + ">>>");
 
-                        debug("CHECKCAST " + getInternalName(parameterTypes[i]));
-                        mv.visitTypeInsn(CHECKCAST, getInternalName(parameterTypes[i]));
+                        checkCast(parameterTypes[i]);
                     }
                 }
 
-                if((m.getModifiers() & STATIC) != 0) {
+                //生成实际的方法调用代码
+
+                //静态方法
+                if(Modifier.isStatic(m.getModifiers())) {
                     debug("INVOKESTATIC: " + m.getName());
-                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(m.getDeclaringClass()), m.getName(), getMethodDescriptor(m), false);
-                } else {
+                    mv.invokeStatic(Type.getType(m.getDeclaringClass()), org.mvel2.asm.commons.Method.getMethod(m));
+                }
+                //非静态方法
+                else {
+                    val thisM = m;
                     if(m.getDeclaringClass().isInterface() && (m.getDeclaringClass() != cls
                             || (ctx != null && ctx.getClass() != m.getDeclaringClass()))) {
-                        debug("INVOKEINTERFACE: " + getInternalName(m.getDeclaringClass()) + "." + m.getName());
-                        mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(m.getDeclaringClass()), m.getName(),
-                                getMethodDescriptor(m), true);
+                        debug(() -> "INVOKEINTERFACE: " + Type.getInternalName(thisM.getDeclaringClass()) + "." + thisM.getName());
+                        mv.invokeInterface(Type.getType(m.getDeclaringClass()), org.mvel2.asm.commons.Method.getMethod(m));
                     } else {
-                        debug("INVOKEVIRTUAL: " + getInternalName(cls) + "." + m.getName());
-                        mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(cls), m.getName(),
-                                getMethodDescriptor(m), false);
+                        val thisCls = cls;
+                        debug(() -> "INVOKEVIRTUAL: " + Type.getInternalName(thisCls) + "." + thisM.getName());
+                        mv.invokeVirtual(Type.getType(cls), org.mvel2.asm.commons.Method.getMethod(m));
                     }
                 }
 
@@ -1870,311 +1754,210 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
                 stacksize++;
             }
 
-            Object o = m.invoke(ctx, normalizeArgsForVarArgs(parameterTypes, args, m.isVarArgs()));
+            //实际的调用及返回
+            Object o = m.invoke(ctx, Varargs.normalizeArgsForVarArgs(parameterTypes, args, m.isVarArgs()));
 
-
-            if(hasNullMethodHandler()) {
-                writeOutNullHandler(m, 1);
+            //直接nullHandler
+            if(PropertyHandlerFactory.hasNullMethodHandler()) {
+                generateNullPropertyHandler(m, NullPropertyHandlerType.METHOD);
                 if(o == null) {
-                    o = getNullMethodHandler().getProperty(m.getName(), ctx, variableFactory);
+                    o = PropertyHandlerFactory.getNullMethodHandler().getProperty(m.getName(), ctx, variableFactory);
                 }
             }
 
-            currType = toNonPrimitiveType(m.getReturnType());
+            currType = ReflectionUtil.toNonPrimitiveType(m.getReturnType());
             return o;
-
         }
     }
 
-    private void dataConversion(Class target) {
-        if(target.equals(Object.class)) {
-            return;
-        }
-
-        pushClass(target);
-        debug("INVOKESTATIC " + NAMESPACE + "DataConversion.convert");
-        mv.visitMethodInsn(INVOKESTATIC, NAMESPACE + "DataConversion", "convert",
-                "(Ljava/lang/Object;Ljava/lang/Class;)Ljava/lang/Object;", false);
-    }
-
-
-    public Object getResultOptPass() {
-        return resultValue;
-    }
-
-
-    private Object addSubStatement(ExecutableStatement stmt) {
+    /** 生成调用executeStatement的代码 */
+    private void generateSubStatementCode(ExecutableStatement stmt) {
         if(stmt instanceof ExecutableAccessor) {
             ExecutableAccessor ea = (ExecutableAccessor) stmt;
             if(ea.getNode().isIdentifier() && !ea.getNode().isDeepProperty()) {
-                loadVariableByName(ea.getNode().getName());
-                return null;
+                log.debug("asm生成es代码时，优化，直接生成localVariableByName代码");
+                generateLoadVariableByName(ea.getNode().getName());
+                return;
             }
         }
 
         compiledInputs.add(stmt);
-
-        debug("ALOAD 0");
-        mv.visitVarInsn(ALOAD, 0);
-
-        debug("GETFIELD p" + (compiledInputs.size() - 1));
-        mv.visitFieldInsn(GETFIELD, className, "p" + (compiledInputs.size() - 1),
-                "L" + NAMESPACE + "compiler/ExecutableStatement;");
-
-        debug("ALOAD 2");
-        mv.visitVarInsn(ALOAD, 2);
-
-        debug("ALOAD 3");
-        mv.visitVarInsn(ALOAD, 3);
-
-        debug("INVOKEINTERFACE ExecutableStatement.getValue");
-        mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(ExecutableStatement.class), "getValue",
-                "(Ljava/lang/Object;L" + NAMESPACE + "integration/VariableResolverFactory;)Ljava/lang/Object;", true);
-
-        return null;
-    }
-
-
-    private void loadVariableByName(String name) {
-        debug("ALOAD 3");
-        mv.visitVarInsn(ALOAD, 3);
-
-        debug("LDC \"" + name + "\"");
-        mv.visitLdcInsn(name);
-
-        debug("INVOKEINTERFACE " + NAMESPACE + "integration/VariableResolverFactory.getVariableResolver");
-        mv.visitMethodInsn(INVOKEINTERFACE, "" + NAMESPACE + "integration/VariableResolverFactory",
-                "getVariableResolver", "(Ljava/lang/String;)L" + NAMESPACE + "integration/VariableResolver;", true);
-
-        debug("INVOKEINTERFACE " + NAMESPACE + "integration/VariableResolver.getValue");
-        mv.visitMethodInsn(INVOKEINTERFACE, "" + NAMESPACE + "integration/VariableResolver",
-                "getValue", "()Ljava/lang/Object;", true);
-
-        returnType = Object.class;
-    }
-
-    private void loadVariableByIndex(int pos) {
-        debug("ALOAD 3");
-        mv.visitVarInsn(ALOAD, 3);
-
-        debug("PUSH IDX VAL =" + pos);
-        pushInt(pos);
-
-        debug("INVOKEINTERFACE " + NAMESPACE + "integration/VariableResolverFactory.getIndexedVariableResolver");
-        mv.visitMethodInsn(INVOKEINTERFACE, "" + NAMESPACE + "integration/VariableResolverFactory",
-                "getIndexedVariableResolver", "(I)L" + NAMESPACE + "integration/VariableResolver;", true);
-
-        debug("INVOKEINTERFACE " + NAMESPACE + "integration/VariableResolver.getValue");
-        mv.visitMethodInsn(INVOKEINTERFACE, "" + NAMESPACE + "integration/VariableResolver",
-                "getValue", "()Ljava/lang/Object;", true);
-
-        returnType = Object.class;
-    }
-
-    private void loadField(int number) {
-        debug("ALOAD 0");
-        mv.loadThis();
-
-        debug("GETFIELD p" + number);
-        mv.visitFieldInsn(GETFIELD, className, "p" + number, "L" + NAMESPACE + "compiler/ExecutableStatement;");
+        int stmtIdx = compiledInputs.size() - 1;
+        generateEsGetValue(stmtIdx);
     }
 
     /** 构建有参数的构造函数 */
-    private void buildInputs() {
+    private void generateInputsConstructor() {
         if(compiledInputs.size() == 0) {
             return;
         }
 
         debug("\n{SETTING UP MEMBERS...}\n");
 
-        StringAppender constSig = new StringAppender("(");
+        StringAppender constructorSignature = new StringAppender("(");
         int size = compiledInputs.size();
 
+        //生成相应的字段
         for(int i = 0; i < size; i++) {
             debug("ACC_PRIVATE p" + i);
-            cw.visitField(ACC_PRIVATE, "p" + i, "L" + NAMESPACE + "compiler/ExecutableStatement;", null, null).visitEnd();
+            cw.visitField(ACC_PRIVATE, "p" + i, "Lorg/mvel2/compiler/ExecutableStatement;", null, null).visitEnd();
 
-            constSig.append("L" + NAMESPACE + "compiler/ExecutableStatement;");
+            constructorSignature.append("Lorg/mvel2/compiler/ExecutableStatement;");
         }
-        constSig.append(")V");
+        constructorSignature.append(")V");
 
         debug("\n{CREATING INJECTION CONSTRUCTOR}\n");
 
-        MethodVisitor cv = cw.visitMethod(ACC_PUBLIC, "<init>", constSig.toString(), null, null);
+        GeneratorAdapter cv = new GeneratorAdapter(cw.visitMethod(ACC_PUBLIC, "<init>", constructorSignature.toString(), null, null),
+                ACC_PUBLIC, "<init>", constructorSignature.toString()
+        );
         cv.visitCode();
+
+        //调用父类
         debug("ALOAD 0");
-        cv.visitVarInsn(ALOAD, 0);
+        cv.loadThis();
         debug("INVOKESPECIAL java/lang/Object.<init>");
         cv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
 
+        //挨个给字段赋值
         for(int i = 0; i < size; i++) {
+            //this.px=xx
             debug("ALOAD 0");
-            cv.visitVarInsn(ALOAD, 0);
+            cv.loadThis();
             debug("ALOAD " + (i + 1));
-            cv.visitVarInsn(ALOAD, i + 1);
+            cv.loadLocal(i + 1);
             debug("PUTFIELD p" + i);
-            cv.visitFieldInsn(PUTFIELD, className, "p" + i, "L" + NAMESPACE + "compiler/ExecutableStatement;");
+            cv.putField(Type.getType(className), "p" + i, Type.getType(ExecutableStatement.class));
         }
 
         debug("RETURN");
-        cv.visitInsn(RETURN);
+        cv.returnValue();
         cv.visitMaxs(0, 0);
         cv.visitEnd();
 
         debug("}");
     }
 
-    private static final int ARRAY = 0;
-    private static final int LIST = 1;
-    private static final int MAP = 2;
-    private static final int VAL = 3;
+    /** 根据当前的值以及具体的子类型的参考类型创建起相应的值创建访问器,这里的type类型为参考类型 */
+    private void _getAccessor(Object o, Class type) {
+        if(type == null) {
+            throw new RuntimeException("必须给出类型信息");
+        }
 
-    private int _getAccessor(Object o, Class type) {
+        //当前值为list，通过一个子值访问器的列表来构造一个list的创建访问器
         if(o instanceof List) {
-            debug("NEW " + LIST_IMPL);
-            mv.visitTypeInsn(NEW, LIST_IMPL);
-
-            debug("DUP");
-            mv.visitInsn(DUP);
-
-            debug("DUP");
-            mv.visitInsn(DUP);
-
-            pushInt(((List) o).size());
-            debug("INVOKESPECIAL " + LIST_IMPL + ".<init>");
-            mv.visitMethodInsn(INVOKESPECIAL, LIST_IMPL, "<init>", "(I)V", false);
+            //以下主要的逻辑代码为
+            /*
+            List list = new ArrayList<>();
+            for(Object item: o) {
+                list.add(item)
+            }
+            //栈上为list
+             */
+            generateNewInstance(mv, FastList.class);
 
             for(Object item : (List) o) {
-                if(_getAccessor(item, type) != VAL) {
-                    debug("POP");
-                    mv.visitInsn(POP);
-                }
+                //以下代码调用 list.add(item)
 
-                debug("INVOKEINTERFACE java/util/List.add");
-                mv.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "add", "(Ljava/lang/Object;)Z", true);
-
-                debug("POP");
-                mv.visitInsn(POP);
-
+                //list
                 debug("DUP");
-                mv.visitInsn(DUP);
+                mv.dup();
+                //item
+                _getAccessor(item, type);
+                //op add
+                debug("INVOKEINTERFACE java/util/List.add");
+                mv.invokeInterface(Type.getType(List.class), org.mvel2.asm.commons.Method.getMethod("boolean add(Object)"));
+
+                //删除返回的数据,因为无意义
+                debug("POP");
+                mv.pop();
             }
 
             returnType = List.class;
-
-            return LIST;
         } else if(o instanceof Map) {
-            debug("NEW " + MAP_IMPL);
-            mv.visitTypeInsn(NEW, MAP_IMPL);
-
-            debug("DUP");
-            mv.visitInsn(DUP);
-
-            debug("DUP");
-            mv.visitInsn(DUP);
-
-            pushInt(((Map) o).size());
-
-            debug("INVOKESPECIAL " + MAP_IMPL + ".<init>");
-            mv.visitMethodInsn(INVOKESPECIAL, MAP_IMPL, "<init>", "(I)V", false);
+            generateNewInstance(mv, HashMap.class);
 
             for(Object item : ((Map) o).keySet()) {
-                mv.visitTypeInsn(CHECKCAST, "java/util/Map");
+                //以下代码调用 map.put(key,value)
 
-                if(_getAccessor(item, type) != VAL) {
-                    debug("POP");
-                    mv.visitInsn(POP);
-                }
-                if(_getAccessor(((Map) o).get(item), type) != VAL) {
-                    debug("POP");
-                    mv.visitInsn(POP);
-                }
-
+                //map
+                debug("DUP");
+                mv.dup();
+                //key
+                _getAccessor(item, type);
+                //value
+                _getAccessor(((Map) o).get(item), type);
+                //op put
                 debug("INVOKEINTERFACE java/util/Map.put");
                 mv.visitMethodInsn(INVOKEINTERFACE, "java/util/Map", "put",
                         "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true);
+                mv.invokeInterface(Type.getType(Map.class), org.mvel2.asm.commons.Method.getMethod("Object put(Object,Object)"));
 
+                //删除返回数据
                 debug("POP");
-                mv.visitInsn(POP);
-
-                debug("DUP");
-                mv.visitInsn(DUP);
+                mv.pop();
             }
 
             returnType = Map.class;
-
-            return MAP;
         } else if(o instanceof Object[]) {
             Accessor[] a = new Accessor[((Object[]) o).length];
-            int i = 0;
+
             int dim = 0;
 
-            if(type != null) {
-                String nm = type.getName();
-                while(nm.charAt(dim) == '[') dim++;
-            } else {
-                type = Object[].class;
-                dim = 1;
-            }
+            String nm = type.getName();
+            while(nm.charAt(dim) == '[') dim++;
 
             try{
                 pushInt(((Object[]) o).length);
-                debug("ANEWARRAY " + getInternalName(getSubComponentType(type)) + " (" + ((Object[]) o).length + ")");
-                mv.visitTypeInsn(ANEWARRAY, getInternalName(getSubComponentType(type)));
+                debug(() -> "ANEWARRAY " + Type.getInternalName(ParseTools.getSubComponentType(type)) + " (" + ((Object[]) o).length + ")");
+                mv.newArray(Type.getType(ParseTools.getSubComponentType(type)));
 
-                Class cls = dim > 1 ? findClass(null, repeatChar('[', dim - 1)
-                        + "L" + getBaseComponentType(type).getName() + ";", pCtx)
+                Class cls = dim > 1 ? ParseTools.findClass(null, ParseTools.repeatChar('[', dim - 1)
+                        + "L" + ParseTools.getBaseComponentType(type).getName() + ";", pCtx)
                         : type;
 
-
-                debug("DUP");
-                mv.visitInsn(DUP);
-
+                int i = 0;
                 for(Object item : (Object[]) o) {
-                    pushInt(i);
+                    //以下的代码执行 arrays[i] = v;
 
-                    if(_getAccessor(item, cls) != VAL) {
-                        debug("POP");
-                        mv.visitInsn(POP);
-                    }
-
-                    debug("AASTORE (" + o.hashCode() + ")");
-                    mv.visitInsn(AASTORE);
-
+                    //arrays
                     debug("DUP");
-                    mv.visitInsn(DUP);
+                    mv.dup();
+                    //i
+                    pushInt(i);
+                    //v
+                    _getAccessor(item, cls);
+                    //op =
+                    arrayStore(Object.class);
 
                     i++;
                 }
 
             } catch(ClassNotFoundException e) {
-                throw new RuntimeException("this error should never throw:" + getBaseComponentType(type).getName(), e);
+                throw new RuntimeException("this error should never throw:" + ParseTools.getBaseComponentType(type).getName(), e);
             }
-
-            return ARRAY;
         } else {
             if(type.isArray()) {
-                writeLiteralOrSubexpression(subCompileExpression(((String) o).toCharArray(), pCtx), getSubComponentType(type));
+                generateLiteralOrExecuteStatement(ParseTools.subCompileExpression(((String) o).toCharArray(), pCtx), ParseTools.getSubComponentType(type), null);
             } else {
-                writeLiteralOrSubexpression(subCompileExpression(((String) o).toCharArray(), pCtx));
+                generateLiteralOrExecuteStatement(ParseTools.subCompileExpression(((String) o).toCharArray(), pCtx), null, null);
             }
-            return VAL;
         }
     }
 
-    private Class writeLiteralOrSubexpression(Object stmt) {
-        return writeLiteralOrSubexpression(stmt, null, null);
-    }
-
-    private Class writeLiteralOrSubexpression(Object stmt, Class desiredTarget) {
-        return writeLiteralOrSubexpression(stmt, desiredTarget, null);
-    }
-
-    private Class writeLiteralOrSubexpression(Object stmt, Class desiredTarget, Class knownIngressType) {
+    /**
+     * 生成常量或者是参数单元的代码
+     *
+     * @param desiredTarget    预期的单元的值类型    如果为null则表示不作强制限定
+     * @param knownIngressType 当前单元的实际参数类型  如果为null则表示不作强制限定
+     * @return 返回此单元作为入参时的类型信息, 即传入其它调用时的参数类型
+     */
+    private Class generateLiteralOrExecuteStatement(Object stmt, Class desiredTarget, Class knownIngressType) {
+        //常量
         if(stmt instanceof ExecutableLiteral) {
             Object literalValue = ((ExecutableLiteral) stmt).getLiteral();
 
-            // Handle the case when the literal is null MVEL-312
+            //专门处理null值
             if(literalValue == null) {
                 mv.visitInsn(ACONST_NULL);
                 return null;
@@ -2184,10 +1967,13 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
             debug("*** type:" + type + ";desired:" + desiredTarget);
 
+            //处理调用如数组时的int类型转换
             if(type == Integer.class && desiredTarget == int.class) {
                 pushInt(((ExecutableLiteral) stmt).getInteger32());
                 type = int.class;
-            } else if(desiredTarget != null && desiredTarget != type) {
+            }
+            //预期类型不相同，将其实际转换之后，生成相应的常量指令
+            else if(desiredTarget != null && desiredTarget != type) {
                 debug("*** Converting because desiredType(" + desiredTarget.getClass() + ") is not: " + type);
 
 
@@ -2195,17 +1981,20 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
                     throw new CompileException("was expecting type: " + desiredTarget.getName()
                             + "; but found type: " + type.getName(), expr, st);
                 }
-                pushLiteralWrapped(convert(literalValue, desiredTarget));
+                pushLiteralWrapped(DataConversion.convert(literalValue, desiredTarget));
             } else {
                 pushLiteralWrapped(literalValue);
             }
 
             return type;
-        } else {
+        }
+        //执行单元
+        else {
             literal = false;
 
-            addSubStatement((ExecutableStatement) stmt);
+            generateSubStatementCode((ExecutableStatement) stmt);
 
+            //类型以优先传入的声明入参类型为准
             Class type;
             if(knownIngressType == null) {
                 type = ((ExecutableStatement) stmt).getKnownEgressType();
@@ -2213,6 +2002,7 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
                 type = knownIngressType;
             }
 
+            //类型不相同，则针对基本类型生成相应的解包代码
             if(desiredTarget != null && type != desiredTarget) {
                 if(desiredTarget.isPrimitive()) {
                     if(type == null) {
@@ -2229,6 +2019,7 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         }
     }
 
+    /** 优化直接集合变量的访问 */
     public AccessorNode optimizeCollection(ParserContext pCtx, Object o, Class type, char[] property, int start, int offset,
                                            Object ctx, Object thisRef, VariableResolverFactory factory) {
         this.expr = property;
@@ -2236,7 +2027,7 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         this.end = start + offset;
         this.length = offset;
 
-        type = toNonPrimitiveArray(type);
+        type = ReflectionUtil.toNonPrimitiveArray(type);
         this.returnType = type;
 
         this.compiledInputs = new ArrayList<>();
@@ -2256,6 +2047,8 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         try{
             AccessorNode compiledAccessor = _initializeAccessor();
 
+            //这里表示如果集合变量后面还有更多的操作，如[1,2,3].length这种，则将当前的访问器和后面
+            //如果length仅与start相同，即表示没有不是继续联合访问
             if(property != null && length > start) {
                 assert compiledAccessor != null;
                 return new Union(pCtx, compiledAccessor, property, start, length);
@@ -2268,6 +2061,7 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         }
     }
 
+    /** 优化对象的创建过程，提供对象创建访问器 */
     public AccessorNode optimizeObjectCreation(ParserContext pCtx, char[] property, int start, int offset, Object ctx,
                                                Object thisRef, VariableResolverFactory factory) {
         _initJit4GetValue();
@@ -2281,36 +2075,43 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         this.variableFactory = factory;
         this.pCtx = pCtx;
 
-        String[] cnsRes = captureConstructorAndResidual(property, start, offset);
-        List<char[]> constructorParms = parseMethodOrConstructor(cnsRes[0].toCharArray());
+        //将构造函数参数信息和后续调用分开
+        String[] cnsRes = ParseTools.captureConstructorAndResidual(property, start, offset);
+        //这里拿到相应的参数信息
+        List<char[]> constructorParams = ParseTools.parseMethodOrConstructor(cnsRes[0].toCharArray());
 
         try{
-            if(constructorParms != null) {
-                for(char[] constructorParm : constructorParms) {
-                    compiledInputs.add((ExecutableStatement) subCompileExpression(constructorParm, pCtx));
+            //有相应的参数信息，因此进行有参数构造函数的处理
+            if(constructorParams != null) {
+                //将相应参数集加入到构造函数集中
+                for(char[] constructorParam : constructorParams) {
+                    compiledInputs.add((ExecutableStatement) ParseTools.subCompileExpression(constructorParam, pCtx));
                 }
 
-                Class cls = findClass(factory, new String(subset(property, 0, findFirst('(', start, length, property))), pCtx);
+                //以下准备生成相应的构建函数代码
 
-                debug("NEW " + getInternalName(cls));
+                Class cls = ParseTools.findClass(factory, new String(ParseTools.subset(property, 0, ArrayTools.findFirst('(', start, length, property))), pCtx);
+
+                debug("NEW " + Type.getInternalName(cls));
                 mv.newInstance(Type.getType(cls));
                 debug("DUP");
                 mv.dup();
 
-                Object[] parms = new Object[constructorParms.size()];
+                Object[] parmas = new Object[constructorParams.size()];
 
                 int i = 0;
                 for(ExecutableStatement es : compiledInputs) {
-                    parms[i++] = es.getValue(ctx, factory);
+                    parmas[i++] = es.getValue(ctx, factory);
                 }
 
-                Constructor cns = getBestConstructorCandidate(parms, cls, pCtx.isStrongTyping());
+                //这里根据参数信息进行构造函数匹配
+                Constructor cns = ParseTools.getBestConstructorCandidate(parmas, cls, pCtx.isStrongTyping());
 
                 if(cns == null) {
                     StringBuilder error = new StringBuilder();
-                    for(int x = 0; x < parms.length; x++) {
-                        error.append(parms[x].getClass().getName());
-                        if(x + 1 < parms.length) {
+                    for(int x = 0; x < parmas.length; x++) {
+                        error.append(parmas[x].getClass().getName());
+                        if(x + 1 < parmas.length) {
                             error.append(", ");
                         }
                     }
@@ -2321,60 +2122,46 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
                 this.returnType = cns.getDeclaringClass();
 
+                //准备各个调用构建函数的参数信息
                 Class tg;
-                for(i = 0; i < constructorParms.size(); i++) {
-                    debug("ALOAD 0");
-                    mv.visitVarInsn(ALOAD, 0);
-                    debug("GETFIELD p" + i);
-                    mv.visitFieldInsn(GETFIELD, className, "p" + i, "L" + NAMESPACE + "compiler/ExecutableStatement;");
-                    debug("ALOAD 2");
-                    mv.visitVarInsn(ALOAD, 2);
-                    debug("ALOAD 3");
-                    mv.visitVarInsn(ALOAD, 3);
-                    debug("INVOKEINTERFACE " + NAMESPACE + "compiler/ExecutableStatement.getValue");
-                    mv.visitMethodInsn(INVOKEINTERFACE, "" + NAMESPACE
-                            + "compiler/ExecutableStatement", "getValue", "(Ljava/lang/Object;L" + NAMESPACE
-                            + "integration/VariableResolverFactory;)Ljava/lang/Object;", true);
+                for(i = 0; i < constructorParams.size(); i++) {
+                    generateEsGetValue(i);
 
-                    tg = cns.getParameterTypes()[i].isPrimitive()
-                            ? toWrapperClass(cns.getParameterTypes()[i]) : cns.getParameterTypes()[i];
+                    val parameterTypeI = cns.getParameterTypes()[i];
 
-                    if(parms[i] != null && !parms[i].getClass().isAssignableFrom(cns.getParameterTypes()[i])) {
-                        pushClass(tg);
+                    tg = parameterTypeI.isPrimitive() ? toWrapperClass(parameterTypeI) : parameterTypeI;
 
-                        debug("INVOKESTATIC " + NAMESPACE + "DataConversion.convert");
-                        mv.visitMethodInsn(INVOKESTATIC, "" + NAMESPACE + "DataConversion", "convert",
-                                "(Ljava/lang/Object;Ljava/lang/Class;)Ljava/lang/Object;", false);
+                    //处理可能的类型转换
+                    if(parmas[i] != null && !parmas[i].getClass().isAssignableFrom(parameterTypeI)) {
+                        generateDataConversionCode(tg);
 
-                        if(cns.getParameterTypes()[i].isPrimitive()) {
-                            unwrapPrimitive(cns.getParameterTypes()[i]);
+                        //还原基本类型
+                        if(parameterTypeI.isPrimitive()) {
+                            unwrapPrimitive(parameterTypeI);
                         } else {
-                            debug("CHECKCAST " + getInternalName(tg));
-                            mv.visitTypeInsn(CHECKCAST, getInternalName(tg));
+                            checkCast(tg);
                         }
-
                     } else {
-                        debug("CHECKCAST " + getInternalName(cns.getParameterTypes()[i]));
-                        mv.visitTypeInsn(CHECKCAST, getInternalName(cns.getParameterTypes()[i]));
+                        checkCast(parameterTypeI);
                     }
-
                 }
 
-                debug("INVOKESPECIAL " + getInternalName(cls) + ".<init> : " + getConstructorDescriptor(cns));
-                mv.visitMethodInsn(INVOKESPECIAL, getInternalName(cls), "<init>", getConstructorDescriptor(cns), false);
+                debug("INVOKESPECIAL " + Type.getInternalName(cls) + ".<init> : " + Type.getConstructorDescriptor(cns));
+                mv.invokeConstructor(Type.getType(cls), org.mvel2.asm.commons.Method.getMethod(cns));
 
                 _finishJIT();
 
                 AccessorNode acc = _initializeAccessor();
 
-                if(cnsRes.length > 1 && cnsRes[1] != null && !cnsRes[1].trim().equals("")) {
+                //后续调用
+                if(cnsRes.length > 1 && !Strings.isNullOrEmpty(cnsRes[1])) {
                     assert acc != null;
                     return new Union(pCtx, acc, cnsRes[1].toCharArray(), 0, cnsRes[1].length());
                 }
 
                 return acc;
             } else {
-                Class cls = findClass(factory, new String(property), pCtx);
+                Class cls = ParseTools.findClass(factory, new String(property), pCtx);
 
                 //构造无参实例
                 generateNewInstance(mv, cls);
@@ -2382,7 +2169,8 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
                 _finishJIT();
                 AccessorNode acc = _initializeAccessor();
 
-                if(cnsRes.length > 1 && cnsRes[1] != null && !cnsRes[1].trim().equals("")) {
+                //后续调用
+                if(cnsRes.length > 1 && !Strings.isNullOrEmpty(cnsRes[1])) {
                     assert acc != null;
                     return new Union(pCtx, acc, cnsRes[1].toCharArray(), 0, cnsRes[1].length());
                 }
@@ -2397,93 +2185,20 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         }
     }
 
+    //---------------------------- 非主要接口方法 start ------------------------------//
+
+    public Object getResultOptPass() {
+        return resultValue;
+    }
+
     public Class getEgressType() {
         return returnType;
-    }
-
-    private void dumpAdvancedDebugging() {
-        if(buildLog == null) {
-            return;
-        }
-
-        System.out.println("JIT Compiler Dump for: <<" + (expr == null ? null : new String(expr))
-                + ">>\n-------------------------------\n");
-        System.out.println(buildLog.toString());
-        System.out.println("\n<END OF DUMP>\n");
-    }
-
-    private Object propHandlerByteCode(String property, Object ctx, Class handler) {
-        PropertyHandler ph = getPropertyHandler(handler);
-        if(ph instanceof ProducesBytecode) {
-            debug("<<3rd-Party Code Generation>>");
-            ((ProducesBytecode) ph).produceBytecodeGet(mv, property, variableFactory);
-            return ph.getProperty(property, ctx, variableFactory);
-        } else {
-            throw new RuntimeException("unable to compileShared: custom accessor does not support producing bytecode: "
-                    + ph.getClass().getName());
-        }
-    }
-
-    private void propHandlerByteCodePut(String property, Object ctx, Class handler, Object value) {
-        PropertyHandler ph = getPropertyHandler(handler);
-        if(ph instanceof ProducesBytecode) {
-            debug("<<3rd-Party Code Generation>>");
-            ((ProducesBytecode) ph).produceBytecodePut(mv, property, variableFactory);
-            ph.setProperty(property, ctx, variableFactory, value);
-        } else {
-            throw new RuntimeException("unable to compileShared: custom accessor does not support producing bytecode: "
-                    + ph.getClass().getName());
-        }
-    }
-
-    private void writeOutNullHandler(Member member, int type) {
-
-        debug("DUP");
-        mv.dup();
-
-        Label endLabel = mv.newLabel();
-
-        debug("IFNONNULL : jump");
-        mv.ifNonNull(endLabel);
-
-        debug("POP");
-        mv.pop();
-
-        debug("ALOAD 0");
-        mv.loadThis();
-
-        if(type == 0) {
-            this.propNull = true;
-
-            debug("GETFIELD 'nullPropertyHandler'");
-            mv.visitFieldInsn(GETFIELD, className, "nullPropertyHandler", "L" + NAMESPACE + "integration/PropertyHandler;");
-        } else {
-            this.methNull = true;
-
-            debug("GETFIELD 'nullMethodHandler'");
-            mv.visitFieldInsn(GETFIELD, className, "nullMethodHandler", "L" + NAMESPACE + "integration/PropertyHandler;");
-        }
-
-
-        debug("LDC '" + member.getName() + "'");
-        mv.push(member.getName());
-
-        debug("ALOAD 1");
-        mv.loadLocal(1);
-
-        debug("ALOAD 3");
-        mv.loadLocal(3);
-
-        debug("INVOKEINTERFACE PropertyHandler.getProperty");
-        mv.invokeInterface(Type.getType(PropertyHandler.class), org.mvel2.asm.commons.Method.getMethod("Object getProperty(String, Object, org.mvel2.integration.VariableResolverFactory)"));
-
-        debug("LABEL:jump");
-        mv.visitLabel(endLabel);
     }
 
     public boolean isLiteralOnly() {
         return literal;
     }
+    //---------------------------- 非主要接口方法 end ------------------------------//
 
     //---------------------------- 辅助及工具方法 start ------------------------------//
 
@@ -2497,6 +2212,23 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
         if(buildLog != null) {
             buildLog.append(call.get()).append(System.lineSeparator());
         }
+    }
+
+    /** 产生一个新的访问器类名 */
+    private static String generateNewAccessorClassName() {
+        return "AsmAccessorImpl_" + CLASS_NAME_POSTFIX.getAndIncrement();
+    }
+
+    /** 创建新的默认访问器类writer */
+    private static ClassWriter createNewAccessorClassWriter(String className) {
+        val writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+
+        synchronized(Runtime.getRuntime()) {
+            writer.visit(OPCODES_VERSION, Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER, className,
+                    null, "java/lang/Object", new String[]{NAMESPACE + "compiler/Accessor"});
+        }
+
+        return writer;
     }
 
     /** 生成默认构造方法 */
@@ -2513,18 +2245,17 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
     }
 
     /** 构建指定类型的实例对象 */
-    private void generateNewInstance(GeneratorAdapter mvWriter, Class clazz) throws NoSuchMethodException {
+    private void generateNewInstance(GeneratorAdapter mvWriter, Class clazz) {
         val type = Type.getType(clazz);
-        val constructor = clazz.getConstructor(EMPTY_CLASSES);
 
-        debug(() -> "NEW " + getInternalName(clazz));
+        debug(() -> "NEW " + Type.getInternalName(clazz));
         mvWriter.newInstance(type);
 
         debug("DUP");
         mvWriter.dup();
 
         debug("INVOKESPECIAL <init>");
-        mvWriter.invokeConstructor(type, org.mvel2.asm.commons.Method.getMethod(constructor));
+        mvWriter.invokeConstructor(type, new org.mvel2.asm.commons.Method("<init>", "()V"));
     }
 
     /** 基本类型转包装类型 */
@@ -2551,7 +2282,7 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
     }
 
     /** 将基本类型包装为包装类型,在当前调用栈中已经是基本类型了 */
-    private void wrapPrimitive(Class<? extends Object> cls) {
+    private void wrapPrimitive(Class cls) {
         if(!cls.isPrimitive()) {
             return;
         }
@@ -2587,65 +2318,49 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
     private void unwrapPrimitive(Class cls) {
         if(cls == boolean.class) {
             val type = Type.getType(Boolean.class);
-
-            debug("CHECKCAST java/lang/Boolean");
-            mv.checkCast(type);
+            checkCast(type);
 
             debug("INVOKEVIRTUAL java/lang/Boolean.booleanValue");
             mv.invokeVirtual(type, org.mvel2.asm.commons.Method.getMethod("boolean booleanValue()"));
         } else if(cls == int.class) {
             val type = Type.getType(Integer.class);
-
-            debug("CHECKCAST java/lang/Integer");
-            mv.checkCast(type);
+            checkCast(type);
 
             debug("INVOKEVIRTUAL java/lang/Integer.intValue");
             mv.invokeVirtual(type, org.mvel2.asm.commons.Method.getMethod("int intValue()"));
         } else if(cls == float.class) {
             val type = Type.getType(Float.class);
-
-            debug("CHECKCAST java/lang/Float");
-            mv.checkCast(type);
+            checkCast(type);
 
             debug("INVOKEVIRTUAL java/lang/Float.floatValue");
             mv.invokeVirtual(type, org.mvel2.asm.commons.Method.getMethod("float floatValue()"));
         } else if(cls == double.class) {
             val type = Type.getType(Double.class);
-
-            debug("CHECKCAST java/lang/Double");
-            mv.checkCast(type);
+            checkCast(type);
 
             debug("INVOKEVIRTUAL java/lang/Double.doubleValue");
             mv.invokeVirtual(type, org.mvel2.asm.commons.Method.getMethod("double doubleValue()"));
         } else if(cls == short.class) {
             val type = Type.getType(Short.class);
-
-            debug("CHECKCAST java/lang/Short");
-            mv.checkCast(type);
+            checkCast(type);
 
             debug("INVOKEVIRTUAL java/lang/Short.shortValue");
             mv.invokeVirtual(type, org.mvel2.asm.commons.Method.getMethod("short shortValue()"));
         } else if(cls == long.class) {
             val type = Type.getType(Long.class);
-
-            debug("CHECKCAST java/lang/Long");
-            mv.checkCast(type);
+            checkCast(type);
 
             debug("INVOKEVIRTUAL java/lang/Long.longValue");
             mv.invokeVirtual(type, org.mvel2.asm.commons.Method.getMethod("long longValue()"));
         } else if(cls == byte.class) {
             val type = Type.getType(Byte.class);
-
-            debug("CHECKCAST java/lang/Byte");
-            mv.checkCast(type);
+            checkCast(type);
 
             debug("INVOKEVIRTUAL java/lang/Byte.byteValue");
             mv.invokeVirtual(type, org.mvel2.asm.commons.Method.getMethod("byte byteValue()"));
         } else if(cls == char.class) {
             val type = Type.getType(Character.class);
-
-            debug("CHECKCAST java/lang/Character");
-            mv.checkCast(type);
+            checkCast(type);
 
             debug("INVOKEVIRTUAL java/lang/Character.charValue");
             mv.invokeVirtual(type, org.mvel2.asm.commons.Method.getMethod("char charValue()"));
@@ -2671,8 +2386,9 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
     /** 往栈中放类常量 */
     private void pushClass(Class cls) {
-        debug("LDC " + getType(cls));
-        mv.push(getType(cls));
+        debug(() -> "LDC " + Type.getType(cls));
+
+        mv.push(Type.getType(cls));
     }
 
     /** 输出常量值 */
@@ -2744,9 +2460,14 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
     /** 断言当前对象必须是相应的类型 */
     private void checkCast(Class cls) {
-        debug(() -> "CHECKCAST " + getInternalName(cls));
+        checkCast(Type.getType(cls));
+    }
 
-        mv.checkCast(Type.getType(cls));
+    /** 断言当前对象必须是相应的类型 */
+    private void checkCast(Type type) {
+        debug(() -> "CHECKCAST " + type.getInternalName());
+
+        mv.checkCast(type);
     }
 
     /** 对一个数组类型进行类型检查 */
@@ -2756,10 +2477,162 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
             checkClass = Object[].class;
         }
 
-        val type = Type.getType(checkClass);
-        debug(() -> "CHECKCAST " + type.getDescriptor());
+        checkCast(checkClass);
+    }
 
-        mv.checkCast(type);
+    /** 生成自定义代码生成器的属性处理 */
+    private Object generatePhByteCode4Get(String property, Object ctx, Class handler) {
+        PropertyHandler ph = PropertyHandlerFactory.getPropertyHandler(handler);
+        if(ph instanceof ProducesByteCode) {
+            debug("<<3rd-Party Code Generation>>");
+            ((ProducesByteCode) ph).produceByteCodeGet(mv, property, variableFactory);
+            return ph.getProperty(property, ctx, variableFactory);
+        } else {
+            throw new RuntimeException("unable to compileShared: custom accessor does not support producing bytecode: " + ph.getClass());
+        }
+    }
+
+    /** 生成自定义代码生成器的set属性处理 */
+    private void generatePhByteCode4Set(String property, Object ctx, Class handler, Object value) {
+        PropertyHandler ph = PropertyHandlerFactory.getPropertyHandler(handler);
+        if(ph instanceof ProducesByteCode) {
+            debug("<<3rd-Party Code Generation>>");
+            ((ProducesByteCode) ph).produceByteCodeSut(mv, property, variableFactory);
+            ph.setProperty(property, ctx, variableFactory, value);
+        } else {
+            throw new RuntimeException("unable to compileShared: custom accessor does not support producing bytecode: " + ph.getClass());
+        }
+    }
+
+    /** 从变量工厂中通过下标获取相应的值 */
+    private void generateLoadVariableByIdx(int pos) {
+        debug("ALOAD 3");
+        mv.loadLocal(ACCESSOR_LOCAL_IDX_VARIABLE_FACTORY);
+
+        debug("PUSH IDX VAL =" + pos);
+        pushInt(pos);
+
+        //VariableResolverFactory 中 VariableResolver getIndexedVariableResolver(int index);
+        debug("INVOKEINTERFACE " + NAMESPACE + "integration/VariableResolverFactory.getIndexedVariableResolver");
+        mv.invokeInterface(Type.getType(VariableResolverFactory.class), org.mvel2.asm.commons.Method.getMethod("org.mvel2.integration.VariableResolver getIndexedVariableResolver(int)"));
+
+        //VariableResolver 中 Object getValue();
+        debug("INVOKEINTERFACE " + NAMESPACE + "integration/VariableResolver.getValue");
+        mv.invokeInterface(Type.getType(VariableResolver.class), org.mvel2.asm.commons.Method.getMethod("Object getValue()"));
+
+        returnType = Object.class;
+    }
+
+    /** 根据名字从变量工厂中获取相应的数据值 */
+    private void generateLoadVariableByName(String name) {
+        debug("ALOAD 3");
+        mv.loadLocal(ACCESSOR_LOCAL_IDX_VARIABLE_FACTORY);
+
+        debug("LDC \"" + name + "\"");
+        mv.push(name);
+
+        //VariableResolverFactory 中 VariableResolver getVariableResolver(String name);
+        debug("INVOKEINTERFACE " + NAMESPACE + "integration/VariableResolverFactory.getVariableResolver");
+        mv.invokeInterface(Type.getType(VariableResolverFactory.class), org.mvel2.asm.commons.Method.getMethod("org.mvel2.integration.VariableResolver getVariableResolver(String)"));
+
+        //VariableResolver 中 Object getValue();
+        debug("INVOKEINTERFACE " + NAMESPACE + "integration/VariableResolver.getValue");
+        mv.invokeInterface(Type.getType(VariableResolver.class), org.mvel2.asm.commons.Method.getMethod("Object getValue()"));
+
+        returnType = Object.class;
+    }
+
+    /** 生成null值属性处理的相应代码 */
+    private void generateNullPropertyHandler(Member member, NullPropertyHandlerType type) {
+        debug("DUP");
+        mv.dup();
+
+        Label endLabel = mv.newLabel();
+
+        debug("IFNONNULL : jump");
+        mv.ifNonNull(endLabel);
+
+        //原来的值为null,因此直接出栈，丢弃
+        debug("POP");
+        mv.pop();
+
+        //准备调用 this.nullPropertyHandler.getProperty
+
+        debug("ALOAD 0");
+        mv.loadThis();
+
+        if(type == NullPropertyHandlerType.FIELD) {
+            this.propertyNullField = true;
+
+            debug("GETFIELD 'nullPropertyHandler'");
+            mv.getField(Type.getObjectType(className), "nullPropertyHandler", Type.getType(PropertyHandler.class));
+        } else {
+            this.methodNullField = true;
+
+            debug("GETFIELD 'nullMethodHandler'");
+            mv.getField(Type.getObjectType(className), "nullMethodHandler", Type.getType(PropertyHandler.class));
+        }
+
+        //调用方法 Object getProperty(String name, Object contextObj, VariableResolverFactory variableFactory);
+
+        debug("LDC '" + member.getName() + "'");
+        mv.push(member.getName());
+
+        debug("ALOAD 1");
+        mv.loadLocal(ACCESSOR_LOCAL_IDX_CTX);
+
+        debug("ALOAD 3");
+        mv.loadLocal(ACCESSOR_LOCAL_IDX_VARIABLE_FACTORY);
+
+        debug("INVOKEINTERFACE PropertyHandler.getProperty");
+        mv.invokeInterface(Type.getType(PropertyHandler.class), org.mvel2.asm.commons.Method.getMethod("Object getProperty(String, Object, org.mvel2.integration.VariableResolverFactory)"));
+
+        debug("LABEL:jump");
+        mv.visitLabel(endLabel);
+    }
+
+    /** 生成获取指定参数下标的字段的代码 */
+    private void generateGetEsField(int esParamIdx) {
+        debug("ALOAD 0");
+        mv.loadThis();
+
+        debug("GETFIELD p" + esParamIdx);
+        mv.getField(Type.getType(className), "p" + esParamIdx, Type.getType(ExecutableStatement.class));
+    }
+
+    /** 生成通过es获取数据值的代码,相应的es使用字段下标来代替 */
+    private void generateEsGetValue(int esIdx) {
+        generateGetEsField(esIdx);
+        //获取相应的参数信息
+        debug("ALOAD 2");
+        mv.loadLocal(ACCESSOR_LOCAL_IDX_EL_CTX);
+        debug("ALOAD 3");
+        mv.loadLocal(ACCESSOR_LOCAL_IDX_VARIABLE_FACTORY);
+        debug("INVOKEINTERFACE ExecutableStatement.getValue");
+        mv.invokeInterface(Type.getType(ExecutableStatement.class), org.mvel2.asm.commons.Method.getMethod("Object getValue(Object, org.mvel2.integration.VariableResolverFactory)"));
+    }
+
+    /** 生成类型转换的代码 */
+    private void generateDataConversionCode(Class target) {
+        if(target.equals(Object.class)) {
+            return;
+        }
+
+        pushClass(target);
+        debug("INVOKESTATIC DataConversion.convert");
+        mv.invokeStatic(Type.getType(DataConversion.class), org.mvel2.asm.commons.Method.getMethod("Object convert(Object, Class)"));
+    }
+
+    /** 输出调试信息 */
+    private void dumpAdvancedDebugging() {
+        if(buildLog == null) {
+            return;
+        }
+
+        System.out.println("JIT Compiler Dump for: <<" + (expr == null ? null : new String(expr))
+                + ">>\n-------------------------------\n");
+        System.out.println(buildLog.toString());
+        System.out.println("\n<END OF DUMP>\n");
     }
 
     //---------------------------- 辅助及工具方法 end ------------------------------//
@@ -2768,13 +2641,13 @@ public class AsmAccessorOptimizer extends AbstractOptimizer implements AccessorO
 
     private static MvelClassLoader classLoader;
 
-    public static void setMVELClassLoader(MvelClassLoader cl) {
+    public static void setMvelClassLoader(MvelClassLoader cl) {
         classLoader = cl;
     }
 
     public void init() {
         try{
-            classLoader = new JitClassLoader(currentThread().getContextClassLoader());
+            classLoader = new JitClassLoader(Thread.currentThread().getContextClassLoader());
         } catch(Exception e) {
             throw new RuntimeException(e);
         }
