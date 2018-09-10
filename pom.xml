@@ -5,7 +5,7 @@
     <groupId>org.mvelx</groupId>
     <artifactId>mvel</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
 
     <name>mvel</name>
     <description>简单高效的脚本执行引擎</description>

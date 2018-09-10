@@ -3,7 +3,7 @@
 <suite name="mvelx-test" parallel="false">
     <test verbose="1" name="mvelx" annotations="JDK">
         <packages>
-            <package name="org.mvel2.*">
+            <package name="org.mvelx.*">
             </package>
         </packages>
     </test>
